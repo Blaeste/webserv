@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:29:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:36:26 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,11 +14,27 @@
 // Contient vector<ServerConfig>
 // Valide la configuration
 
+#pragma once
+
+#include <string>
+#include <vector>
+// #include "ServerConfig.hpp"
+
 class Config
 {
 private:
-	/* data */
+	// TODO: std::vector<ServerConfig> _servers;
+	// TODO: std::string _filePath;
+
 public:
 	Config(/* args */);
 	~Config();
+
+	// TODO: bool parse(const std::string &filePath);
+	// TODO: const std::vector<ServerConfig> &getServers() const;
+
+private:
+	// TODO: void parseServerBlock(/* ... */);
+	// TODO: void parseLocationBlock(/* ... */);
+	// TODO: bool validate() const;
 };

@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 12:46:02 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:39:37 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 int main(int ac, char **av)
 {
 	// TODO: Parse arguments (config file path or default)
-	// TODO: Load and parse configuation file
+	// TODO: Load and parse configuration file
 	// TODO: Create server instance with config
 	// TODO: Setup signal handlers (SIGINT, SIGTERM)
 	// TODO: Run server loop

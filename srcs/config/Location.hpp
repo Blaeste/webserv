@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:31:55 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:06:31 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,28 @@
 // Upload path
 // Redirection
 
+#pragma once
+
+#include <string>
+#include <vector>
+
 class Location
 {
 private:
-	/* data */
+	// TODO: std::string _path;
+	// TODO: std::string _root;
+	// TODO: std::vector<std::string> _allowedMethods;
+	// TODO: std::vector<std::string> _index;
+	// TODO: bool _autoindex;
+	// TODO: std::string _uploadPath;
+	// TODO: std::string _redirect;
+	// TODO: std::string _cgiExtension;
+	// TODO: std::string _cgiPath;
+
 public:
 	Location(/* args */);
 	~Location();
+
+	// TODO: Getters/Setters
+	// TODO: bool isMethodAllowed(const std::string &method) const;
 };
