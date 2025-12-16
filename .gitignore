@@ -1,6 +1,4 @@
 # Build directories
-build/
-bin/
 obj/
 
 # VS Code
