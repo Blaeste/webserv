@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:02:16 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:11 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ private:
 	// TODO: std::vector<Location> _locations;
 
 public:
-	ServerConfig(/* args */);
+	ServerConfig();
 	~ServerConfig();
 
 	// TODO: Getters/Setters for all attributes

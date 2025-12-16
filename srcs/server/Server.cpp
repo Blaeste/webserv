@@ -6,7 +6,16 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:19:50 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:59 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Server.hpp"
+
+Server::Server()
+{
+}
+
+Server::~Server()
+{
+}

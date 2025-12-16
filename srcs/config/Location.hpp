@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:06:31 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:06 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ private:
 	// TODO: std::string _cgiPath;
 
 public:
-	Location(/* args */);
+	Location();
 	~Location();
 
 	// TODO: Getters/Setters

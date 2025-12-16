@@ -6,7 +6,16 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:19:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:38 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Client.hpp"
+
+Client::Client()
+{
+}
+
+Client::~Client()
+{
+}

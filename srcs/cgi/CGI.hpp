@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:38:27 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:49:56 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ private:
 	// TODO: std::map<std::string, std::string> _env;
 
 public:
-	CGI(/* args */);
+	CGI();
 	~CGI();
 
 	// TODO: std::string execute(const HttpRequest &request, const std::string &scriptPath);

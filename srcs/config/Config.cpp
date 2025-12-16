@@ -6,7 +6,16 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:20:12 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:48:17 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Config.hpp"
+
+Config::Config()
+{
+}
+
+Config::~Config()
+{
+}

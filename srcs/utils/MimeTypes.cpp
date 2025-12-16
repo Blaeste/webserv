@@ -6,7 +6,16 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:44 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:22:45 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:51:19 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "MimeTypes.hpp"
+
+MimeTypes::MimeTypes()
+{
+}
+
+MimeTypes::~MimeTypes()
+{
+}

@@ -6,7 +6,16 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 10:20:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:48:35 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Location.hpp"
+
+Location::Location()
+{
+}
+
+Location::~Location()
+{
+}

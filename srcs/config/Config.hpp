@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:36:26 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:50:01 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ private:
 	// TODO: std::string _filePath;
 
 public:
-	Config(/* args */);
+	Config();
 	~Config();
 
 	// TODO: bool parse(const std::string &filePath);

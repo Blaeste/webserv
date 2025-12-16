@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:47 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:35:18 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/16 13:51:47 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,5 +28,8 @@ private:
 	// TODO: static void init();
 
 public:
+	MimeTypes();
+	~MimeTypes();
+
 	// TODO: static std::string get(const std::string &extension);
 };
