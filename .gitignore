@@ -1,3 +1,17 @@
+# Build directories
+build/
+bin/
+obj/
+
+# VS Code
+.vscode/
+
+# CLion / JetBrains
+.idea/
+
+# Valgrind
+vgcore.*
+
 # Prerequisites
 *.d
 
@@ -37,5 +51,21 @@
 *.out
 *.app
 
-# debug information files
+# Debug information files
 *.dwo
+
+# Temporary files
+*~
+*.swp
+*.swo
+*.tmp
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# Core dumps
+core
+core.*
