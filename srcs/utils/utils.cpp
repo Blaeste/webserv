@@ -6,9 +6,12 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/17 12:26:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/18 09:43:46 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
+
+// =============================================================================
+// Includes
 
 #include "utils.hpp"
 #include <fcntl.h> // open(), O_RDONLY
@@ -17,6 +20,9 @@
 #include <sstream> // for urlDecode
 #include <cstdlib> // for strtol
 #include <ctime> // for getHttpDate -> strftime
+
+// =============================================================================
+// Functions
 
 std::string trim(const std::string &str)
 {
