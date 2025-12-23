@@ -6,14 +6,9 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 14:13:20 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 15:51:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-// Construit une reponse HTTP
-// Gere les status codes
-// Headers automatiaues (Content-Length, etc.)
-// Lit les fichiers statiques
 
 // =============================================================================
 // Includes
@@ -23,11 +18,7 @@
 #include <string>
 #include <map>
 
-// =============================================================================
-// Typedef
-
-// =============================================================================
-// Defines
+#include "../http/HttpRequest.hpp"
 
 // =============================================================================
 // Class HttpResponse
@@ -41,16 +32,13 @@ private:
 	// Attributs
 
 	// HTTP status code
-	int									_statusCode;
-
+	int _statusCode;
 	// HTTP status message
-	std::string							_statusMessage;
-
+	std::string _statusMessage;
 	// Headers
-	std::map<std::string, std::string>	_headers;
-
+	std::map<std::string, std::string> _headers;
 	// Body
-	std::string							_body;
+	std::string _body;
 
 public:
 
@@ -122,6 +110,13 @@ public:
 	 * @param body The content to write to the resource.
 	 */
 	void servePut(const std::string &path, const std::string &body);
+
+	/**
+	 * @brief Handles file upload by saving uploaded files to a directory.
+	 * @param request The HTTP request containing uploaded files.
+	 * @param uploadDir The directory where files should be saved.
+	 */
+	void handleUpload(const HttpRequest &request, const std::string &uploadDir);
 
 private:
 

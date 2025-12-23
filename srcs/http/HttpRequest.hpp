@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 14:36:03 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 15:47:47 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,13 +21,21 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <map>
 
 // =============================================================================
 // Typedef
 
 // =============================================================================
-// Defines
+// Structure
+
+struct UploadedFile
+{
+	std::string filename;
+	std::string contentType;
+	std::string content;
+};
 
 // =============================================================================
 // Class HttpRequest
@@ -41,27 +49,21 @@ private:
 	// Attributs
 
 	// Method (GET, POST, etc.)
-	std::string							_method;
-
+	std::string _method;
 	// URI (/index.html, /api/data, etc.)
-	std::string							_uri;
-
+	std::string _uri;
 	// HTTP version (HTTP/1.1)
-	std::string							_version;
-
+	std::string _version;
 	// Headers
-	std::map<std::string, std::string>	_headers;
-
+	std::map<std::string, std::string> _headers;
 	// Body
-	std::string							_body;
-
+	std::string _body;
 	// Raw request data
-	std::string							_rawData;
-
+	std::string _rawData;
 	// Is the request complete
-	bool								_isComplete;
-
-	// TODO: bool _isChunked;
+	bool _isComplete;
+	// Uploaded files (for multipart/form-data)
+	std::vector<UploadedFile> _uploadedFiles;
 
 public:
 
@@ -93,29 +95,15 @@ public:
     // =========================================================================
 	// Getters
 
-	/**
-	 * @brief Gets the HTTP method of the request.
-	 * @return The HTTP method as a string.
-	 */
     const std::string &getMethod() const { return _method; }
 
-	/**
-	 * @brief Gets the URI of the request.
-	 * @return The URI as a string.
-	 */
     const std::string &getUri() const { return _uri; }
 
-	/**
-	 * @brief Gets the HTTP version of the request.
-	 * @return The HTTP version as a string.
-	 */
     const std::string &getVersion() const { return _version; }
 
-	/**
-	 * @brief Gets the headers of the request.
-	 * @return A constant reference to the map of headers.
-	 */
     const std::map<std::string, std::string> &getHeaders() const { return _headers; }
+
+	const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
 
 
 private:
@@ -149,4 +137,11 @@ private:
 	 * @return true if parsing was successful, false otherwise.
 	 */
 	bool parseChunked();
+
+	/**
+	 * @brief Parses multipart/form-data body.
+	 * @param boundary The boundary string used to separate parts.
+	 * @return true if parsing was successful, false otherwise.
+	 */
+	bool parseMultipart(const std::string &boundary);
 };
