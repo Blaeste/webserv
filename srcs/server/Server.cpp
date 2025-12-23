@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:04:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 16:37:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,7 @@ void Server::handleClientRead(size_t clientIndex) {
 	char buffer[4096];
 	int clientFd = _pollFds[clientIndex].fd;
 
+	// Read incoming data from the client socket
 	int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
 	if (bytesRead <= 0) {
 		std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
@@ -148,32 +149,47 @@ void Server::handleClientRead(size_t clientIndex) {
 		return;
 	}
 
+	// Append received data to the HTTP request parser
 	HttpRequest request;
 	std::string data(buffer, bytesRead);
 	request.appendData(data);
+	
+	// Wait until the full HTTP request has been received
 	if (!request.isComplete()) {
 		std::cout << "Incomplete request, waiting for more data..." << std::endl;
 		return;
 	}
 
+	// Log basic request information
 	std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
 
-	// TODO: Select the correct ServerConfig based on the Host header
-    // For now, use the first configuration
-	const ServerConfig& config = _configs[0];
+	// Select the correct ServerConfig based on the Host header
+	// Fallback to the first configuration if no match is found
+	const ServerConfig* config = &_configs[0];
+	std::string host = request.getHeader("Host");
 
-	// Use the Router to match the requested route
-	RouteMatch match = _router.matchRoute(config, request);
+	// Remove port number from Host header if present (e.g. "localhost:8080")
+	size_t colonPos = host.find(':');
+	if (colonPos != std::string::npos)
+		host = host.substr(0, colonPos);
+	for (size_t i = 0; i < _configs.size(); i++) {
+		if (_configs[i].getServerName() == host) {
+			config = &_configs[i];
+			break;
+		}
+	}
+	// Use the router to match the request to a route and determine the action
+	RouteMatch match = _router.matchRoute(*config, request);
 
+	// Build the HTTP response based on the routing result
 	HttpResponse response;
-	
 	if (!match.redirectUrl.empty()) {
-		// Redirection
+		// Handle HTTP redirection
 		response.setStatus(match.statusCode);
 		response.setHeader("Location", match.redirectUrl);
 		response.setBody("");
 	} else if (match.statusCode == 405) {
-		// Method not allowed
+		// Method not allowed for this route
 		response.setStatus(405);
 		response.setHeader("Content-Type", "text/html");
 		std::string errorPage = "www/error_pages/405.html";
@@ -182,7 +198,7 @@ void Server::handleClientRead(size_t clientIndex) {
 		else
 			response.setBody("<html><body><h1>405 Method Not Allowed</h1></body></html>");
 	} else if (match.statusCode == 404) {
-		// File not found
+		// Requested resource not found
 		response.setStatus(404);
 		response.setHeader("Content-Type", "text/html");
 		std::string errorPage = "www/error_pages/404.html";
@@ -191,16 +207,18 @@ void Server::handleClientRead(size_t clientIndex) {
 		else
 			response.setBody("<html><body><h1>404 Not Found</h1></body></html>");
 	} else {
-		// File found, serve it
+		// Resource found: serve the requested file
 		response.setStatus(200);
 		std::string ext = getFileExtension(match.filePath);
-		response.setHeader("Content-Type", "text/html"); // TODO: use MimeTypes based on extension
+		response.setHeader("Content-Type", "text/html"); // TODO: determine MIME type from extension
 		response.setBody(readFile(match.filePath));
 	}
 
+	// Send the response to the client
 	std::string rawResponse = response.build();
 	send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
 
+	// Close the connection and remove the client from poll monitoring
 	close(clientFd);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
