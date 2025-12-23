@@ -12,7 +12,7 @@
 
 #include <iostream>
 #include <string>
-// #include "server/Server.hpp"
+#include "server/Server.hpp"
 #include "config/Config.hpp"
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
@@ -190,5 +190,28 @@ int main(int ac, char **av)
 		if (i < files.size() - 1)
 			std::cout << ", ";
 	}
+  
 	std::cout << std::endl;
+	std::cout << MAGENTA "\n============ TEST Server::init + Server::run ============" RESET << std::endl;;
+	try {
+		Config config;
+		if (!config.parse("config/default.conf"))
+		{
+			std::cerr << "Error: Failed to parse config" << std::endl;
+			return 1;
+		}
+		
+		std::cout << "[Server initialization]" << std::endl;
+		Server server;
+		server.init(config);
+
+		std::cout << "\n[Server starting]" << std::endl;
+		std::cout << "[Try 'curl http://localhost:8080']" << std::endl;
+		server.run();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "❌ Error: " << e.what() << std::endl;
+		return 1;
+	}
 }

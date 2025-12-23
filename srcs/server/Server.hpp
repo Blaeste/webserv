@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 12:53:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 11:27:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,30 +20,35 @@
 #include <vector>
 #include <poll.h>
 // #include "Client.hpp"
-// #include "../config/Config.hpp"
+#include "../config/Config.hpp"
 
-class Server
-{
-private:
-	// TODO: vector<ServerConfig> _configs;
-	// TODO: vector<Client> _clients;
-	// TODO: vector<pollfd> _pollFds;
-	// TODO: vector<int> _listenSockets;
-	// TODO: bool _running;
+class Server {
 
-public:
-	Server();
-	~Server();
+	private:
 
-	// TODO: void init(const Config &config);
-	// TODO: void run();
-	// TODO: void stop();
+		std::vector<ServerConfig> _configs;
+		// TODO: vector<Client> _clients;
+		std::vector<pollfd> _pollFds;
+		std::vector<int> _listenSockets;
+		bool _running;
 
-private:
-	// TODO: void setupListenSockets();
-	// TODO: void acceptNewClient(int listenSocket);
-	// TODO: void handleClientRead(int clientIndex);
-	// TODO: void handleClientWrite(int clientIndex);
-	// TODO: void closeClient(int clientIndex);
-	// TODO: void checkTimeouts();
+	public:
+
+		Server();
+		~Server();
+
+		void init(const Config &config);
+		void run();
+		void stop();
+
+	private:
+
+		void setupListenSockets();
+		void acceptNewClient(int listenSocket);
+		void handleClientRead(size_t clientIndex);
+		// TODO: void handleClientWrite(int clientIndex);
+		// TODO: void closeClient(int clientIndex);
+		// TODO: void checkTimeouts();
+		bool isListenSocket(int fd) const;
+
 };
