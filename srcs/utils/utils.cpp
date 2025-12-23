@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/18 09:43:46 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 11:19:58 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -186,4 +186,11 @@ size_t getFileSize(const std::string &path)
 		return 0; // TODO: Throw exception
 
 	return sb.st_size;
+}
+
+std::string intToString(int value)
+{
+	std::stringstream ss;
+	ss << value;
+	return ss.str();
 }
