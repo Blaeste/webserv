@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 15:58:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 16:58:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,12 @@
 
 #pragma once
 
-#include <vector>
-#include <poll.h>
 // #include "Client.hpp"
 #include "Router.hpp"
 #include "../config/Config.hpp"
+#include "../http/HttpResponse.hpp"
+#include <poll.h>
+#include <vector>
 
 class Server {
 
@@ -39,18 +40,25 @@ class Server {
 		Server();
 		~Server();
 
+		// Public method(s)
 		void init(const Config &config);
 		void run();
 		void stop();
 
 	private:
 
+		// private method(s)
 		void setupListenSockets();
+		bool isListenSocket(int fd) const;
 		void acceptNewClient(int listenSocket);
+
+		// Client read
+		const ServerConfig* selectConfig(const HttpRequest& request) const;
+		void buildResponse(HttpResponse& response, const RouteMatch& match);
+		void buildErrorResponse(HttpResponse& response, int statusCode);
 		void handleClientRead(size_t clientIndex);
 		// TODO: void handleClientWrite(int clientIndex);
 		// TODO: void closeClient(int clientIndex);
 		// TODO: void checkTimeouts();
-		bool isListenSocket(int fd) const;
 
 };
