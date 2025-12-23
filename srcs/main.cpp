@@ -6,13 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/22 17:52:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 12:59:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <iostream>
 #include <string>
-// #include "server/Server.hpp"
+#include "server/Server.hpp"
 #include "config/Config.hpp"
 #include "http/HttpRequest.hpp"
 
@@ -143,5 +143,28 @@ int main(int ac, char **av)
 		const std::map<std::string, std::string> &headers = req.getHeaders();
 		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
 			std::cout << "Header #" << std::distance(headers.begin(), it) + 1 << ":\t" << it->first << ": " << it->second << std::endl;
+	}
+
+	std::cout << MAGENTA "\n============ TEST Server::init + Server::run ============" RESET << std::endl;;
+	try {
+		Config config;
+		if (!config.parse("config/default.conf"))
+		{
+			std::cerr << "Error: Failed to parse config" << std::endl;
+			return 1;
+		}
+		
+		std::cout << "[Server initialization]" << std::endl;
+		Server server;
+		server.init(config);
+
+		std::cout << "\n[Server starting]" << std::endl;
+		std::cout << "[Try 'curl http://localhost:8080']" << std::endl;
+		server.run();
+	}
+	catch (const std::exception& e)
+	{
+		std::cerr << "❌ Error: " << e.what() << std::endl;
+		return 1;
 	}
 }
