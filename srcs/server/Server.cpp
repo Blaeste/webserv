@@ -6,13 +6,14 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:19:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 13:33:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Server.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
+#include "../utils/utils.hpp"
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
@@ -148,26 +149,36 @@ void Server::handleClientRead(size_t clientIndex) {
 	}
 	
 	// Parse HTTP request
-    HttpRequest request;
-    std::string data(buffer, bytesRead);
-    request.appendData(data);
+	HttpRequest request;
+	std::string data(buffer, bytesRead);
+	request.appendData(data);
 
 	if (!request.isComplete()) {
-        std::cout << "Incomplete request, waiting for more data..." << std::endl;
-        return; // Keep the connection open until request is complete
-    }
+		std::cout << "Incomplete request, waiting for more data..." << std::endl;
+		return; // Keep the connection open until request is complete
+	}
 
-    // Log request info
-    std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
+	// Log request info
+	std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
 
-	// Build a minimal HTTP response
+	// Serve static file or 404
 	HttpResponse response;
-    response.setStatus(200);
-    response.setHeader("Content-Type", "text/html");
-    response.setBody("<html><body><h1>Hello from webserv!</h1><p>You requested: " 
-                     + request.getUri() + "</p></body></html>");
-    
-    std::string rawResponse = response.build();
+	std::string filePath = "www" + request.getUri();
+	
+	if (fileExists(filePath) && !isDirectory(filePath)) {
+		// File exists, serve it
+		std::string content = readFile(filePath);
+		response.setStatus(200);
+		response.setHeader("Content-Type", "text/html"); // TODO: use MimeTypes based on extension
+		response.setBody(content);
+	} else {
+		// File not found, return 404
+		response.setStatus(404);
+		response.setHeader("Content-Type", "text/html");
+		response.setBody("<html><body><h1>404 Not Found</h1><p>The requested file was not found.</p></body></html>");
+	}
+	
+	std::string rawResponse = response.build();
 
 	// Send the response
 	send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
