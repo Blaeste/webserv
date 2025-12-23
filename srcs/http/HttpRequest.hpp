@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:09:11 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 14:36:03 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,7 +144,9 @@ private:
 	 */
 	bool parseHeaders(const std::string &headerBlock);
 
-	// TODO: bool parseBody(const std::string &bodyData);
-	// TODO: bool parseChunkedBody(const std::string &chunkedData);
-
+	/**
+	 * @brief Parses the body of a chunked transfer encoded request.
+	 * @return true if parsing was successful, false otherwise.
+	 */
+	bool parseChunked();
 };
