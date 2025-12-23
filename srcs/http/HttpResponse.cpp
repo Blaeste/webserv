@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 11:20:48 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 13:09:54 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,9 +48,6 @@ void HttpResponse::setBody(const std::string &body)
 {
 	_body = body;
 }
-
-// =============================================================================
-// Getters
 
 // =============================================================================
 // Methods
@@ -98,4 +95,116 @@ std::string HttpResponse::build() const
 	response += _body;
 
 	return response;
+}
+
+void HttpResponse::serveError(int code, const std::string &errorPagePath)
+{
+	setStatus(code);
+
+	// If custom error page exist
+	if (!errorPagePath.empty() && fileExists(errorPagePath))
+	{
+		std::string content = readFile(errorPagePath);
+		setHeader("Content-Type", "text/html");
+		setBody(content);
+	}
+	else
+	{
+		// Defautl error page
+		std::string body =
+			"<html>\n"
+			"<head><title>Error " + intToString(code) + "</title></head>\n"
+			"<body>\n"
+			"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
+			"<p>The requested resource could not be found.</p>"
+			"</body>\n"
+			"</html>";
+
+		setHeader("Content-Type", "text/html");
+		setBody(body);
+	}
+}
+
+void HttpResponse::serveFile(const std::string &path)
+{
+	// Check if file exist
+	if (!fileExists(path))
+	{
+		serveError(404, "");
+		return;
+	}
+
+	// Check if its a directory
+	if (isDirectory(path))
+	{
+		serveError(403, "");
+		return;
+	}
+
+	// Read file content
+	std::string content = readFile(path);
+
+	// Chose content type by file extension
+	std::string ext = getFileExtension(path);
+	std::string contentType = "text/plain"; // Default
+
+	if (ext == ".html" || ext == ".htm")
+		contentType = "text/html";
+	else if (ext == ".css")
+		contentType = "text/css";
+	else if (ext == ".js")
+		contentType = "application/javascript";
+	else if (ext == ".json")
+		contentType = "application/json";
+	else if (ext == ".png")
+		contentType = "image/png";
+	else if (ext == ".jpg" || ext == ".jpeg")
+		contentType = "image/jpeg";
+	else if (ext == ".gif")
+		contentType = "image/gif";
+	else if (ext == ".pdf")
+		contentType = "application/pdf";
+
+	// Build response
+	setStatus(200);
+	setHeader("Content-Type", contentType);
+	setBody(content);
+}
+
+void HttpResponse::serveDirectoryListing(const std::string &path)
+{
+	// Check if path is a directory
+	if (!isDirectory(path))
+	{
+		serveError(404, "");
+		return;
+	}
+
+	// Get list of directories/files
+	std::vector<std::string> files = listDirectory(path);
+
+	// Generate HTML page
+	std::string body =
+		"<html>\n"
+		"<head><title>Index of " + path + "</title></head>\n"
+		"<body>\n"
+		"<h1>Index of " + path + "</h1>\n"
+		"<hr>\n"
+		"<ul>";
+
+	// add each entries as a link
+	for (size_t i = 0; i < files.size(); ++i)
+		body += "<li><a href=\"" + files[i] + "\">" + files[i] + "</a></li>\n";
+
+	// add the rest of body
+	body +=
+		"</ul>\n"
+		"<hr>"
+		"</body>\n"
+		"</html>";
+
+	// Build response
+	setStatus(200);
+	setHeader("Content-Type", "text/html");
+	setBody(body);
 }
