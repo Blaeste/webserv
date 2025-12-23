@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 14:12:33 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 14:21:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -273,3 +273,4 @@ void HttpResponse::servePut(const std::string &path, const std::string &body)
 	else
 		setStatus(201);
 }
+

@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:09:25 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 14:35:24 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,6 +103,42 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
     return true;
 }
 
+bool HttpRequest::parseChunked()
+{
+    std::string &data = _rawData;
+    std::string body;
+    size_t pos = 0;
+
+    while (true)
+    {
+        // Find chunk size line
+        size_t lineEnd = data.find("\r\n", pos);
+        if (lineEnd == std::string::npos)
+            return false; // Incomplete chunk
+
+        // Parse chunk size (hexa)
+        std::string sizeStr = data.substr(pos, lineEnd - pos);
+        size_t chunkSize = std::strtol(sizeStr.c_str(), NULL, 16);
+
+        pos = lineEnd + 2; // skip "\r\n"
+
+        // Last chunk (size = 0)
+        if (chunkSize == 0)
+        {
+            _body = body;
+            return true;
+        }
+
+        // Check if chunk is complet (full data)
+        if (pos + chunkSize + 2 > data.length())
+            return false; // Incomplete chunk data
+
+        // Extract chunk data
+        body += data.substr(pos, chunkSize);
+        pos += chunkSize + 2; // Skip data + \r\n
+    }
+}
+
 bool HttpRequest::parse()
 {
     // Search for end of headers
@@ -119,11 +155,20 @@ bool HttpRequest::parse()
     if (!parseHeaders(headersBlock))
         return false;
 
-    // Check if body exists
+    // Check if body type (chunked or Content-Length)
     size_t bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
 
-    // if content length exist, check size
-    if (_headers.find("Content-Length") != _headers.end())
+    // Case 1 Chunked "Transfer-Encoding"
+    if (_headers.find("Transfer-Encoding") != _headers.end() &&
+        _headers["Transfer-Encoding"] == "chunked")
+    {
+        // Remove headers from _rawdata befor parsing chunk
+        _rawData = _rawData.substr(bodyStart);
+        return parseChunked();
+    }
+
+    // Cas 2 Content Length
+    else if (_headers.find("Content-Length") != _headers.end())
     {
         size_t contentLength = atoi(_headers["Content-Length"].c_str());
 
@@ -141,3 +186,4 @@ bool HttpRequest::parse()
 
     return true;
 }
+
