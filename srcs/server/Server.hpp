@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:58:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 19:45:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 #pragma once
 
-// #include "Client.hpp"
+#include "Client.hpp"
 #include "Router.hpp"
 #include "../config/Config.hpp"
 #include "../http/HttpResponse.hpp"
@@ -29,7 +29,7 @@ class Server {
 	private:
 
 		std::vector<ServerConfig> _configs;
-		// TODO: vector<Client> _clients;
+		std::vector<Client> _clients;
 		std::vector<pollfd> _pollFds;
 		std::vector<int> _listenSockets;
 		bool _running;

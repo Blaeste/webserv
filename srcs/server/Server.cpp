@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:54:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 19:56:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,6 +127,10 @@ void Server::acceptNewClient(int listenSocket) {
 	// Set the client socket to non-blocking mode
 	fcntl(clientFd, F_SETFL, O_NONBLOCK);
 
+	// Add a Client to the vector
+	Client newClient(clientFd);
+	_clients.push_back(newClient);
+
 	// Add the new client socket to poll() to monitor incoming data
 	struct pollfd pfd;
 	pfd.fd = clientFd;
@@ -138,78 +142,90 @@ void Server::acceptNewClient(int listenSocket) {
 }
 
 const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
-    const ServerConfig* config = &_configs[0];
-    std::string host = request.getHeader("Host");
-    
-    size_t colonPos = host.find(':');
-    if (colonPos != std::string::npos)
-        host = host.substr(0, colonPos);
-    
-    for (size_t i = 0; i < _configs.size(); i++) {
-        if (_configs[i].getServerName() == host) {
-            config = &_configs[i];
-            break;
-        }
-    }
-    return config;
+	const ServerConfig* config = &_configs[0];
+	std::string host = request.getHeader("Host");
+	
+	size_t colonPos = host.find(':');
+	if (colonPos != std::string::npos)
+		host = host.substr(0, colonPos);
+	
+	for (size_t i = 0; i < _configs.size(); i++) {
+		if (_configs[i].getServerName() == host) {
+			config = &_configs[i];
+			break;
+		}
+	}
+	return config;
 }
 
 void Server::buildResponse(HttpResponse& response, const RouteMatch& match) {
-    if (!match.redirectUrl.empty()) {
-        response.setStatus(match.statusCode);
-        response.setHeader("Location", match.redirectUrl);
-        response.setBody("");
-    } else if (match.statusCode == 405) {
-        buildErrorResponse(response, 405);
-    } else if (match.statusCode == 404) {
-        buildErrorResponse(response, 404);
-    } else {
-        response.setStatus(200);
-        std::string ext = getFileExtension(match.filePath);
-        response.setHeader("Content-Type", "text/html"); // TODO: MIME types
-        response.setBody(readFile(match.filePath));
-    }
+	if (!match.redirectUrl.empty()) {
+		response.setStatus(match.statusCode);
+		response.setHeader("Location", match.redirectUrl);
+		response.setBody("");
+	} else if (match.statusCode == 405) {
+		buildErrorResponse(response, 405);
+	} else if (match.statusCode == 404) {
+		buildErrorResponse(response, 404);
+	} else {
+		response.setStatus(200);
+		std::string ext = getFileExtension(match.filePath);
+		response.setHeader("Content-Type", "text/html"); // TODO: MIME types
+		response.setBody(readFile(match.filePath));
+	}
 }
 
 void Server::buildErrorResponse(HttpResponse& response, int statusCode) {
-    response.setStatus(statusCode);
-    response.setHeader("Content-Type", "text/html");
-    
-    std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-    if (fileExists(errorPage))
-        response.setBody(readFile(errorPage));
-    else
-        response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+	response.setStatus(statusCode);
+	response.setHeader("Content-Type", "text/html");
+	
+	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+	if (fileExists(errorPage))
+		response.setBody(readFile(errorPage));
+	else
+		response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 }
 
 void Server::handleClientRead(size_t clientIndex) {
-    char buffer[4096];
-    int clientFd = _pollFds[clientIndex].fd;
-
-    int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
-    if (bytesRead <= 0) {
-        std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
-        close(clientFd);
-        _pollFds.erase(_pollFds.begin() + clientIndex);
+	int clientFd = _pollFds[clientIndex].fd;
+    
+    // Find the client with this fd
+    size_t i;
+    for (i = 0; i < _clients.size(); i++) {
+        if (_clients[i].getSocket() == clientFd)
+            break;
+    }
+        if (i == _clients.size()) {
+        std::cerr << "Error: client not found for fd " << clientFd << std::endl;
         return;
     }
+	Client& client = _clients[i];
 
-    HttpRequest request;
-    request.appendData(std::string(buffer, bytesRead));
-    if (!request.isComplete())
-        return;
+	// Read data from socket
+	if (!client.readData()) {
+		// Error or disconnection
+		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
+		close(client.getSocket());
+		_clients.erase(_clients.begin() + clientIndex);
+		_pollFds.erase(_pollFds.begin() + clientIndex);
+		return;
+	}
 
-    std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
+	// Check if request is complete
+	if (!client.isRequestComplete())
+		return;
 
-    const ServerConfig* config = selectConfig(request);
-    RouteMatch match = _router.matchRoute(*config, request);
-    
-    HttpResponse response;
-    buildResponse(response, match);
+	std::cout << "📨 Request received" << std::endl;
 
-    std::string rawResponse = response.build();
-    send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
+	// Build response
+	const ServerConfig* config = &_configs[0];  // TODO: use selectConfig with Host header
+	client.buildResponse(*config, _router);
 
-    close(clientFd);
-    _pollFds.erase(_pollFds.begin() + clientIndex);
+	// Send response
+	client.sendResponse();
+
+	// Close connection and cleanup
+	close(client.getSocket());
+	_clients.erase(_clients.begin() + clientIndex);
+	_pollFds.erase(_pollFds.begin() + clientIndex);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:50:44 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 19:51:23 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,33 +18,44 @@
 
 #pragma once
 
-#include <string>
+#include "../http/HttpRequest.hpp"
+#include "../http/HttpResponse.hpp"
 #include <ctime>
-// #include "../http/HttpRequest.hpp"
-// #include "../http/HttpResponse.hpp"
+#include <string>
 
-class Client
-{
-private:
-	// TODO: int _socket;
-	// TODO: std::string _readBuffer;
-	// TODO: std::string _writeBuffer;
-	// TODO: HttpRequest _request;
-	// TODO: HttpResponse _response;
-	// TODO: time_t _lastActivity;
-	// TODO: bool _requestComplete;
-	// TODO: bool _responseReady;
+// Forward declarations
+class ServerConfig;
+class Router;
 
-public:
-	Client();
-	~Client();
+class Client {
 
-	// TODO: int getSocket() const;
-	// TODO: bool hasTimedOut(time_t timeout) const;
-	// TODO: void updateActivity();
+	private:
 
-	// TODO: void readData();
-	// TODO: void writeData();
-	// TODO: void processRequest();
-	// TODO: void prepareResponse();
+		int _socket;
+		std::string _readBuffer;
+		HttpRequest _request;
+		HttpResponse _response;
+		time_t _lastActivity;
+		bool _requestComplete;
+		bool _responseReady;
+		// std::string _writeBuffer;
+
+	public:
+
+		Client(int socket);
+		~Client();
+
+		int getSocket() const;
+		bool hasTimedOut(time_t timeout) const;
+		void updateActivity();
+		bool isRequestComplete() const;
+
+		bool readData();
+		void buildResponse(const ServerConfig& config, Router& router);
+		void buildErrorResponse(int statusCode);
+		bool sendResponse();
+		// TODO: void writeData();
+		// TODO: void processRequest();
+		// TODO: void prepareResponse();
+
 };
