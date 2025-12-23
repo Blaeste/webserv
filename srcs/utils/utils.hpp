@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 11:19:45 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 12:46:35 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,3 +97,10 @@ size_t getFileSize(const std::string &path);
  * @return A string representation of the integer.
  */
 std::string intToString(int value);
+
+/**
+ * @brief Lists all entries in a directory.
+ * @param path The path to the directory.
+ * @return A vector containing the names of all entries in the directory (excluding "." and "..").
+ */
+std::vector<std::string> listDirectory(const std::string &path);

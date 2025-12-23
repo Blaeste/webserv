@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 11:19:58 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 12:51:12 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <sstream> // for urlDecode
 #include <cstdlib> // for strtol
 #include <ctime> // for getHttpDate -> strftime
+#include <dirent.h> // for listDirectory
 
 // =============================================================================
 // Functions
@@ -193,4 +194,26 @@ std::string intToString(int value)
 	std::stringstream ss;
 	ss << value;
 	return ss.str();
+}
+
+std::vector<std::string> listDirectory(const std::string &path)
+{
+	std::vector<std::string> entries;
+
+	DIR *dir = opendir(path.c_str());
+	if (!dir)
+		return entries; // return empty vector if error
+
+	struct dirent *entry;
+
+	while ((entry = readdir(dir)) != NULL)
+	{
+		std::string name = entry->d_name;
+		// skip . and ..
+		if (name != "." && name != "..")
+			entries.push_back(name);
+	}
+
+	closedir(dir);
+	return entries;
 }

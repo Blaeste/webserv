@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 12:59:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 13:04:55 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -161,6 +161,37 @@ int main(int ac, char **av)
 	errorResponse.setBody("<html><body><h1>404 Not Found</h1></body></html>");
 	std::cout << errorResponse.build() << std::endl;
 
+	std::cout << MAGENTA "\n============ TEST HttpResponse::serveError ==============" RESET << std::endl;;
+	HttpResponse errorPage;
+	errorPage.serveError(404, ""); // Default error page
+	std::cout << errorPage.build() << std::endl;
+
+	std::cout << MAGENTA "\n============ TEST HttpResponse::serveFile ===============" RESET << std::endl;;
+	HttpResponse fileResponse;
+	fileResponse.serveFile("www/index.html");
+	std::string fileResp = fileResponse.build();
+	std::cout << "Status: " << fileResp.substr(0, fileResp.find("\r\n")) << std::endl;
+	std::cout << "Content-Type included: " << (fileResp.find("Content-Type: text/html") != std::string::npos ? "YES" : "NO") << std::endl;
+
+	std::cout << MAGENTA "\n======= TEST HttpResponse::serveDirectoryListing ========" RESET << std::endl;;
+	HttpResponse dirListing;
+	dirListing.serveDirectoryListing("www");
+	std::string dirResp = dirListing.build();
+	std::cout << "Status: " << dirResp.substr(0, dirResp.find("\r\n")) << std::endl;
+	std::cout << "Contains <ul>: " << (dirResp.find("<ul>") != std::string::npos ? "YES" : "NO") << std::endl;
+	std::cout << "Contains Index of: " << (dirResp.find("Index of") != std::string::npos ? "YES" : "NO") << std::endl;
+
+	std::cout << MAGENTA "\n============ TEST listDirectory utility =================" RESET << std::endl;;
+	std::vector<std::string> files = listDirectory("www");
+	std::cout << "Files in www/: ";
+	for (size_t i = 0; i < files.size(); ++i)
+	{
+		std::cout << files[i];
+		if (i < files.size() - 1)
+			std::cout << ", ";
+	}
+  
+	std::cout << std::endl;
 	std::cout << MAGENTA "\n============ TEST Server::init + Server::run ============" RESET << std::endl;;
 	try {
 		Config config;
