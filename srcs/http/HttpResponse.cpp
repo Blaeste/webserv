@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:09:54 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 13:48:02 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -101,28 +101,37 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 {
 	setStatus(code);
 
-	// If custom error page exist
+	// If custom error page exist from config
 	if (!errorPagePath.empty() && fileExists(errorPagePath))
 	{
 		std::string content = readFile(errorPagePath);
 		setHeader("Content-Type", "text/html");
 		setBody(content);
+		return;
 	}
-	else
-	{
-		// Defautl error page
-		std::string body =
-			"<html>\n"
-			"<head><title>Error " + intToString(code) + "</title></head>\n"
-			"<body>\n"
-			"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
-			"<p>The requested resource could not be found.</p>"
-			"</body>\n"
-			"</html>";
 
+	// Try default error page in www/error_pages/
+	std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
+	if (fileExists(defaultErrorPage))
+	{
+		std::string content = readFile(defaultErrorPage);
 		setHeader("Content-Type", "text/html");
-		setBody(body);
+		setBody(content);
+		return;
 	}
+
+	// Default error page
+	std::string body =
+		"<html>\n"
+		"<head><title>Error " + intToString(code) + "</title></head>\n"
+		"<body>\n"
+		"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
+		"<p>The requested resource could not be found.</p>"
+		"</body>\n"
+		"</html>";
+
+	setHeader("Content-Type", "text/html");
+	setBody(body);
 }
 
 void HttpResponse::serveFile(const std::string &path)
