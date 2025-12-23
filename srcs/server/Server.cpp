@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:33:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 13:52:43 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,7 +163,10 @@ void Server::handleClientRead(size_t clientIndex) {
 
 	// Serve static file or 404
 	HttpResponse response;
-	std::string filePath = "www" + request.getUri();
+	std::string uri = request.getUri();
+	if (uri == "/" || uri.empty())
+		uri = "/index.html";
+	std::string filePath = "www" + uri;
 	
 	if (fileExists(filePath) && !isDirectory(filePath)) {
 		// File exists, serve it
@@ -172,12 +175,19 @@ void Server::handleClientRead(size_t clientIndex) {
 		response.setHeader("Content-Type", "text/html"); // TODO: use MimeTypes based on extension
 		response.setBody(content);
 	} else {
-		// File not found, return 404
+		// File not found, return custom 404 page
 		response.setStatus(404);
 		response.setHeader("Content-Type", "text/html");
-		response.setBody("<html><body><h1>404 Not Found</h1><p>The requested file was not found.</p></body></html>");
+		
+		std::string errorPage = "www/error_pages/404.html";
+		if (fileExists(errorPage)) {
+			response.setBody(readFile(errorPage));
+		} else {
+			// Fallback if error page doesn't exist
+			response.setBody("<html><body><h1>404 Not Found</h1><p>The requested file was not found.</p></body></html>");
+		}
 	}
-	
+
 	std::string rawResponse = response.build();
 
 	// Send the response

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:04:55 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 13:51:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,27 +124,27 @@ int main(int ac, char **av)
 	std::cout << MAGENTA "\n==================== TEST getHttpDate ===================" RESET << std::endl;;
 	std::cout << getHttpDate() << std::endl;
 
-	std::cout << MAGENTA "\n=============== TEST basic GET HttpRequest ==============" RESET << std::endl;;
-	std::string rawRequest =
-		"GET /index.html HTTP/1.1\r\n"
-		"Host: localhost:8080\r\n"
-		"User-Agent: Mozilla/5.0\r\n"
-		"\r\n";
-	HttpRequest req;
-	if (!req.appendData(rawRequest))
-	{
-		std::cerr << "Error: Failed to parse request" << std::endl;
-		return 1;
-	}
-	if (req.isComplete())
-	{
-		std::cout << "Method:\t\t" << req.getMethod() << std::endl;
-		std::cout << "URI:\t\t" << req.getUri() << std::endl;
-		std::cout << "Version:\t" << req.getVersion() << std::endl;
-		const std::map<std::string, std::string> &headers = req.getHeaders();
-		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
-			std::cout << "Header #" << std::distance(headers.begin(), it) + 1 << ":\t" << it->first << ": " << it->second << std::endl;
-	}
+	// std::cout << MAGENTA "\n=============== TEST basic GET HttpRequest ==============" RESET << std::endl;;
+	// std::string rawRequest =
+	// 	"GET /index.html HTTP/1.1\r\n"
+	// 	"Host: localhost:8080\r\n"
+	// 	"User-Agent: Mozilla/5.0\r\n"
+	// 	"\r\n";
+	// HttpRequest req;
+	// if (!req.appendData(rawRequest))
+	// {
+	// 	std::cerr << "Error: Failed to parse request" << std::endl;
+	// 	return 1;
+	// }
+	// if (req.isComplete())
+	// {
+	// 	std::cout << "Method:\t\t" << req.getMethod() << std::endl;
+	// 	std::cout << "URI:\t\t" << req.getUri() << std::endl;
+	// 	std::cout << "Version:\t" << req.getVersion() << std::endl;
+	// 	const std::map<std::string, std::string> &headers = req.getHeaders();
+	// 	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
+	// 		std::cout << "Header #" << std::distance(headers.begin(), it) + 1 << ":\t" << it->first << ": " << it->second << std::endl;
+	// }
 
 	std::cout << MAGENTA "\n============== TEST HttpResponse 200 OK =================" RESET << std::endl;;
 	HttpResponse response;
