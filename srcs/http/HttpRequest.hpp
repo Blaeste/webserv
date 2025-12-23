@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 15:47:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 16:30:55 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,13 @@ public:
 	 */
     bool isComplete() const;
 
+	/**
+	 * @brief Gets a specific header value by key.
+	 * @param key The header name (e.g., "Content-Type").
+	 * @return The header value if found, empty string otherwise.
+	 */
+	std::string getHeader(const std::string &key) const;
+
     // =========================================================================
 	// Getters
 
@@ -104,7 +111,6 @@ public:
     const std::map<std::string, std::string> &getHeaders() const { return _headers; }
 
 	const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
-
 
 private:
 

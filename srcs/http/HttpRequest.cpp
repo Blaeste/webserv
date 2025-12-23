@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 15:44:34 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 16:32:58 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,14 @@ bool HttpRequest::appendData(const std::string &data)
 bool HttpRequest::isComplete() const
 {
     return _isComplete;
+}
+
+std::string HttpRequest::getHeader(const std::string &key) const
+{
+    std::map<std::string, std::string>::const_iterator it = _headers.find(key);
+    if (it != _headers.end())
+        return it->second;
+    return "";
 }
 
 bool HttpRequest::parseRequestLine(const std::string &headerBlock)
