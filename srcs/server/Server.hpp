@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 11:27:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 15:58:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <vector>
 #include <poll.h>
 // #include "Client.hpp"
+#include "Router.hpp"
 #include "../config/Config.hpp"
 
 class Server {
@@ -31,6 +32,7 @@ class Server {
 		std::vector<pollfd> _pollFds;
 		std::vector<int> _listenSockets;
 		bool _running;
+		Router _router;
 
 	public:
 
