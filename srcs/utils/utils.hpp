@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/18 09:50:44 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 11:19:45 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,3 +90,10 @@ std::string readFile(const std::string &path);
  * @return The size of the file in bytes, or 0 if the file does not exist or is not a regular file.
  */
 size_t getFileSize(const std::string &path);
+
+/**
+ * @brief Converts an integer to a string.
+ * @param value The integer value to convert.
+ * @return A string representation of the integer.
+ */
+std::string intToString(int value);

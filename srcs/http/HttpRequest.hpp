@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/22 17:41:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 11:02:42 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,15 +15,30 @@
 // Gere chunked encoding
 // Validation
 
+// =============================================================================
+// Includes
+
 #pragma once
 
 #include <string>
 #include <map>
 
+// =============================================================================
+// Typedef
+
+// =============================================================================
+// Defines
+
+// =============================================================================
+// Class HttpRequest
+
 class HttpRequest
 {
-	
+
 private:
+
+	// =========================================================================
+	// Attributs
 
 	std::string							_method;
 	std::string							_uri;
@@ -36,15 +51,22 @@ private:
 
 public:
 
+	// =========================================================================
+	// Handlers
 	HttpRequest();
 	~HttpRequest();
 
+	// =========================================================================
+	// Public methods
+
 	bool appendData(const std::string &data);
-    
+
     // Vérifie si la requête est complète
     bool isComplete() const;
-    
-    // Getters
+
+    // =========================================================================
+	// Getters
+
     const std::string &getMethod() const { return _method; }
     const std::string &getUri() const { return _uri; }
     const std::string &getVersion() const { return _version; }
@@ -52,9 +74,12 @@ public:
 
 private:
 
+	// =========================================================================
+	// Methods
+
 	bool parse();
-	// TODO: bool parseRequestLine(const std::string &line);
-	// TODO: bool parseHeaders(const std::string &headerBlock);
+	bool parseRequestLine(const std::string &headerBlock);
+	bool parseHeaders(const std::string &headerBlock);
 	// TODO: bool parseBody(const std::string &bodyData);
 	// TODO: bool parseChunkedBody(const std::string &chunkedData);
 
