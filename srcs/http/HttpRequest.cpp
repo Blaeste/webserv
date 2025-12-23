@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:32:58 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 16:43:44 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -237,8 +237,7 @@ bool HttpRequest::parse()
     size_t bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
 
     // Case 1 Chunked "Transfer-Encoding"
-    if (_headers.find("Transfer-Encoding") != _headers.end() &&
-        _headers["Transfer-Encoding"] == "chunked")
+    if (getHeader("Transfer-Encoding") == "chunked")
     {
         // Remove headers from _rawdata befor parsing chunk
         _rawData.erase(0, bodyStart);
@@ -246,9 +245,9 @@ bool HttpRequest::parse()
     }
 
     // Cas 2 Content Length
-    else if (_headers.find("Content-Length") != _headers.end())
+    else if (!getHeader("Content-Length").empty())
     {
-        size_t contentLength = atoi(_headers["Content-Length"].c_str());
+        size_t contentLength = atoi(getHeader("Content-Length").c_str());
 
         if (_rawData.length() < bodyStart + contentLength)
             return false; // incomplet body
@@ -263,9 +262,9 @@ bool HttpRequest::parse()
     }
 
     // Check if multipart/form-data
-    if (_headers.find("Content-Type") != _headers.end())
+    if (!getHeader("Content-Type").empty())
     {
-        std::string contentType = _headers["Content-Type"];
+        std::string contentType = getHeader("Content-Type");
         if (contentType.find("multipart/form-data") != std::string::npos)
         {
             // Extract boundary
