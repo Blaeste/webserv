@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:10:25 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 14:13:20 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -109,6 +109,19 @@ public:
 	 * @param path The directory path.
 	 */
 	void serveDirectoryListing(const std::string &path);
+
+	/**
+	 * @brief Handles DELETE requests for the given path.
+	 * @param path The path to the resource to delete.
+	 */
+	void serveDelete(const std::string &path);
+
+	/**
+	 * @brief Handles PUT requests to create or update a resource at the given path.
+	 * @param path The path to the resource.
+	 * @param body The content to write to the resource.
+	 */
+	void servePut(const std::string &path, const std::string &body);
 
 private:
 
