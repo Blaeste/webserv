@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 14:35:24 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 15:44:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 
-#include <vector>
 #include <cstdlib>
 
 // =============================================================================
@@ -31,9 +30,6 @@ HttpRequest::HttpRequest() : _isComplete(false)
 HttpRequest::~HttpRequest()
 {
 }
-
-// =============================================================================
-// Setters
 
 // =============================================================================
 // Methods
@@ -134,9 +130,83 @@ bool HttpRequest::parseChunked()
             return false; // Incomplete chunk data
 
         // Extract chunk data
-        body += data.substr(pos, chunkSize);
+        //body += data.substr(pos, chunkSize);
+        body.append(data, pos, chunkSize);
         pos += chunkSize + 2; // Skip data + \r\n
     }
+}
+
+bool HttpRequest::parseMultipart(const std::string &boundary)
+{
+    std::string delimiter = "--" + boundary;
+    std::string endDelimiter = delimiter + "--";
+
+    size_t pos = 0;
+
+    while (true)
+    {
+        // Find next boundary
+        size_t boundaryPos = _body.find(delimiter, pos);
+        if (boundaryPos == std::string::npos)
+            break;
+
+        // add delimiter length
+        pos = boundaryPos + delimiter.length();
+
+        // Skip \r\n after boundary
+        if (_body[pos] == '\r' && _body[pos + 1] == '\n')
+            pos += 2;
+
+        // Check if end delimiter
+        if (_body.substr(boundaryPos, endDelimiter.length()) ==  endDelimiter)
+            break;
+
+        // Find headers end (\r\n\r\n)
+        size_t headersEnd = _body.find("\r\n\r\n", pos);
+        if (headersEnd == std::string::npos)
+            return false;
+
+        // Extract part headers
+        std::string partHeaders = _body.substr(pos, headersEnd - pos);
+        pos = headersEnd + 4;
+
+        // Find next boundary to get content
+        size_t nextBoundary = _body.find(delimiter, pos);
+        if (nextBoundary == std::string::npos)
+            return false;
+
+        // Extract content (remove trailling \r\n)
+        std::string content = _body.substr(pos, nextBoundary - pos - 2);
+
+        // Parse part headers to extract filename and content type
+        UploadedFile file;
+        file.content = content;
+
+        // Extract filename from Content-Disposition
+        size_t filenamePos = partHeaders.find("filename=\"");
+        if (filenamePos != std::string::npos)
+        {
+            filenamePos += 10; // 'skip filename="'
+            size_t filenameEnd = partHeaders.find("\"", filenamePos);
+            file.filename = partHeaders.substr(filenamePos, filenameEnd - filenamePos);
+        }
+
+        // Extract Content-Type
+        size_t ctPos = partHeaders.find("Content-Type: ");
+        if (ctPos != std::string::npos)
+        {
+            ctPos += 14; // Skip 'Content-Type: '
+            size_t ctEnd = partHeaders.find("\r\n", ctPos);
+            file.contentType = partHeaders.substr(ctPos, ctEnd - ctPos);
+        }
+        else
+            file.contentType = "application/octet-stream";
+
+        _uploadedFiles.push_back(file);
+        pos = nextBoundary;
+    }
+
+    return true;
 }
 
 bool HttpRequest::parse()
@@ -163,7 +233,7 @@ bool HttpRequest::parse()
         _headers["Transfer-Encoding"] == "chunked")
     {
         // Remove headers from _rawdata befor parsing chunk
-        _rawData = _rawData.substr(bodyStart);
+        _rawData.erase(0, bodyStart);
         return parseChunked();
     }
 
@@ -182,6 +252,22 @@ bool HttpRequest::parse()
     {
         // No content length = no body
         _body = "";
+    }
+
+    // Check if multipart/form-data
+    if (_headers.find("Content-Type") != _headers.end())
+    {
+        std::string contentType = _headers["Content-Type"];
+        if (contentType.find("multipart/form-data") != std::string::npos)
+        {
+            // Extract boundary
+            size_t boundaryPos = contentType.find("boundary=");
+            if (boundaryPos != std::string::npos)
+            {
+                std::string boundary = contentType.substr(boundaryPos + 9);
+                parseMultipart(boundary);
+            }
+        }
     }
 
     return true;

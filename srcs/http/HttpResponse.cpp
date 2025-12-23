@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 14:21:34 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 16:15:33 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,3 +274,42 @@ void HttpResponse::servePut(const std::string &path, const std::string &body)
 		setStatus(201);
 }
 
+void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
+{
+	const std::vector<UploadedFile> &files = request.getUploadedFiles();
+
+	if (files.empty())
+	{
+		serveError(400, ""); // Bad request - no files
+		return;
+	}
+
+	// Save each file
+	for (size_t i = 0; i < files.size(); ++i)
+	{
+		std::string filePath = uploadDir + '/' + files[i].filename;
+
+		// Open file fpr writing
+		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		if (fd < 0)
+		{
+			serveError(500, ""); // Failed to save
+			return;
+		}
+
+		// Write content
+		ssize_t written = write(fd, files[i].content.c_str(), files[i].content.length());
+		close(fd);
+
+		if ( written < 0 || (size_t)written != files[i].content.length())
+		{
+			serveError(500, ""); // Failed to write
+			return;
+		}
+	}
+
+	// Success 201 Created
+	setStatus(201);
+	setHeader("Content-Type", "text/html");
+	setBody("<html><body><h1>Upload successful!</h1></body></html>");
+}
