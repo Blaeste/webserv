@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/22 17:52:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 11:24:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 // #include "server/Server.hpp"
 #include "config/Config.hpp"
 #include "http/HttpRequest.hpp"
+#include "http/HttpResponse.hpp"
 
 #define MAGENTA	"\033[35m"
 #define RESET	"\033[0m"
@@ -124,7 +125,7 @@ int main(int ac, char **av)
 	std::cout << getHttpDate() << std::endl;
 
 	std::cout << MAGENTA "\n=============== TEST basic GET HttpRequest ==============" RESET << std::endl;;
-	std::string rawRequest = 
+	std::string rawRequest =
 		"GET /index.html HTTP/1.1\r\n"
 		"Host: localhost:8080\r\n"
 		"User-Agent: Mozilla/5.0\r\n"
@@ -144,4 +145,19 @@ int main(int ac, char **av)
 		for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it)
 			std::cout << "Header #" << std::distance(headers.begin(), it) + 1 << ":\t" << it->first << ": " << it->second << std::endl;
 	}
+
+	std::cout << MAGENTA "\n============== TEST HttpResponse 200 OK =================" RESET << std::endl;;
+	HttpResponse response;
+	response.setStatus(200);
+	response.setHeader("Content-Type", "text/html");
+	response.setBody("<html><body><h1>Hello World!</h1></body></html>");
+	std::string rawResponse = response.build();
+	std::cout << rawResponse << std::endl;
+
+	std::cout << MAGENTA "\n============== TEST HttpResponse 404 Error ==============" RESET << std::endl;;
+	HttpResponse errorResponse;
+	errorResponse.setStatus(404);
+	errorResponse.setHeader("Content-Type", "text/html");
+	errorResponse.setBody("<html><body><h1>404 Not Found</h1></body></html>");
+	std::cout << errorResponse.build() << std::endl;
 }

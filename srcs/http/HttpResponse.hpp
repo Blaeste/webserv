@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:39:16 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 11:02:21 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,29 +15,60 @@
 // Headers automatiaues (Content-Length, etc.)
 // Lit les fichiers statiques
 
+// =============================================================================
+// Includes
+
 #pragma once
 
 #include <string>
 #include <map>
 
+// =============================================================================
+// Typedef
+
+// =============================================================================
+// Defines
+
+// =============================================================================
+// Class HttpResponse
+
 class HttpResponse
 {
+
 private:
-	// TODO: int _statusCode;
-	// TODO: std::string _statusMessage;
-	// TODO: std::map<std::string, std::string> _headers;
-	// TODO: std::string _body;
+
+	// =========================================================================
+	// Attributs
+
+	int									_statusCode;
+	std::string							_statusMessage;
+	std::map<std::string, std::string>	_headers;
+	std::string							_body;
 
 public:
+
+	// =========================================================================
+	// Handlers
+
 	HttpResponse();
 	~HttpResponse();
 
-	// TODO: void setStatus(int code);
-	// TODO: void setHeader(const std::string &key, const std::string &value);
-	// TODO: void setBody(const std::string &body);
-	// TODO: std::string build() const;
+	// =========================================================================
+	// Public methods
 
-	// TODO: void serveFile(const std::string &path);
-	// TODO: void serveError(int code, const std::string &errorPagePath);
-	// TODO: void serveDirectoryListing(const std::string &path);
+	void setStatus(int code);
+	void setHeader(const std::string &key, const std::string &value);
+	void setBody(const std::string &body);
+	std::string build() const;
+
+	void serveFile(const std::string &path);
+	void serveError(int code, const std::string &errorPagePath);
+	void serveDirectoryListing(const std::string &path);
+
+private:
+
+	// =========================================================================
+	// Methods
+
+	std::string getStatusMessage(int code) const;
 };
