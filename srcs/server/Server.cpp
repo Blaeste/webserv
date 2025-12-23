@@ -6,10 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:52:43 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 16:04:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Router.hpp"
 #include "Server.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
@@ -139,7 +140,6 @@ void Server::handleClientRead(size_t clientIndex) {
 	char buffer[4096];
 	int clientFd = _pollFds[clientIndex].fd;
 
-	// Read data from client
 	int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
 	if (bytesRead <= 0) {
 		std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
@@ -147,53 +147,60 @@ void Server::handleClientRead(size_t clientIndex) {
 		_pollFds.erase(_pollFds.begin() + clientIndex);
 		return;
 	}
-	
-	// Parse HTTP request
+
 	HttpRequest request;
 	std::string data(buffer, bytesRead);
 	request.appendData(data);
-
 	if (!request.isComplete()) {
 		std::cout << "Incomplete request, waiting for more data..." << std::endl;
-		return; // Keep the connection open until request is complete
+		return;
 	}
 
-	// Log request info
 	std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
 
-	// Serve static file or 404
+	// TODO: Select the correct ServerConfig based on the Host header
+    // For now, use the first configuration
+	const ServerConfig& config = _configs[0];
+
+	// Use the Router to match the requested route
+	RouteMatch match = _router.matchRoute(config, request);
+
 	HttpResponse response;
-	std::string uri = request.getUri();
-	if (uri == "/" || uri.empty())
-		uri = "/index.html";
-	std::string filePath = "www" + uri;
 	
-	if (fileExists(filePath) && !isDirectory(filePath)) {
-		// File exists, serve it
-		std::string content = readFile(filePath);
-		response.setStatus(200);
-		response.setHeader("Content-Type", "text/html"); // TODO: use MimeTypes based on extension
-		response.setBody(content);
-	} else {
-		// File not found, return custom 404 page
+	if (!match.redirectUrl.empty()) {
+		// Redirection
+		response.setStatus(match.statusCode);
+		response.setHeader("Location", match.redirectUrl);
+		response.setBody("");
+	} else if (match.statusCode == 405) {
+		// Method not allowed
+		response.setStatus(405);
+		response.setHeader("Content-Type", "text/html");
+		std::string errorPage = "www/error_pages/405.html";
+		if (fileExists(errorPage))
+			response.setBody(readFile(errorPage));
+		else
+			response.setBody("<html><body><h1>405 Method Not Allowed</h1></body></html>");
+	} else if (match.statusCode == 404) {
+		// File not found
 		response.setStatus(404);
 		response.setHeader("Content-Type", "text/html");
-		
 		std::string errorPage = "www/error_pages/404.html";
-		if (fileExists(errorPage)) {
+		if (fileExists(errorPage))
 			response.setBody(readFile(errorPage));
-		} else {
-			// Fallback if error page doesn't exist
-			response.setBody("<html><body><h1>404 Not Found</h1><p>The requested file was not found.</p></body></html>");
-		}
+		else
+			response.setBody("<html><body><h1>404 Not Found</h1></body></html>");
+	} else {
+		// File found, serve it
+		response.setStatus(200);
+		std::string ext = getFileExtension(match.filePath);
+		response.setHeader("Content-Type", "text/html"); // TODO: use MimeTypes based on extension
+		response.setBody(readFile(match.filePath));
 	}
 
 	std::string rawResponse = response.build();
-
-	// Send the response
 	send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
-	
-	// Close connection
+
 	close(clientFd);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }

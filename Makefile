@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2025/12/23 10:09:20 by eschwart         ###   ########.fr        #
+#    Updated: 2025/12/23 15:51:05 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -47,7 +47,7 @@ INCLUDES = -I includes
 CGI_FILES = CGI.cpp
 CONFIG_FILES = Config.cpp Location.cpp ServerConfig.cpp
 HTTP_FILES = HttpRequest.cpp HttpResponse.cpp
-SERVER_FILES = Client.cpp Server.cpp
+SERVER_FILES = Client.cpp Server.cpp Router.cpp
 UTILS_FILES = MimeTypes.cpp utils.cpp
 
 # Add directory prefixes to source files

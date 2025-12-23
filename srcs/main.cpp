@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:51:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 13:59:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,7 +192,7 @@ int main(int ac, char **av)
 	}
   
 	std::cout << std::endl;
-	std::cout << MAGENTA "\n============ TEST Server::init + Server::run ============" RESET << std::endl;;
+	std::cout << MAGENTA "\n============ TEST Server::init + Server::run ============" RESET << std::endl;
 	try {
 		Config config;
 		if (!config.parse("config/default.conf"))
