@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:37:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/23 16:54:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,9 +30,37 @@ Server::~Server() {
 		close(_listenSockets[i]);
 }
 
+// Public method(s)
 void Server::init(const Config &config) {
 	_configs = config.getServers();
 	setupListenSockets();
+}
+
+void Server::run() {
+	_running = true;
+	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+	while (_running) {
+		// Wait for events on file descriptors = monitored sockets
+		int ret = poll(&_pollFds[0], _pollFds.size(), 1000); // 1 second timeout
+		if (ret < 0)
+			continue; // Error, but keep running
+
+			// Iterate through all sockets to check for events
+		for (size_t i = 0; i < _pollFds.size(); i++) {
+			// There is data to read or a new connection
+			if (_pollFds[i].revents & POLLIN) {
+				if (isListenSocket(_pollFds[i].fd))
+					acceptNewClient(_pollFds[i].fd); // Accept a new client connection
+				else
+					handleClientRead(i); // Handle incoming data from a client
+			}
+		}
+	}
+	std::cout << "Server stopped.";
+}
+
+void Server::stop() {
+	_running = false;
 }
 
 void Server::setupListenSockets() {
@@ -80,38 +108,11 @@ void Server::setupListenSockets() {
 	}
 }
 
-void Server::stop() {
-	_running = false;
-}
-
 bool Server::isListenSocket(int fd) const {
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		if (_listenSockets[i] == fd)
 			return true;
 	return false;
-}
-
-void Server::run() {
-	_running = true;
-	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
-	while (_running) {
-		// Wait for events on file descriptors = monitored sockets
-		int ret = poll(&_pollFds[0], _pollFds.size(), 1000); // 1 second timeout
-		if (ret < 0)
-			continue; // Error, but keep running
-
-			// Iterate through all sockets to check for events
-		for (size_t i = 0; i < _pollFds.size(); i++) {
-			// There is data to read or a new connection
-			if (_pollFds[i].revents & POLLIN) {
-				if (isListenSocket(_pollFds[i].fd))
-					acceptNewClient(_pollFds[i].fd); // Accept a new client connection
-				else
-					handleClientRead(i); // Handle incoming data from a client
-			}
-		}
-	}
-	std::cout << "Server stopped.";
 }
 
 void Server::acceptNewClient(int listenSocket) {
@@ -136,89 +137,79 @@ void Server::acceptNewClient(int listenSocket) {
 	std::cout << "New client connected (fd " << clientFd << ")" << std::endl;
 }
 
+const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
+    const ServerConfig* config = &_configs[0];
+    std::string host = request.getHeader("Host");
+    
+    size_t colonPos = host.find(':');
+    if (colonPos != std::string::npos)
+        host = host.substr(0, colonPos);
+    
+    for (size_t i = 0; i < _configs.size(); i++) {
+        if (_configs[i].getServerName() == host) {
+            config = &_configs[i];
+            break;
+        }
+    }
+    return config;
+}
+
+void Server::buildResponse(HttpResponse& response, const RouteMatch& match) {
+    if (!match.redirectUrl.empty()) {
+        response.setStatus(match.statusCode);
+        response.setHeader("Location", match.redirectUrl);
+        response.setBody("");
+    } else if (match.statusCode == 405) {
+        buildErrorResponse(response, 405);
+    } else if (match.statusCode == 404) {
+        buildErrorResponse(response, 404);
+    } else {
+        response.setStatus(200);
+        std::string ext = getFileExtension(match.filePath);
+        response.setHeader("Content-Type", "text/html"); // TODO: MIME types
+        response.setBody(readFile(match.filePath));
+    }
+}
+
+void Server::buildErrorResponse(HttpResponse& response, int statusCode) {
+    response.setStatus(statusCode);
+    response.setHeader("Content-Type", "text/html");
+    
+    std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+    if (fileExists(errorPage))
+        response.setBody(readFile(errorPage));
+    else
+        response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+}
+
 void Server::handleClientRead(size_t clientIndex) {
-	char buffer[4096];
-	int clientFd = _pollFds[clientIndex].fd;
+    char buffer[4096];
+    int clientFd = _pollFds[clientIndex].fd;
 
-	// Read incoming data from the client socket
-	int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
-	if (bytesRead <= 0) {
-		std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
-		close(clientFd);
-		_pollFds.erase(_pollFds.begin() + clientIndex);
-		return;
-	}
+    int bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
+    if (bytesRead <= 0) {
+        std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
+        close(clientFd);
+        _pollFds.erase(_pollFds.begin() + clientIndex);
+        return;
+    }
 
-	// Append received data to the HTTP request parser
-	HttpRequest request;
-	std::string data(buffer, bytesRead);
-	request.appendData(data);
-	
-	// Wait until the full HTTP request has been received
-	if (!request.isComplete()) {
-		std::cout << "Incomplete request, waiting for more data..." << std::endl;
-		return;
-	}
+    HttpRequest request;
+    request.appendData(std::string(buffer, bytesRead));
+    if (!request.isComplete())
+        return;
 
-	// Log basic request information
-	std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
+    std::cout << "📨 " << request.getMethod() << " " << request.getUri() << std::endl;
 
-	// Select the correct ServerConfig based on the Host header
-	// Fallback to the first configuration if no match is found
-	const ServerConfig* config = &_configs[0];
-	std::string host = request.getHeader("Host");
+    const ServerConfig* config = selectConfig(request);
+    RouteMatch match = _router.matchRoute(*config, request);
+    
+    HttpResponse response;
+    buildResponse(response, match);
 
-	// Remove port number from Host header if present (e.g. "localhost:8080")
-	size_t colonPos = host.find(':');
-	if (colonPos != std::string::npos)
-		host = host.substr(0, colonPos);
-	for (size_t i = 0; i < _configs.size(); i++) {
-		if (_configs[i].getServerName() == host) {
-			config = &_configs[i];
-			break;
-		}
-	}
-	// Use the router to match the request to a route and determine the action
-	RouteMatch match = _router.matchRoute(*config, request);
+    std::string rawResponse = response.build();
+    send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
 
-	// Build the HTTP response based on the routing result
-	HttpResponse response;
-	if (!match.redirectUrl.empty()) {
-		// Handle HTTP redirection
-		response.setStatus(match.statusCode);
-		response.setHeader("Location", match.redirectUrl);
-		response.setBody("");
-	} else if (match.statusCode == 405) {
-		// Method not allowed for this route
-		response.setStatus(405);
-		response.setHeader("Content-Type", "text/html");
-		std::string errorPage = "www/error_pages/405.html";
-		if (fileExists(errorPage))
-			response.setBody(readFile(errorPage));
-		else
-			response.setBody("<html><body><h1>405 Method Not Allowed</h1></body></html>");
-	} else if (match.statusCode == 404) {
-		// Requested resource not found
-		response.setStatus(404);
-		response.setHeader("Content-Type", "text/html");
-		std::string errorPage = "www/error_pages/404.html";
-		if (fileExists(errorPage))
-			response.setBody(readFile(errorPage));
-		else
-			response.setBody("<html><body><h1>404 Not Found</h1></body></html>");
-	} else {
-		// Resource found: serve the requested file
-		response.setStatus(200);
-		std::string ext = getFileExtension(match.filePath);
-		response.setHeader("Content-Type", "text/html"); // TODO: determine MIME type from extension
-		response.setBody(readFile(match.filePath));
-	}
-
-	// Send the response to the client
-	std::string rawResponse = response.build();
-	send(clientFd, rawResponse.c_str(), rawResponse.length(), 0);
-
-	// Close the connection and remove the client from poll monitoring
-	close(clientFd);
-	_pollFds.erase(_pollFds.begin() + clientIndex);
+    close(clientFd);
+    _pollFds.erase(_pollFds.begin() + clientIndex);
 }
