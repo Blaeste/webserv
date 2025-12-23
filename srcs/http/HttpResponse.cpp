@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 13:48:02 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/23 14:12:33 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,9 @@
 
 #include "HttpResponse.hpp"
 #include "../utils/utils.hpp"
+
+#include <fcntl.h>   // open()
+#include <unistd.h> // write(), close(), unlink()
 
 // =============================================================================
 // Handlers
@@ -216,4 +219,57 @@ void HttpResponse::serveDirectoryListing(const std::string &path)
 	setStatus(200);
 	setHeader("Content-Type", "text/html");
 	setBody(body);
+}
+
+void HttpResponse::serveDelete(const std::string &path)
+{
+	// Check if file exist
+	if (!fileExists(path))
+	{
+		serveError(404, "");
+		return;
+	}
+
+	// Check if it directory (cannot del dir)
+	if (isDirectory(path))
+	{
+		serveError(403, "");
+		return;
+	}
+
+	// Try to delete the file
+	if (unlink(path.c_str()) == 0)
+		setStatus(204); // Success: 204 No Content
+	else
+		serveError(500, "");
+}
+
+void HttpResponse::servePut(const std::string &path, const std::string &body)
+{
+	// Check if file already exists
+	bool fileExisted = fileExists(path);
+
+	// Open file for writing (create or replace)
+	int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	if (fd < 0)
+	{
+		serveError(500, "");
+		return;
+	}
+
+	// Write body to file
+	ssize_t written = write(fd, body.c_str(), body.length());
+	close(fd);
+
+	if (written < 0 || (size_t)written != body.length())
+	{
+		serveError(500, "");
+		return;
+	}
+
+	// Success 201 Created if new, 204 No content if replaced
+	if (fileExisted)
+		setStatus(204);
+	else
+		setStatus(201);
 }
