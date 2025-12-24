@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:59:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 17:03:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ int main(int ac, char **av)
 				const Location& loc = locs[j];
 				std::cout
 					<< "Location #" << j + 1 << ":\t"
-					<< "Path: " << std::setw(12) << loc.getPath() << " "
+					<< "Path: " << std::setw(14) << loc.getPath() << " "
 					<< "Root: " << std::setw(12) << loc.getRoot() << " ";
 				const std::vector<std::string>& methods = loc.getAllowedMethods();
 				std::cout << "Methods:";

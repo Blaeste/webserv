@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/23 16:05:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 16:29:59 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,14 @@
 #include <string>
 
 struct RouteMatch {
+
 	const Location* location;
 	std::string filePath;
 	bool isRedirect;
 	std::string redirectUrl;
 	int statusCode;
+	bool isCGI;
+
 };
 
 class Router {

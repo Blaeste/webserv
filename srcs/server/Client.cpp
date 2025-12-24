@@ -6,11 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 12:07:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 17:58:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
+#include "../cgi/CGI.hpp"
 #include "../server/Router.hpp"
 #include "../utils/MimeTypes.hpp"
 #include "../utils/utils.hpp"
@@ -72,10 +73,15 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 		_response.setStatus(match.statusCode);
 		_response.setHeader("Location", match.redirectUrl);
 		_response.setBody("");
-	} else if (match.statusCode == 405) {
+	} else if (match.statusCode == 405)
 		buildErrorResponse(405);
-	} else if (match.statusCode == 404) {
+	else if (match.statusCode == 404)
 		buildErrorResponse(404);
+	else if (match.isCGI) {
+	CGI cgi;
+	std::string output = cgi.execute(match, _request);
+	_response.setStatus(200);
+	_response.setBody(output);
 	} else {
 		_response.setStatus(200);
 		std::string ext = getFileExtension(match.filePath);

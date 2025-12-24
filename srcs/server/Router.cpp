@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/23 16:17:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 18:04:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,7 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 	RouteMatch match;
 	match.statusCode = 200;
 	match.isRedirect = false;
+	match.isCGI = false;
 	match.location = findMatchingLocation(config, uri);
 	if (!match.location)
 		match.statusCode = 404;
@@ -56,8 +57,15 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 	else {
 		if (uri == "/" || uri.empty())
 			uri = "/index.html";
-		match.filePath = match.location->getRoot() + uri;
-		if (!fileExists(match.filePath) || isDirectory(match.filePath))
+		std::string pathPart = uri;
+		size_t queryPos = uri.find('?');
+		if (queryPos != std::string::npos)
+			pathPart = uri.substr(0, queryPos);
+		match.filePath = match.location->getRoot() + pathPart;
+		std::string cgiExt = match.location->getCgiExtension();
+		if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
+			match.isCGI = true;
+		if (!match.isCGI && (!fileExists(match.filePath) || isDirectory(match.filePath)))
 			match.statusCode = 404;
 	}
 	return match;
