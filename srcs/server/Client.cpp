@@ -6,12 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 19:59:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 12:07:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "../server/Router.hpp"
+#include "../utils/MimeTypes.hpp"
 #include "../utils/utils.hpp"
 #include <netinet/in.h>
 #include <sys/socket.h>
@@ -78,7 +79,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 	} else {
 		_response.setStatus(200);
 		std::string ext = getFileExtension(match.filePath);
-		_response.setHeader("Content-Type", "text/html"); // TODO: MIME types
+		_response.setHeader("Content-Type", MimeTypes::get(ext));
 		_response.setBody(readFile(match.filePath));
 	}
 	_responseReady = true;

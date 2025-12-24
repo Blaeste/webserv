@@ -3,33 +3,30 @@
 /*                                                        :::      ::::::::   */
 /*   MimeTypes.hpp                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:47 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/16 13:51:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/24 12:27:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Map des extensions vers types MIME :
-// - .html -> text/html
-// - .css -> text/css
-// - .jpg -> image/jpeg
-// etc.
-
 #pragma once
 
-#include <string>
 #include <map>
+#include <string>
 
-class MimeTypes
-{
-private:
-	// TODO: static std::map<std::string, std::string> _types;
-	// TODO: static void init();
+class MimeTypes {
 
-public:
-	MimeTypes();
-	~MimeTypes();
+	private:
 
-	// TODO: static std::string get(const std::string &extension);
+		MimeTypes();
+		~MimeTypes();
+
+		static const std::map<std::string, std::string> _types;
+		static std::map<std::string, std::string> createMap();
+
+	public:
+
+		static const std::string& get(const std::string& extension);
+
 };
