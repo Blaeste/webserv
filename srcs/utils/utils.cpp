@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 12:51:12 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/24 19:13:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -216,4 +216,12 @@ std::vector<std::string> listDirectory(const std::string &path)
 
 	closedir(dir);
 	return entries;
+}
+
+std::string normalizeHeaderKey(const std::string& key) {
+	std::string result = key;
+	for (size_t i = 0; i < result.length(); ++i)
+		if (result[i] >= 'A' && result[i] <= 'Z')
+			result[i] = result[i] + 32;
+	return result;
 }

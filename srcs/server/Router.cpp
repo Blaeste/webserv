@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/24 18:04:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 18:48:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,8 @@ bool Router::isMethodAllowed(const Location& loc, const std::string& method) con
 RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
 	std::string uri = request.getUri();
 	RouteMatch match;
+	match.serverName = config.getServerName();
+	match.serverPort = config.getPort();
 	match.statusCode = 200;
 	match.isRedirect = false;
 	match.isCGI = false;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:30:55 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/24 18:46:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -107,6 +107,8 @@ public:
     const std::string &getUri() const { return _uri; }
 
     const std::string &getVersion() const { return _version; }
+
+	const std::string& getBody() const { return _body; }
 
     const std::map<std::string, std::string> &getHeaders() const { return _headers; }
 

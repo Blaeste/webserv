@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 12:46:35 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/24 19:00:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,3 +104,10 @@ std::string intToString(int value);
  * @return A vector containing the names of all entries in the directory (excluding "." and "..").
  */
 std::vector<std::string> listDirectory(const std::string &path);
+
+/**
+ * @brief Normalizes an HTTP header key to capitalize the first letter of each word.
+ * @param key The header key to normalize (e.g., "content-type", "CONTENT-TYPE").
+ * @return The normalized header key (e.g., "Content-Type").
+ */
+std::string normalizeHeaderKey(const std::string &key);

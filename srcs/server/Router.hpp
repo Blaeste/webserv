@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/24 16:29:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 18:47:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@ struct RouteMatch {
 	std::string redirectUrl;
 	int statusCode;
 	bool isCGI;
+	std::string serverName;
+	int serverPort;
 
 };
 
