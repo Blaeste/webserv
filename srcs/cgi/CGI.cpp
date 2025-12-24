@@ -6,12 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 20:41:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 21:06:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGI.hpp"
 #include "../utils/utils.hpp"
+#include <cstdlib>
 #include <ctime>
 #include <signal.h>
 #include <sys/wait.h>
@@ -81,75 +82,117 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	}
 }
 
-std::string CGI::execute(const RouteMatch& match, const HttpRequest& request) {
-    setupEnvironment(match, request);
-    
-    int pipeIn[2];
-    int pipeOut[2];
-    if (pipe(pipeIn) < 0 || pipe(pipeOut) < 0)
-        return "";
-    
-    pid_t pid = fork();
-    if (pid < 0)
-        return "";
-    
-    if (!pid) {
-        // Child process: CGI execution
-        dup2(pipeOut[1], 1);
-        dup2(pipeIn[0], 0);
-        close(pipeOut[0]);
-        close(pipeIn[1]);
-        
-        char* argv[3];
-        argv[0] = (char *)match.location->getCgiPath().c_str();
-        argv[1] = (char *)match.filePath.c_str();
-        argv[2] = NULL;
-        
-        std::vector<std::string> envStrings;
-        for (std::map<std::string, std::string>::iterator it = _env.begin(); it != _env.end(); ++it)
-            envStrings.push_back(it->first + "=" + it->second);
-        std::vector<char *> envp;
-        for (size_t i = 0; i < envStrings.size(); i++)
-            envp.push_back((char *)envStrings[i].c_str());
-        envp.push_back(NULL);
-        
-        execve(argv[0], argv, &envp[0]);
-        _exit(1);
-    }
-    
-    // Parent: send POST body, read output with timeout
-    close(pipeOut[1]);
-    close(pipeIn[0]);
-    
-    if (request.getMethod() == "POST") {
-        const std::string& body = request.getBody();
-        write(pipeIn[1], body.c_str(), body.length());
-    }
-    close(pipeIn[1]);
-    
-    // Timeout: 5 seconds
-    time_t startTime = time(NULL);
-    int timeout = 5;
-    int status;
-    
-    while (true) {
-        pid_t result = waitpid(pid, &status, WNOHANG);
-        if (result == pid) {
-            // Child finished
-            break;
-        }
-        if (time(NULL) - startTime > timeout) {
-            // Timeout exceeded - kill the child
-            kill(pid, SIGKILL);
-            waitpid(pid, NULL, 0);
-            close(pipeOut[0]);
-            return ""; // Return empty on timeout
-        }
-        usleep(100000); // Sleep 100ms
-    }
-    
-    std::string output = readFromPipe(pipeOut[0]);
-    close(pipeOut[0]);
-    
-    return output;
+CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
+	CGIResult result;
+	result.statusCode = 200;
+	result.output = "";
+	setupEnvironment(match, request);
+
+	int pipeIn[2];
+	int pipeOut[2];
+	if (pipe(pipeIn) < 0 || pipe(pipeOut) < 0) {
+		result.statusCode = 500;
+		return result;
+	}
+	pid_t pid = fork();
+	if (pid < 0) {
+		result.statusCode = 500;
+		return result;
+	}
+	if (!pid) {
+		// Child process: CGI execution
+		dup2(pipeOut[1], 1);
+		dup2(pipeIn[0], 0);
+		close(pipeOut[0]);
+		close(pipeIn[1]);
+
+		char* argv[3];
+		argv[0] = (char *)match.location->getCgiPath().c_str();
+		argv[1] = (char *)match.filePath.c_str();
+		argv[2] = NULL;
+
+		std::vector<std::string> envStrings;
+		for (std::map<std::string, std::string>::iterator it = _env.begin(); it != _env.end(); ++it)
+			envStrings.push_back(it->first + "=" + it->second);
+		std::vector<char *> envp;
+		for (size_t i = 0; i < envStrings.size(); i++)
+			envp.push_back((char *)envStrings[i].c_str());
+		envp.push_back(NULL);
+
+		execve(argv[0], argv, &envp[0]);
+		_exit(1);
+	}
+
+	// Parent: send POST body, read output with timeout
+	close(pipeOut[1]);
+	close(pipeIn[0]);
+
+	if (request.getMethod() == "POST") {
+		const std::string& body = request.getBody();
+		write(pipeIn[1], body.c_str(), body.length());
+	}
+	close(pipeIn[1]);
+
+	// Timeout: 5 seconds
+	time_t startTime = time(NULL);
+	int timeout = 5;
+	int status;
+
+	while (true) {
+		pid_t wpid = waitpid(pid, &status, WNOHANG);
+		if (wpid == pid) {
+			// Child finished
+			break;
+		}
+		if (time(NULL) - startTime > timeout) {
+			kill(pid, SIGKILL);
+			waitpid(pid, NULL, 0);
+			close(pipeOut[0]);
+			result.statusCode = 504;
+			return result;
+		}
+		usleep(100000); // Sleep 100ms
+	}
+	result.output = readFromPipe(pipeOut[0]);
+	close(pipeOut[0]);
+	// Parse CGI headers (Status, etc.)
+	parseHeaders(result.output, result);
+	return result;
 }
+
+void CGI::parseHeaders(const std::string& output, CGIResult& result) {
+	size_t headersEnd = output.find("\r\n\r\n");
+	if (headersEnd == std::string::npos) {
+		// No headers separator, treat all as body
+		result.output = output;
+		return;
+	}
+	
+	std::string headersBlock = output.substr(0, headersEnd);
+	std::string body = output.substr(headersEnd + 4);
+	
+	// Parse headers line by line
+	size_t pos = 0;
+	while (pos < headersBlock.length()) {
+		size_t lineEnd = headersBlock.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			lineEnd = headersBlock.length();
+		
+		std::string line = headersBlock.substr(pos, lineEnd - pos);
+		
+		// Check for Status header
+		if (line.find("Status: ") == 0) {
+			std::string statusLine = line.substr(8); // Skip "Status: "
+			// Extract status code (first 3 digits)
+			if (statusLine.length() >= 3) {
+				result.statusCode = atoi(statusLine.substr(0, 3).c_str());
+			}
+		}
+		// Other headers (Content-Type, etc.) are ignored for now
+		
+		pos = lineEnd + 2;
+	}
+	
+	result.output = body;
+}
+

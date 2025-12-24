@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 17:58:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 20:59:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,10 +78,14 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 	else if (match.statusCode == 404)
 		buildErrorResponse(404);
 	else if (match.isCGI) {
-	CGI cgi;
-	std::string output = cgi.execute(match, _request);
-	_response.setStatus(200);
-	_response.setBody(output);
+		CGI cgi;
+		CGIResult result = cgi.execute(match, _request);
+		if (result.statusCode == 200) {
+			_response.setStatus(200);
+			_response.setBody(result.output);
+		} else {
+			buildErrorResponse(result.statusCode);
+		}
 	} else {
 		_response.setStatus(200);
 		std::string ext = getFileExtension(match.filePath);

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 17:26:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/24 21:05:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,11 @@
 #include <string>
 #include <map>
 
+struct CGIResult {
+	int statusCode; // 200 = OK, 500 = error, 504 = timeout
+	std::string output;
+};
+
 class CGI {
 
 	private:
@@ -35,12 +40,13 @@ class CGI {
 		CGI();
 		~CGI();
 
-		std::string execute(const RouteMatch& match, const HttpRequest& request);
+		CGIResult execute(const RouteMatch& match, const HttpRequest& request);
 
 	private:
 
 		void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
 		std::string readFromPipe(int fd);
+		void parseHeaders(const std::string& output, CGIResult& result);
 		// TODO: void writeToPipe(int fd, const std::string &data);
 
 };
