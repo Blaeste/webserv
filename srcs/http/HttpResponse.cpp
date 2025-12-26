@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 13:47:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:44:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,8 +69,10 @@ std::string HttpResponse::getStatusMessage(int code) const
 		case 403: return "Forbidden";
 		case 404: return "Not Found";
 		case 405: return "Method Not Allowed";
+		case 413: return "Payload Too Large";
 		case 500: return "Internal Server Error";
 		case 501: return "Not Implemented";
+		case 504: return "Gateway Timeout";
 		default: return "Unknown";
 	}
 }
