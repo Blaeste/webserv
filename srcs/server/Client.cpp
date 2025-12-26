@@ -6,20 +6,18 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:36:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 15:47:10 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
 #include "../cgi/CGI.hpp"
 #include "../server/Router.hpp"
-#include "../utils/MimeTypes.hpp"
 #include "../utils/utils.hpp"
-#include <fcntl.h>
-#include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
+// Constructor: initialize socket and activity timestamp
 Client::Client(int socket)
 	: _socket(socket)
 	, _lastActivity(time(NULL))
@@ -49,6 +47,7 @@ bool Client::isRequestComplete() const {
 	return _requestComplete;
 }
 
+// Read data from socket into buffer and parse request
 bool Client::readData() {
 	char buffer[4096];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
@@ -65,7 +64,6 @@ bool Client::readData() {
 void Client::buildErrorResponse(int statusCode) {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
-	
 	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
 	if (fileExists(errorPage))
 		_response.setBody(readFile(errorPage));
@@ -76,25 +74,25 @@ void Client::buildErrorResponse(int statusCode) {
 void Client::buildResponse(const ServerConfig& config, Router& router) {
 	// Check body size limit
 	if (_request.getBody().size() > config.getMaxBodySize()) {
-		buildErrorResponse(413);  // 413 Payload Too Large
+		buildErrorResponse(413); // 413 Payload Too Large
 		_responseReady = true;
 		return;
 	}
 
 	RouteMatch match = router.matchRoute(config, _request);
 
-	// Redirections
+	// Handle redirections
 	if (!match.redirectUrl.empty()) {
 		_response.setStatus(match.statusCode);
 		_response.setHeader("Location", match.redirectUrl);
 		_response.setBody("");
 	}
 
-	// Errors
+	// Handle errors (405 Method Not Allowed, 404 Not Found)
 	else if (match.statusCode == 405 || match.statusCode == 404)
 		_response.serveError(match.statusCode, "");
 
-	// CGI
+	// Execute CGI script
 	else if (match.isCGI) {
 		CGI cgi;
 		CGIResult result = cgi.execute(match, _request);
@@ -105,19 +103,19 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 			_response.serveError(result.statusCode, "");
 	}
 
-	// DELETE
+	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
 		_response.serveDelete(match.filePath);
 	
-	// Upload
+	// Handle file upload (POST with uploaded files)
 	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
 		_response.handleUpload(_request, match.location->getUploadPath());
 	
-	// Directory listing
+	// Serve directory listing if autoindex is enabled
 	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
 		_response.serveDirectoryListing(match.filePath, _request.getUri());
 	
-	// Static file
+	// Serve static file
 	else
 		_response.serveFile(match.filePath);
 	_responseReady = true;

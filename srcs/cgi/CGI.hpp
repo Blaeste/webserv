@@ -6,14 +6,9 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 21:05:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 15:03:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-// Fork + exec du script
-// Prepare lenvironnement
-// Gere les pipes stdin/stdout
-// Timeout du CGI
 
 #pragma once
 
@@ -23,8 +18,10 @@
 #include <map>
 
 struct CGIResult {
-	int statusCode; // 200 = OK, 500 = error, 504 = timeout
+
+	int statusCode;
 	std::string output;
+
 };
 
 class CGI {

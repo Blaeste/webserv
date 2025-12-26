@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:18:14 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 15:24:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,11 +43,12 @@ class Server {
 	private:
 
 		// private method(s)
+		void checkTimeouts();
 		void setupListenSockets();
 		bool isListenSocket(int fd) const;
 		void acceptNewClient(int listenSocket);
 
-		// Client read
+		// Client handling
 		const ServerConfig* selectConfig(const HttpRequest& request) const;
 		void handleClientRead(size_t clientIndex);
 		// TODO: void handleClientWrite(int clientIndex);

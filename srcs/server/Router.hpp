@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/26 14:26:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 15:35:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,8 +33,10 @@ class Router {
 
 	private:
 
+		// Attribute(s)
 		// const ServerConfig& _config;
 
+		// Private method(s)
 		const Location* findMatchingLocation(const ServerConfig& config, const std::string& uri) const;
 
 	public:
@@ -42,6 +44,7 @@ class Router {
 		Router();
 		~Router();
 
+		// Public method(s)
 		RouteMatch matchRoute(const ServerConfig& config, const HttpRequest& request) const;
 
 };

@@ -3,55 +3,33 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/18 14:48:20 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/26 15:25:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
-// Includes
-
+#include "Config.hpp"
+#include "../utils/utils.hpp"
 #include <stdexcept>
 #include <cstdlib>
 
-#include "Config.hpp"
-#include "../utils/utils.hpp"
+Config::Config() {}
 
+Config::~Config() {}
 
-// =============================================================================
-// Handlers
-
-// Default constructor
-Config::Config()
-{
-}
-
-// Destructor
-Config::~Config()
-{
-}
-
-// =============================================================================
 // Getters
-
-const std::vector<ServerConfig> &Config::getServers() const
-{
+const std::vector<ServerConfig> &Config::getServers() const {
 	return _servers;
 }
 
-// =============================================================================
 // Methods
-
-std::vector<std::string> Config::extractBlocks(const std::string &content, const std::string &keyword)
-{
+std::vector<std::string> Config::extractBlocks(const std::string &content, const std::string &keyword) {
 	std::vector<std::string> blocks;
 	size_t pos = 0;
 	size_t keywordLen = keyword.length();
-
-	while (pos < content.length())
-	{
+	while (pos < content.length()) {
 		// Search for keyword
 		size_t keywordPos = content.find(keyword, pos);
 		if (keywordPos == std::string::npos)
@@ -65,22 +43,18 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 		// Check if only whitspace between keyword and "{"
 		// For "location", we accept any path (location /api, location /uploads, etc.)
 		// For "server", only whitespace is allowed
-		if (keyword != "location")
-		{
+		if (keyword != "location") {
 			std::string between = content.substr(keywordPos + keywordLen, openBracePos - (keywordPos + keywordLen));
-			if (between.find_first_not_of(" \t\n\r") != std::string::npos)
-			{
+			if (between.find_first_not_of(" \t\n\r") != std::string::npos) {
 				pos = keywordPos + keywordLen;
 				continue;
 			}
 		}
 
 		// Check if keyword have whitespace before it
-		if (keywordPos > 0)
-		{
+		if (keywordPos > 0) {
 			char before = content[keywordPos - 1];
-			if (before != ' ' && before != '\t' && before != '\n' && before != '\r')
-			{
+			if (before != ' ' && before != '\t' && before != '\n' && before != '\r') {
 				pos = keywordPos + 1;
 				continue;
 			}
@@ -90,13 +64,10 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 		int braceCount = 0; // int here because braceCount can be neg
 		size_t i = openBracePos;
 		size_t closeBrace = std::string::npos;
-
-		while (i < content.length())
-		{
+		while (i < content.length()) {
 			if (content[i] == '{')
 				braceCount++;
-			else if (content[i] == '}')
-			{
+			else if (content[i] == '}') {
 				braceCount--;
 				if (braceCount < 0)
 					throw std::runtime_error("Config syntax error: unmatched '}'");
@@ -108,7 +79,6 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 			}
 			i++;
 		}
-
 		if (closeBrace == std::string::npos)
 			break; // Error: no closing brace
 
@@ -123,20 +93,16 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 		// Continue for next block
 		pos = closeBrace + 1;
 	}
-
 	return blocks;
 }
 
-void Config::parseServerBlock(const std::string &block, ServerConfig &server)
-{
-
+void Config::parseServerBlock(const std::string &block, ServerConfig &server) {
 	// Extract all location blocks first
 	std::vector<std::string> locationBlocks = extractBlocks(block, "location");
 
 	// Remove location blocks form content to parse simple directives
 	std::string cleanBlock = block;
-	for (size_t i = 0; i < locationBlocks.size(); i++)
-	{
+	for (size_t i = 0; i < locationBlocks.size(); i++) {
 		size_t pos = cleanBlock.find(locationBlocks[i]);
 		if (pos != std::string::npos)
 			cleanBlock.erase(pos,locationBlocks[i].length());
@@ -144,8 +110,7 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server)
 
 	// Parse directives (listen, server_name, etc.)
 	std::vector<std::string> lines = split(cleanBlock, '\n');
-	for (size_t i = 0; i < lines.size(); i++)
-	{
+	for (size_t i = 0; i < lines.size(); i++) {
 		// trim each line
 		std::string line = trim(lines[i]);
 		if (line.empty())
@@ -172,17 +137,15 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server)
 	}
 
 	// Parse each location block
-	for (size_t i = 0; i < locationBlocks.size(); i++)
-	{
+	for (size_t i = 0; i < locationBlocks.size(); i++) {
 		Location loc;
 		parseLocationBlock(locationBlocks[i], loc);
 		server.addLocation(loc);
 	}
 }
 
-void Config::parseLocationBlock(const std::string &block, Location &location)
-{
-	// Extract path
+void Config::parseLocationBlock(const std::string &block, Location &location) {
+	// Extract path from header
 	size_t openBrace = block.find("{");
 	if (openBrace == std::string::npos)
 		return;
@@ -195,7 +158,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location)
 		path = headerTokens[1];
 	location.setPath(path);
 
-	// Extract content
+	// Extract content between braces
 	size_t closeBrace = block.rfind('}');
 	if (closeBrace == std::string::npos)
 		return;
@@ -203,8 +166,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location)
 
 	// Parse lines
 	std::vector<std::string> lines = split(content, '\n');
-	for (size_t i = 0; i < lines.size(); i++)
-	{
+	for (size_t i = 0; i < lines.size(); i++) {
 		// trim each line
 		std::string line = trim(lines[i]);
 		if (line.empty())
@@ -241,8 +203,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location)
 	}
 }
 
-size_t Config::parseSize(const std::string &sizeStr)
-{
+size_t Config::parseSize(const std::string &sizeStr) {
 	if (sizeStr.empty())
 		return 0;
 
@@ -253,14 +214,10 @@ size_t Config::parseSize(const std::string &sizeStr)
 	// Check if last char is an unit
 	std::string numStr = sizeStr;
 	size_t multiplier = 1;
-
-	if (lastChar == 'M' || lastChar == 'm')
-	{
+	if (lastChar == 'M' || lastChar == 'm') {
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024 * 1024;
-	}
-	else if (lastChar == 'K' || lastChar == 'k')
-	{
+	} else if (lastChar == 'K' || lastChar == 'k') {
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024;
 	}
@@ -269,27 +226,23 @@ size_t Config::parseSize(const std::string &sizeStr)
 	return num * multiplier;
 }
 
-bool Config::validate() const
-{
+bool Config::validate() const {
 	// Check if there are at least one server
 	if (_servers.empty())
 		throw std::runtime_error("Config error: No server configured");
 
-	// Checking on each server
-	for (size_t i = 0; i < _servers.size(); i++)
-	{
+	// Check each server
+	for (size_t i = 0; i < _servers.size(); i++) {
 		const ServerConfig &server = _servers[i];
 
-		// Check Port
+		// Check Port range
 		int port = server.getPort();
 		if (port < 1 || port > 65535)
 			throw std::runtime_error("Config error: Invalid port number");
 
 		// Check for duplicate Port
-		for (size_t j = i + 1; j < _servers.size(); j++)
-		{
-			if (_servers[j].getPort() ==  port)
-			{
+		for (size_t j = i + 1; j < _servers.size(); j++) {
+			if (_servers[j].getPort() ==  port) {
 				// Same port ok if different server name
 				if (_servers[j].getServerName() ==  server.getServerName())
 					throw std::runtime_error("Config error: Duplicate port with same server name");
@@ -298,23 +251,21 @@ bool Config::validate() const
 
 		// Check locations
 		const std::vector<Location> &locations = server.getLocations();
-		for (size_t j = 0; j < locations.size(); j++)
-		{
+		for (size_t j = 0; j < locations.size(); j++) {
 			const Location &loc = locations[j];
 
-			// Check Path start with '/'
+			// Check Path starts with '/'
 			std::string path = loc.getPath();
 			if (path.empty() || path[0] != '/')
 				throw std::runtime_error("Config error: Invalid location path");
 
-			// Check CGI ext / path
+			// Check CGI extension has corresponding CGI path
 			if (!loc.getCgiExtension().empty() && loc.getCgiPath().empty())
 				throw std::runtime_error("Config error: CGI extension without CGI path");
 
-			// Check method HTTP
+			// Check HTTP methods are valid
 			const std::vector<std::string> &methods = loc.getAllowedMethods();
-			for (size_t k = 0; k < methods.size(); k++)
-			{
+			for (size_t k = 0; k < methods.size(); k++) {
 				const std::string &method = methods[k];
 				if (method != "GET" && method != "POST" && method != "DELETE" && method != "PUT" && method != "HEAD" && method != "OPTIONS")
 					throw std::runtime_error("Config error: Invalid HTTP method");
@@ -337,8 +288,7 @@ bool Config::parse(const std::string &filePath)
 	std::vector<std::string> serverBlocks = extractBlocks(content, "server");
 
 	// Parse each server
-	for (size_t i = 0; i < serverBlocks.size(); i++)
-	{
+	for (size_t i = 0; i < serverBlocks.size(); i++) {
 		ServerConfig server;
 		parseServerBlock(serverBlocks[i], server);
 		_servers.push_back(server);
@@ -347,4 +297,3 @@ bool Config::parse(const std::string &filePath)
 	// return after validate()
 	return validate();
 }
-
