@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/26 11:59:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 12:37:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 		std::string cgiExt = match.location->getCgiExtension();
 		if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
 			match.isCGI = true;
-		if (!match.isCGI && (!fileExists(match.filePath) || isDirectory(match.filePath)))
+		if (!match.isCGI && request.getMethod() != "POST" && (!fileExists(match.filePath) || isDirectory(match.filePath)))
 			match.statusCode = 404;
 	}
 	return match;

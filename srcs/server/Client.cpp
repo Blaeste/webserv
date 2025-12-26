@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 11:48:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 12:47:10 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "../server/Router.hpp"
 #include "../utils/MimeTypes.hpp"
 #include "../utils/utils.hpp"
+#include <fcntl.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -69,33 +70,44 @@ void Client::buildErrorResponse(int statusCode) {
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router) {
-    RouteMatch match = router.matchRoute(config, _request);
-    if (!match.redirectUrl.empty()) {
-        _response.setStatus(match.statusCode);
-        _response.setHeader("Location", match.redirectUrl);
-        _response.setBody("");
-    } else if (match.statusCode == 405)
-        buildErrorResponse(405);
-    else if (match.statusCode == 404)
-        buildErrorResponse(404);
-    else if (_request.getMethod() == "DELETE") {
-        // DELETE method: remove file
-        if (unlink(match.filePath.c_str()) == 0) {
-            _response.setStatus(204); // 204 No Content = success
-            _response.setBody("");
-        } else
-            buildErrorResponse(404);// File doesn't exist or permission denied
-    }
+	RouteMatch match = router.matchRoute(config, _request);
+	if (!match.redirectUrl.empty()) {
+		_response.setStatus(match.statusCode);
+		_response.setHeader("Location", match.redirectUrl);
+		_response.setBody("");
+	} else if (match.statusCode == 405)
+		buildErrorResponse(405);
+	else if (match.statusCode == 404)
+		buildErrorResponse(404);
 	else if (match.isCGI) {
 		CGI cgi;
 		CGIResult result = cgi.execute(match, _request);
 		if (result.statusCode == 200) {
 			_response.setStatus(200);
 			_response.setBody(result.output);
-		} else {
+		} else
 			buildErrorResponse(result.statusCode);
+	} else if (_request.getMethod() == "DELETE") { // DELETE method: remove file
+		if (unlink(match.filePath.c_str()) == 0) {
+			_response.setStatus(204); // 204 No Content = success
+			_response.setBody("");
+		} else
+			buildErrorResponse(404); // File doesn't exist or permission denied
+	} else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty()) {
+		std::string uploadPath = match.location->getUploadPath();
+		const std::vector<UploadedFile>& files = _request.getUploadedFiles();;
+		for (size_t i = 0; i < files.size(); i++) {
+			const UploadedFile& file = files[i];
+			std::string fullPath = match.location->getUploadPath() + "/" + file.filename;
+			int fd = open(fullPath.c_str(), O_WRONLY|O_CREAT|O_TRUNC, 0644);
+			if (fd < 0)
+				continue;
+			write(fd, file.content.c_str(), file.content.length());
+			close(fd);
 		}
-	} else {
+		_response.setStatus(201);
+		_response.setBody("<html><body><h1>Upload successful</h1><p>" + intToString(files.size()) + " file(s) uploaded</p></body></html>");
+	} else { // POST without files or GET
 		_response.setStatus(200);
 		std::string ext = getFileExtension(match.filePath);
 		_response.setHeader("Content-Type", MimeTypes::get(ext));
