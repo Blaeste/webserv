@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 16:15:33 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/26 13:47:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 #include "HttpResponse.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/MimeTypes.hpp"
 
 #include <fcntl.h>   // open()
 #include <unistd.h> // write(), close(), unlink()
@@ -139,86 +140,76 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 
 void HttpResponse::serveFile(const std::string &path)
 {
-	// Check if file exist
-	if (!fileExists(path))
-	{
-		serveError(404, "");
-		return;
-	}
+    // Check if file exists
+    if (!fileExists(path))
+    {
+        serveError(404, "");
+        return;
+    }
 
-	// Check if its a directory
-	if (isDirectory(path))
-	{
-		serveError(403, "");
-		return;
-	}
+    // Check if it's a directory
+    if (isDirectory(path))
+    {
+        serveError(403, "");
+        return;
+    }
 
-	// Read file content
-	std::string content = readFile(path);
+    // Read file content
+    std::string content = readFile(path);
 
-	// Chose content type by file extension
-	std::string ext = getFileExtension(path);
-	std::string contentType = "text/plain"; // Default
+    // Get MIME type using MimeTypes class
+    std::string ext = getFileExtension(path);
+    std::string contentType = MimeTypes::get(ext);
 
-	if (ext == ".html" || ext == ".htm")
-		contentType = "text/html";
-	else if (ext == ".css")
-		contentType = "text/css";
-	else if (ext == ".js")
-		contentType = "application/javascript";
-	else if (ext == ".json")
-		contentType = "application/json";
-	else if (ext == ".png")
-		contentType = "image/png";
-	else if (ext == ".jpg" || ext == ".jpeg")
-		contentType = "image/jpeg";
-	else if (ext == ".gif")
-		contentType = "image/gif";
-	else if (ext == ".pdf")
-		contentType = "application/pdf";
-
-	// Build response
-	setStatus(200);
-	setHeader("Content-Type", contentType);
-	setBody(content);
+    // Build response
+    setStatus(200);
+    setHeader("Content-Type", contentType);
+    setBody(content);
 }
 
-void HttpResponse::serveDirectoryListing(const std::string &path)
+void HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
 {
-	// Check if path is a directory
-	if (!isDirectory(path))
-	{
-		serveError(404, "");
-		return;
-	}
+    // Check if path is a directory
+    if (!isDirectory(path))
+    {
+        serveError(404, "");
+        return;
+    }
 
-	// Get list of directories/files
-	std::vector<std::string> files = listDirectory(path);
+    // Get list of files/directories
+    std::vector<std::string> entries = listDirectory(path);
 
-	// Generate HTML page
-	std::string body =
-		"<html>\n"
-		"<head><title>Index of " + path + "</title></head>\n"
-		"<body>\n"
-		"<h1>Index of " + path + "</h1>\n"
-		"<hr>\n"
-		"<ul>";
+    // Generate HTML page with correct URI for links
+    std::string body =
+        "<html>\n"
+        "<head><title>Index of " + uri + "</title></head>\n"
+        "<body>\n"
+        "<h1>Index of " + uri + "</h1>\n"
+        "<hr>\n"
+        "<ul>";
 
-	// add each entries as a link
-	for (size_t i = 0; i < files.size(); ++i)
-		body += "<li><a href=\"" + files[i] + "\">" + files[i] + "</a></li>\n";
+    // Add each entry as a clickable link
+    for (size_t i = 0; i < entries.size(); ++i)
+    {
+        std::string href = uri;
+        // Add trailing slash if needed
+        if (!uri.empty() && uri[uri.length() - 1] != '/')
+            href += "/";
+        href += entries[i];
+        
+        body += "<li><a href=\"" + href + "\">" + entries[i] + "</a></li>\n";
+    }
 
-	// add the rest of body
-	body +=
-		"</ul>\n"
-		"<hr>"
-		"</body>\n"
-		"</html>";
+    body +=
+        "</ul>\n"
+        "<hr>\n"
+        "</body>\n"
+        "</html>";
 
-	// Build response
-	setStatus(200);
-	setHeader("Content-Type", "text/html");
-	setBody(body);
+    // Build response
+    setStatus(200);
+    setHeader("Content-Type", "text/html");
+    setBody(body);
 }
 
 void HttpResponse::serveDelete(const std::string &path)
@@ -244,35 +235,35 @@ void HttpResponse::serveDelete(const std::string &path)
 		serveError(500, "");
 }
 
-void HttpResponse::servePut(const std::string &path, const std::string &body)
-{
-	// Check if file already exists
-	bool fileExisted = fileExists(path);
+// void HttpResponse::servePut(const std::string &path, const std::string &body)
+// {
+// 	// Check if file already exists
+// 	bool fileExisted = fileExists(path);
 
-	// Open file for writing (create or replace)
-	int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-	if (fd < 0)
-	{
-		serveError(500, "");
-		return;
-	}
+// 	// Open file for writing (create or replace)
+// 	int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+// 	if (fd < 0)
+// 	{
+// 		serveError(500, "");
+// 		return;
+// 	}
 
-	// Write body to file
-	ssize_t written = write(fd, body.c_str(), body.length());
-	close(fd);
+// 	// Write body to file
+// 	ssize_t written = write(fd, body.c_str(), body.length());
+// 	close(fd);
 
-	if (written < 0 || (size_t)written != body.length())
-	{
-		serveError(500, "");
-		return;
-	}
+// 	if (written < 0 || (size_t)written != body.length())
+// 	{
+// 		serveError(500, "");
+// 		return;
+// 	}
 
-	// Success 201 Created if new, 204 No content if replaced
-	if (fileExisted)
-		setStatus(204);
-	else
-		setStatus(201);
-}
+// 	// Success 201 Created if new, 204 No content if replaced
+// 	if (fileExisted)
+// 		setStatus(204);
+// 	else
+// 		setStatus(201);
+// }
 
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
 {

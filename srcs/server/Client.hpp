@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/23 19:51:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:14:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ class Client {
 		int getSocket() const;
 		bool hasTimedOut(time_t timeout) const;
 		void updateActivity();
+		const HttpRequest& getRequest() const;
 		bool isRequestComplete() const;
 
 		bool readData();

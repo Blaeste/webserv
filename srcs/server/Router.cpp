@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/26 13:03:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:26:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,14 +31,6 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 	return bestMatch;
 }
 
-bool Router::isMethodAllowed(const Location& loc, const std::string& method) const {
-	const std::vector<std::string>& methods = loc.getAllowedMethods();
-	for (size_t i = 0; i < methods.size(); i++)
-		if (methods[i] == method)
-			return true;
-	return false;
-}
-
 RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
 	std::string uri = request.getUri();
 	RouteMatch match;
@@ -50,7 +42,7 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 	match.location = findMatchingLocation(config, uri);
 	if (!match.location)
 		match.statusCode = 404;
-	else if (!isMethodAllowed(*match.location, request.getMethod())) // Check if HTTP method is allowed
+	else if (!match.location->isMethodAllowed(request.getMethod())) // Check if HTTP method is allowed
 		match.statusCode = 405;
 	else if (!(match.redirectUrl = match.location->getRedirect()).empty()) {
 		match.isRedirect = true;

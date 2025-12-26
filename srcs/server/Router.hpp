@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/24 18:47:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:26:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,6 @@ class Router {
 		// const ServerConfig& _config;
 
 		const Location* findMatchingLocation(const ServerConfig& config, const std::string& uri) const;
-		bool isMethodAllowed(const Location& loc, const std::string& method) const;
 
 	public:
 	

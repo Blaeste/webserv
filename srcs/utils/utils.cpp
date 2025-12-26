@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 19:13:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:20:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,42 +63,42 @@ std::vector<std::string> split(const std::string &str, char delimiter)
 	return result;
 }
 
-bool isHexDigit(char c)
-{
-	return	(c >= '0' && c <= '9') ||
-			(c >= 'A' && c <= 'Z') ||
-			(c >= 'a' && c <= 'z');
-}
+// bool isHexDigit(char c)
+// {
+// 	return	(c >= '0' && c <= '9') ||
+// 			(c >= 'A' && c <= 'Z') ||
+// 			(c >= 'a' && c <= 'z');
+// }
 
-std::string urlDecode(const std::string &url)
-{
-	std::string result;
+// std::string urlDecode(const std::string &url)
+// {
+// 	std::string result;
 
-	for (size_t i = 0; i  < url.length(); i++)
-	{
-		if (url[i] == '%' && i + 2 < url.length() &&
-			isHexDigit(url[i + 1]) && isHexDigit(url[i + 2]))
-		{
-			// extract the 2 hex characters
-			char hex[3] = { url[i + 1], url[i + 2], '\0' };
+// 	for (size_t i = 0; i  < url.length(); i++)
+// 	{
+// 		if (url[i] == '%' && i + 2 < url.length() &&
+// 			isHexDigit(url[i + 1]) && isHexDigit(url[i + 2]))
+// 		{
+// 			// extract the 2 hex characters
+// 			char hex[3] = { url[i + 1], url[i + 2], '\0' };
 
-			// convert in ASCII
-			char decoded = static_cast<char>(strtol(hex, NULL, 16));
-			result += decoded;
+// 			// convert in ASCII
+// 			char decoded = static_cast<char>(strtol(hex, NULL, 16));
+// 			result += decoded;
 
-			i += 2; // jump 2 charactere (hex we just decode)
-		}
+// 			i += 2; // jump 2 charactere (hex we just decode)
+// 		}
 
-		// Query + => espace
-		else if (url[i] == '+')
-			result += ' ';
+// 		// Query + => espace
+// 		else if (url[i] == '+')
+// 			result += ' ';
 
-		// Just write url
-		else
-			result += url[i];
-	}
-	return result;
-}
+// 		// Just write url
+// 		else
+// 			result += url[i];
+// 	}
+// 	return result;
+// }
 
 bool fileExists(const std::string &path)
 {
@@ -138,19 +138,19 @@ std::string getFileExtension(const std::string &path)
 	return path.substr(pos);
 }
 
-std::string getHttpDate()
-{
-	// Actual timestamp
-	time_t now = time(NULL);
-	// Convert into GMT
-	struct tm *gmt = gmtime(&now);
+// std::string getHttpDate()
+// {
+// 	// Actual timestamp
+// 	time_t now = time(NULL);
+// 	// Convert into GMT
+// 	struct tm *gmt = gmtime(&now);
 
-	// Format it
-	char buffer[100];
-	strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+// 	// Format it
+// 	char buffer[100];
+// 	strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 
-	return std::string(buffer);
-}
+// 	return std::string(buffer);
+// }
 
 std::string readFile(const std::string &path)
 {
@@ -174,20 +174,20 @@ std::string readFile(const std::string &path)
 	return result;
 }
 
-size_t getFileSize(const std::string &path)
-{
-	struct stat sb;
+// size_t getFileSize(const std::string &path)
+// {
+// 	struct stat sb;
 
-	// check if file exist
-	if (stat(path.c_str(), &sb) != 0)
-		return 0; // TODO: Throw exception
+// 	// check if file exist
+// 	if (stat(path.c_str(), &sb) != 0)
+// 		return 0; // TODO: Throw exception
 
-	// check if regular file (not folder etc.)
-	if (!S_ISREG(sb.st_mode))
-		return 0; // TODO: Throw exception
+// 	// check if regular file (not folder etc.)
+// 	if (!S_ISREG(sb.st_mode))
+// 		return 0; // TODO: Throw exception
 
-	return sb.st_size;
-}
+// 	return sb.st_size;
+// }
 
 std::string intToString(int value)
 {

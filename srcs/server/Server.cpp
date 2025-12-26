@@ -6,10 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 12:09:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 14:17:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "Client.hpp"
 #include "Router.hpp"
 #include "Server.hpp"
 #include "../http/HttpRequest.hpp"
@@ -159,34 +160,6 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
 	return config;
 }
 
-void Server::buildResponse(HttpResponse& response, const RouteMatch& match) {
-	if (!match.redirectUrl.empty()) {
-		response.setStatus(match.statusCode);
-		response.setHeader("Location", match.redirectUrl);
-		response.setBody("");
-	} else if (match.statusCode == 405) {
-		buildErrorResponse(response, 405);
-	} else if (match.statusCode == 404) {
-		buildErrorResponse(response, 404);
-	} else {
-		response.setStatus(200);
-		std::string ext = getFileExtension(match.filePath);
-		response.setHeader("Content-Type", MimeTypes::get(ext));
-		response.setBody(readFile(match.filePath));
-	}
-}
-
-void Server::buildErrorResponse(HttpResponse& response, int statusCode) {
-	response.setStatus(statusCode);
-	response.setHeader("Content-Type", "text/html");
-	
-	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-	if (fileExists(errorPage))
-		response.setBody(readFile(errorPage));
-	else
-		response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
-}
-
 void Server::handleClientRead(size_t clientIndex) {
 	int clientFd = _pollFds[clientIndex].fd;
     
@@ -219,7 +192,7 @@ void Server::handleClientRead(size_t clientIndex) {
 	std::cout << "📨 Request received" << std::endl;
 
 	// Build response
-	const ServerConfig* config = &_configs[0];  // TODO: use selectConfig with Host header
+	const ServerConfig* config = selectConfig(client.getRequest());
 	client.buildResponse(*config, _router);
 
 	// Send response

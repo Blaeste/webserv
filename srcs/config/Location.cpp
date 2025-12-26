@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/17 13:44:00 by eschwart         ###   ########.fr       */
+/*   Updated: 2025/12/26 14:24:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,10 +133,9 @@ const std::string &Location::getCgiPath() const
 // =============================================================================
 // Methods
 
-bool Location::isMethodAllowed(const std::string &method) const
-{
-	for (size_t i = 0; i < _allowedMethods.size(); i++)
-		if (_allowedMethods[i] == method)
-			return true;
-	return false;
+bool Location::isMethodAllowed(const std::string &method) const {
+    for (size_t i = 0; i < _allowedMethods.size(); i++)
+        if (_allowedMethods[i] == method)
+            return true;
+    return false;
 }
