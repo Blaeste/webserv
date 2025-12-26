@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 12:47:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 12:54:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,10 +108,26 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 		_response.setStatus(201);
 		_response.setBody("<html><body><h1>Upload successful</h1><p>" + intToString(files.size()) + " file(s) uploaded</p></body></html>");
 	} else { // POST without files or GET
+		if (isDirectory(match.filePath) && match.location->getAutoIndex()) { // Generate directory listing
+		std::vector<std::string> entries = listDirectory(match.filePath);
+		std::string html = "<html><head><title>Index of " + _request.getUri() + "</title></head>";
+		html += "<body><h1>Index of " + _request.getUri() + "</h1><hr><ul>";
+		for (size_t i = 0; i < entries.size(); i++) {
+			html += "<li><a href=\"" + _request.getUri();
+			if (_request.getUri()[_request.getUri().length() - 1] != '/')
+				html += "/";
+			html += entries[i] + "\">" + entries[i] + "</a></li>";
+		}
+		html += "</ul><hr></body></html>";
 		_response.setStatus(200);
-		std::string ext = getFileExtension(match.filePath);
-		_response.setHeader("Content-Type", MimeTypes::get(ext));
-		_response.setBody(readFile(match.filePath));
+		_response.setHeader("Content-Type", "text/html");
+		_response.setBody(html);
+	} else {
+			_response.setStatus(200);
+			std::string ext = getFileExtension(match.filePath);
+			_response.setHeader("Content-Type", MimeTypes::get(ext));
+			_response.setBody(readFile(match.filePath));
+		}
 	}
 	_responseReady = true;
 }
