@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 20:59:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2025/12/26 11:48:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "../utils/utils.hpp"
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 Client::Client(int socket)
 	: _socket(socket)
@@ -68,15 +69,23 @@ void Client::buildErrorResponse(int statusCode) {
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router) {
-	RouteMatch match = router.matchRoute(config, _request);
-	if (!match.redirectUrl.empty()) {
-		_response.setStatus(match.statusCode);
-		_response.setHeader("Location", match.redirectUrl);
-		_response.setBody("");
-	} else if (match.statusCode == 405)
-		buildErrorResponse(405);
-	else if (match.statusCode == 404)
-		buildErrorResponse(404);
+    RouteMatch match = router.matchRoute(config, _request);
+    if (!match.redirectUrl.empty()) {
+        _response.setStatus(match.statusCode);
+        _response.setHeader("Location", match.redirectUrl);
+        _response.setBody("");
+    } else if (match.statusCode == 405)
+        buildErrorResponse(405);
+    else if (match.statusCode == 404)
+        buildErrorResponse(404);
+    else if (_request.getMethod() == "DELETE") {
+        // DELETE method: remove file
+        if (unlink(match.filePath.c_str()) == 0) {
+            _response.setStatus(204); // 204 No Content = success
+            _response.setBody("");
+        } else
+            buildErrorResponse(404);// File doesn't exist or permission denied
+    }
 	else if (match.isCGI) {
 		CGI cgi;
 		CGIResult result = cgi.execute(match, _request);
