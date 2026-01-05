@@ -86,6 +86,22 @@ p {
 	word-break: break-all;
 }
 
+.delete-btn {
+    margin-top: 10px;
+    background-color: #dc3545;  /* Rouge */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;  /* Rouge plus foncé au survol */
+}
+
 #uploadForm {
 	background-color: white;
 	padding: 30px;
