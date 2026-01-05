@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2025/12/26 15:37:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 14:24:23 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,9 +55,17 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 		match.statusCode = 301;
 	}
 	else {
-		// Default to index.html for root path
-		if (uri == "/" || uri.empty())
-			uri = "/index.html";
+		// Try index files for root or directory paths
+		if (uri == "/" || uri.empty()) {
+			const std::vector<std::string>& indexes = match.location->getIndex();
+			for (size_t i = 0; i < indexes.size(); i++) {
+				std::string indexPath = match.location->getRoot() + "/" + indexes[i];
+				if (fileExists(indexPath)) {
+					uri = "/" + indexes[i];
+					break;
+				}
+			}
+		}
 
 		// Remove query string from path
 		std::string pathPart = uri;

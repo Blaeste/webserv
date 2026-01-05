@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 10:10:00 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/05 13:49:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,8 @@
 #include "HttpResponse.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
-
 #include <fcntl.h>   // open()
+#include <iostream>
 #include <unistd.h> // write(), close(), unlink()
 
 // =============================================================================
@@ -105,39 +105,39 @@ std::string HttpResponse::build() const
 
 void HttpResponse::serveError(int code, const std::string &errorPagePath)
 {
-	setStatus(code);
+    setStatus(code);
 
-	// If custom error page exist from config
-	if (!errorPagePath.empty() && fileExists(errorPagePath))
-	{
-		std::string content = readFile(errorPagePath);
-		setHeader("Content-Type", "text/html");
-		setBody(content);
-		return;
-	}
+    try {
+        if (!errorPagePath.empty() && fileExists(errorPagePath)) {
+            std::string content = readFile(errorPagePath);
+            setHeader("Content-Type", "text/html");
+            setBody(content);
+            return;
+        }
 
-	// Try default error page in www/error_pages/
-	std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
-	if (fileExists(defaultErrorPage))
-	{
-		std::string content = readFile(defaultErrorPage);
-		setHeader("Content-Type", "text/html");
-		setBody(content);
-		return;
-	}
+        std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
+        if (fileExists(defaultErrorPage)) {
+            std::string content = readFile(defaultErrorPage);
+            setHeader("Content-Type", "text/html");
+            setBody(content);
+            return;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "[HttpResponse] readFile error: " << e.what() << std::endl;
+    }
 
-	// Default error page
-	std::string body =
-		"<html>\n"
-		"<head><title>Error " + intToString(code) + "</title></head>\n"
-		"<body>\n"
-		"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
-		"<p>The requested resource could not be found.</p>"
-		"</body>\n"
-		"</html>";
+    // Default error page
+    std::string body =
+        "<html>\n"
+        "<head><title>Error " + intToString(code) + "</title></head>\n"
+        "<body>\n"
+        "<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
+        "<p>The requested resource could not be found.</p>"
+        "</body>\n"
+        "</html>";
 
-	setHeader("Content-Type", "text/html");
-	setBody(body);
+    setHeader("Content-Type", "text/html");
+    setBody(body);
 }
 
 void HttpResponse::serveFile(const std::string &path)
@@ -156,17 +156,22 @@ void HttpResponse::serveFile(const std::string &path)
         return;
     }
 
-    // Read file content
-    std::string content = readFile(path);
+    try {
+        // Read file content
+        std::string content = readFile(path);
 
-    // Get MIME type using MimeTypes class
-    std::string ext = getFileExtension(path);
-    std::string contentType = MimeTypes::get(ext);
+        // Get MIME type using MimeTypes class
+        std::string ext = getFileExtension(path);
+        std::string contentType = MimeTypes::get(ext);
 
-    // Build response
-    setStatus(200);
-    setHeader("Content-Type", contentType);
-    setBody(content);
+        // Build response
+        setStatus(200);
+        setHeader("Content-Type", contentType);
+        setBody(content);
+    } catch (const std::exception& e) {
+        std::cerr << "[HttpResponse] serveFile error: " << e.what() << std::endl;
+        serveError(500, "");
+    }
 }
 
 void HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
@@ -233,8 +238,10 @@ void HttpResponse::serveDelete(const std::string &path)
 	// Try to delete the file
 	if (unlink(path.c_str()) == 0)
 		setStatus(204); // Success: 204 No Content
-	else
+	else {
+		std::cerr << "[HttpResponse] serveDelete: unlink failed for " << path << std::endl;
 		serveError(500, "");
+	}
 }
 
 // void HttpResponse::servePut(const std::string &path, const std::string &body)
@@ -286,17 +293,18 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (fd < 0)
 		{
+			std::cerr << "[handleUpload] open failed: " << filePath << std::endl;
 			serveError(500, ""); // Failed to save
 			return;
 		}
 
 		// Write content (use .data() and .size() for binary data)
 		ssize_t written = write(fd, files[i].content.data(), files[i].content.size());
-		close(fd);
+		safeClose(fd);
 
-		if ( written < 0 || (size_t)written != files[i].content.size())
-		{
-			serveError(500, ""); // Failed to write
+		if (written < 0 || (size_t)written != files[i].content.size()) {
+			std::cerr << "[handleUpload] write failed: " << filePath << std::endl;
+			serveError(500, "");
 			return;
 		}
 	}
