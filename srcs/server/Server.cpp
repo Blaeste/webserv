@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 10:15:08 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/05 11:41:04 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -224,4 +224,17 @@ void Server::handleClientRead(size_t clientIndex) {
 	close(client.getSocket());
 	_clients.erase(_clients.begin() + i);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
+}
+
+void Server::cleanupSessions() {
+	time_t now = time(NULL);
+	std::map<std::string, SessionData>::iterator it = _sessions.begin();
+	while (it != _sessions.end()) {
+		if (now - it->second.lastActive > 1800) { // 30 minutes
+			std::map<std::string, SessionData>::iterator toErase = it;
+			it++;
+			_sessions.erase(toErase);
+		} else
+			it++;
+	}
 }

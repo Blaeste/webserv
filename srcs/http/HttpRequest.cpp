@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:21:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:26:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
-
 #include <cstdlib>
+#include <sstream>
 
 // =============================================================================
 // Handlers
@@ -33,6 +33,25 @@ HttpRequest::~HttpRequest()
 
 // =============================================================================
 // Methods
+
+std::map<std::string, std::string> HttpRequest::getCookies() const {
+	std::map<std::string, std::string> cookies;
+	std::string cookieHeader = getHeader("Cookie");
+	if (cookieHeader.empty())
+		return cookies;
+
+	std::istringstream stream(cookieHeader);
+	std::string pair;
+	while (std::getline(stream, pair, ';')) {
+		size_t eqPos = pair.find('=');
+		if (eqPos != std::string::npos) {
+			std::string key = trim(pair.substr(0, eqPos));
+			std::string value = trim(pair.substr(eqPos + 1));
+			cookies[key] = value;
+		}
+	}
+	return cookies;
+}
 
 bool HttpRequest::appendData(const std::string &data)
 {

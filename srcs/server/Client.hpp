@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:14:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:29:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,8 @@ class Client {
 		bool _requestComplete;
 		bool _responseReady;
 		// std::string _writeBuffer;
+
+		void handleSession();
 
 	public:
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:20:39 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:13:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -224,4 +224,13 @@ std::string normalizeHeaderKey(const std::string& key) {
 		if (result[i] >= 'A' && result[i] <= 'Z')
 			result[i] = result[i] + 32;
 	return result;
+}
+
+std::string generateSessionId() {
+	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const size_t idLength = 32;
+	std::string id;
+	for (size_t i = 0; i < idLength; i++)
+		id += charset[std::rand() % (sizeof(charset) - 1)];
+	return id;
 }
