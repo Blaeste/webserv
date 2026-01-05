@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<Title>Uploaded Files</Title>
+		<link rel="stylesheet" href="/css/style.css">
+		<script src="/js/header.js" defer></script>
+		<script src="/js/filesgrid.js" defer></script>
+	</head>
+
+	<body>
+
+		<h1>Uploaded Files</h1>
+
+		<div id="fileList">
+			<p>Loading files...</p>
+		</div>
+
+		<h2>Upload a file</h1>
+
+		<form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
+			<input type="file" name="file" multiple required>
+			<input type="submit" value="Upload">
+		</form>
+		<div id="uploadStatus"></div>
+
+	</body>
+</html>
