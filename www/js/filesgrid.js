@@ -89,3 +89,14 @@ function setupUploadForm() {
 
 loadFilesList();
 setupUploadForm();
+
+// Display file names
+
+const fileInput = document.getElementById('fileInput');
+
+if (fileInput) {
+	fileInput.addEventListener('change', function() {
+		const fileNames = Array.from(this.files).map(f => f.name).join(', ');
+		document.getElementById('fileNames').textContent = fileNames || 'No files selected';
+	});
+}

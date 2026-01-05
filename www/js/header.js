@@ -3,7 +3,6 @@ function loadHeader() {
 		<header>
 			<nav>
 				<a href="/">Home</a>
-				<a href="/upload.html">Upload</a>
 				<a href="/files.html">Files</a>
 				<a href="/about.html">About</a>
 			</nav>
