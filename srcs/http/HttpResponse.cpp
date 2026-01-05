@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 14:44:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 10:10:00 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,7 +92,7 @@ std::string HttpResponse::build() const
 
 	// Content length auto if body exist
 	if (!_body.empty())
-		response += "Content-Length: " + intToString(_body.length()) + "\r\n";
+		response += "Content-Length: " + intToString(_body.size()) + "\r\n";
 
 	// Separate headers from body
 	response += "\r\n";
@@ -198,7 +198,7 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
         if (!uri.empty() && uri[uri.length() - 1] != '/')
             href += "/";
         href += entries[i];
-        
+
         body += "<li><a href=\"" + href + "\">" + entries[i] + "</a></li>\n";
     }
 
@@ -290,11 +290,11 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 			return;
 		}
 
-		// Write content
-		ssize_t written = write(fd, files[i].content.c_str(), files[i].content.length());
+		// Write content (use .data() and .size() for binary data)
+		ssize_t written = write(fd, files[i].content.data(), files[i].content.size());
 		close(fd);
 
-		if ( written < 0 || (size_t)written != files[i].content.length())
+		if ( written < 0 || (size_t)written != files[i].content.size())
 		{
 			serveError(500, ""); // Failed to write
 			return;

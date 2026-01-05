@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:47:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 10:16:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,8 +53,9 @@ bool Client::readData() {
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
 	if (bytesRead <= 0)
 		return false;
-	_readBuffer.append(buffer, bytesRead);
-	_request.appendData(_readBuffer);
+	// Append only the new data to the request
+	std::string newData(buffer, bytesRead);
+	_request.appendData(newData);
 	if (_request.isComplete())
 		_requestComplete = true;
 	updateActivity();
@@ -106,15 +107,15 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
 		_response.serveDelete(match.filePath);
-	
+
 	// Handle file upload (POST with uploaded files)
 	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
 		_response.handleUpload(_request, match.location->getUploadPath());
-	
+
 	// Serve directory listing if autoindex is enabled
 	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
 		_response.serveDirectoryListing(match.filePath, _request.getUri());
-	
+
 	// Serve static file
 	else
 		_response.serveFile(match.filePath);
@@ -123,7 +124,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 
 bool Client::sendResponse() {
 	std::string rawResponse = _response.build();
-	int bytesSent = send(_socket, rawResponse.c_str(), rawResponse.length(), 0);
+	int bytesSent = send(_socket, rawResponse.data(), rawResponse.size(), 0);
 	if (bytesSent < 0)
 		return false;
 	return true;
