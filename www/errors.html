@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Test error pages</title>
+	<link rel="stylesheet" href="/css/style.css">
+	<script src="/js/header.js" defer></script>
+	<script src="/js/footer.js" defer></script>
+</head>
+
+<body>
+	<div class="container">
+		<h1>Test error pages</h1>
+		<p>Select an action to make the server generate an error and show your configured error handling.</p>
+
+		<div class="home-links">
+			<a href="/this-page-should-404" class="home-button" title="/this-page-should-404"><span>Trigger 404 Not
+					Found</span></a>
+			<a href="/cgi-bin/py/error500.py" class="home-button" title="/cgi-bin/py/error500.py"><span>Trigger 500
+					Internal Server Error (CGI crash)</span></a>
+			<a href="/cgi-bin/py/infinite.py" class="home-button" title="/cgi-bin/py/infinite.py"><span>Trigger timeout
+					/ 504 (infinite CGI)</span></a>
+		</div>
+	</div>
+</body>
+
+</html>
