@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:49:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 15:09:15 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ std::string CGI::readFromPipe(int fd) {
 	ssize_t bytesRead;
 	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
 		result.append(buffer, bytesRead);
-	return result;   
+	return result;
 }
 
 // Setup CGI environment variables
@@ -182,7 +182,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	}
 	std::string headersBlock = output.substr(0, headersEnd);
 	std::string body = output.substr(headersEnd + 4);
-	
+
 	// Parse headers line by line
 	size_t pos = 0;
 	while (pos < headersBlock.length()) {
@@ -199,7 +199,10 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 				result.statusCode = atoi(statusLine.substr(0, 3).c_str());
 			}
 		}
-		// Other headers (Content-Type, etc.) are ignored for now
+
+		// Check for Content-Type header
+		else if (line.find("Content-Type: ") == 0)
+			result.contentType = line.substr(14); // skip "Content-Type: "
 
 		pos = lineEnd + 2;
 	}
