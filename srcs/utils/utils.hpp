@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 11:00:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 13:17:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,3 +117,10 @@ std::string normalizeHeaderKey(const std::string &key);
  * @return A unique string suitable for use as a session_id cookie value.
  */
 std::string generateSessionId();
+
+/**
+ * @brief Ferme un descripteur de fichier et log une erreur si la fermeture échoue.
+ * @param fd Le descripteur de fichier à fermer.
+ * @return 0 en cas de succès, -1 en cas d’échec.
+ */
+int safeClose(int fd);

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:49:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 13:41:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "../utils/utils.hpp"
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -23,12 +24,14 @@ CGI::CGI() {}
 CGI::~CGI() {}
 
 std::string CGI::readFromPipe(int fd) {
-	char buffer[4096];
-	std::string result;
-	ssize_t bytesRead;
-	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
-		result.append(buffer, bytesRead);
-	return result;   
+    char buffer[4096];
+    std::string result;
+    ssize_t bytesRead;
+    while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
+        result.append(buffer, bytesRead);
+    if (bytesRead < 0)
+        std::cerr << "[CGI] readFromPipe: read failed" << std::endl;
+    return result;
 }
 
 // Setup CGI environment variables
@@ -102,11 +105,13 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 	int pipeIn[2];
 	int pipeOut[2];
 	if (pipe(pipeIn) < 0 || pipe(pipeOut) < 0) {
+		std::cerr << "[CGI] execute: pipe creation failed" << std::endl;
 		result.statusCode = 500;
 		return result;
 	}
 	pid_t pid = fork();
 	if (pid < 0) {
+		std::cerr << "[CGI] execute: fork failed" << std::endl;
 		result.statusCode = 500;
 		return result;
 	}
@@ -114,8 +119,8 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 		// Child process: CGI execution
 		dup2(pipeOut[1], 1); // Redirect stdout to pipe
 		dup2(pipeIn[0], 0); // Redirect stdin from pipe
-		close(pipeOut[0]);
-		close(pipeIn[1]);
+		safeClose(pipeOut[0]);
+		safeClose(pipeIn[1]);
 
 		// Prepare argv
 		char* argv[3];
@@ -133,19 +138,22 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 		envp.push_back(NULL);
 
 		execve(argv[0], argv, &envp[0]);
+		std::cerr << "[CGI] execve failed for: " << argv[0] << std::endl;
 		_exit(1);
 	}
 
 	// Parent: send POST body, read output with timeout
-	close(pipeOut[1]);
-	close(pipeIn[0]);
+	safeClose(pipeOut[0]);
+	safeClose(pipeIn[1]);
 
 	// Send POST body to CGI stdin if present
 	if (request.getMethod() == "POST") {
 		const std::string& body = request.getBody();
-		write(pipeIn[1], body.c_str(), body.length());
+		ssize_t written = write(pipeIn[1], body.c_str(), body.length());
+		if (written < 0 || (size_t)written != body.length())
+			std::cerr << "[CGI] execute: write to pipe failed" << std::endl;
 	}
-	close(pipeIn[1]);
+	safeClose(pipeIn[1]);
 
 	// Wait for child with timeout (5 seconds)
 	time_t startTime = time(NULL);
@@ -159,14 +167,14 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 			// kill child and return 504 Gateway Timeout
 			kill(pid, SIGKILL);
 			waitpid(pid, NULL, 0);
-			close(pipeOut[0]);
+			safeClose(pipeOut[0]);
 			result.statusCode = 504;
 			return result;
 		}
 		usleep(100000); // Sleep 100ms
 	}
 	result.output = readFromPipe(pipeOut[0]);
-	close(pipeOut[0]);
+	safeClose(pipeOut[0]);
 
 	// Parse CGI headers (Status, etc.)
 	parseHeaders(result.output, result);

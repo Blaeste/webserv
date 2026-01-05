@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 11:41:04 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 14:20:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ Server::Server() : _running(false) {}
 
 Server::~Server() {
 	for (size_t i = 0; i < _listenSockets.size(); i++)
-		close(_listenSockets[i]);
+		safeClose(_listenSockets[i]);
 }
 
 // Public method(s)
@@ -47,7 +47,7 @@ void Server::checkTimeouts() {
 			// Find and remove corresponding pollfd
 			for (size_t j = 0; j < _pollFds.size(); j++) {
 				if (_pollFds[j].fd == _clients[i].getSocket()) {
-					close(_pollFds[j].fd);
+					safeClose(_pollFds[j].fd);
 					_pollFds.erase(_pollFds.begin() + j);
 					break;
 				}
@@ -61,28 +61,41 @@ void Server::checkTimeouts() {
 }
 
 void Server::run() {
-	_running = true;
-	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+    _running = true;
+    std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+	static time_t lastCleanup = 0;
 
-	while (_running) {
-		// Check for idle client timeouts
-		checkTimeouts();
+    while (_running) {
+        // Check for idle client timeouts
+        checkTimeouts();
 
-		// Poll for events on all sockets (1 second timeout)
-		int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
-		if (ret < 0)
-			continue;
+		// Cleanup expired sessions every 60 seconds
+        if (time(NULL) - lastCleanup > 60) {
+            cleanupSessions();
+            lastCleanup = time(NULL);
+        }
 
-		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size(); i++) {
-			if (_pollFds[i].revents & POLLIN) {
-				if (isListenSocket(_pollFds[i].fd))
-					acceptNewClient(_pollFds[i].fd);
-				else
-					handleClientRead(i);
-			}
-		}
-	}
+        // Poll for events on all sockets (1 second timeout)
+        int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
+        if (ret < 0)
+            continue;
+
+        // Process events on each socket
+        for (size_t i = 0; i < _pollFds.size(); i++) {
+            // Handle POLLIN (incoming data to read)
+            if (_pollFds[i].revents & POLLIN) {
+                if (isListenSocket(_pollFds[i].fd))
+                    acceptNewClient(_pollFds[i].fd);
+                else
+                    handleClientRead(i);
+            }
+            
+            // Handle POLLOUT (socket ready to write)
+            if (_pollFds[i].revents & POLLOUT) {
+                handleClientWrite(i);
+            }
+        }
+    }
 }
 
 void Server::stop() {
@@ -100,7 +113,7 @@ void Server::setupListenSockets() {
 		// Configure SO_REUSEADDR to allow address reuse and prevent "Address already in use" error
 		int opt = 1;
 		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
-			close(listenFd);
+			safeClose(listenFd);
 			throw std::runtime_error("setsockopt() failed");
 		}
 
@@ -111,13 +124,13 @@ void Server::setupListenSockets() {
 		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
 		addr.sin_port = htons(port); // Convert port to network byte order
 		if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
-			close(listenFd);
+			safeClose(listenFd);
 			throw std::runtime_error("bind() failed");
 		}
 
 		// Start listening for incoming connections
 		if (listen(listenFd, 128) < 0) {
-			close(listenFd);
+			safeClose(listenFd);
 			throw std::runtime_error("listen() failed");
 		}
 		_listenSockets.push_back(listenFd);
@@ -146,12 +159,17 @@ void Server::acceptNewClient(int listenSocket) {
 
 	// Accept a new incoming connection (non-blocking)
 	int clientFd = accept(listenSocket, (struct sockaddr*)&clientAddr, &addrLen);
-	if (clientFd < 0)
+	if (clientFd < 0) {
+		std::cerr << "[Server] accept failed on fd " << listenSocket << std::endl;
 		return; // No connection available right now
+	}	
 
 	// Set the client socket to non-blocking mode
-	fcntl(clientFd, F_SETFL, O_NONBLOCK);
-
+	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
+		std::cerr << "[Server] fcntl failed for fd " << clientFd << std::endl;
+		safeClose(clientFd);
+		return;
+	}
 	// Add a Client to the vector
 	Client newClient(clientFd);
 	_clients.push_back(newClient);
@@ -185,45 +203,66 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
 }
 
 void Server::handleClientRead(size_t clientIndex) {
-	int clientFd = _pollFds[clientIndex].fd;
+    int clientFd = _pollFds[clientIndex].fd;
 
-	// Find the client with this fd
-	size_t i;
-	for (i = 0; i < _clients.size(); i++)
-		if (_clients[i].getSocket() == clientFd)
-			break;
-	if (i == _clients.size()) {
-		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
-		return;
-	}
-	Client& client = _clients[i];
+    // Find the client with this fd
+    size_t i;
+    for (i = 0; i < _clients.size(); i++)
+        if (_clients[i].getSocket() == clientFd)
+            break;
+    if (i == _clients.size()) {
+        std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+        return;
+    }
+    Client& client = _clients[i];
 
-	// Read data from socket
-	if (!client.readData()) {
-		// Error or disconnection
-		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
-		close(client.getSocket());
-		_clients.erase(_clients.begin() + i);
-		_pollFds.erase(_pollFds.begin() + clientIndex);
-		return;
-	}
+    // Read data from socket
+    if (!client.readData()) {
+        // Error or disconnection
+        std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
+        safeClose(client.getSocket());
+        _clients.erase(_clients.begin() + i);
+        _pollFds.erase(_pollFds.begin() + clientIndex);
+        return;
+    }
 
-	// Check if request is complete
-	if (!client.isRequestComplete())
-		return;
-	std::cout << "📨 Request received" << std::endl;
+    // Check if request is complete
+    if (!client.isRequestComplete())
+        return;
+    
+    std::cout << "📨 Request received" << std::endl;
 
-	// Build response
-	const ServerConfig* config = selectConfig(client.getRequest());
-	client.buildResponse(*config, _router);
+    // Build response
+    const ServerConfig* config = selectConfig(client.getRequest());
+    client.buildResponse(*config, _router);
 
-	// Send response
-	client.sendResponse();
+    // Enable POLLOUT to send response when socket is ready for writing
+    _pollFds[clientIndex].events |= POLLOUT;
+}
 
-	// Close connection and cleanup
-	close(client.getSocket());
-	_clients.erase(_clients.begin() + i);
-	_pollFds.erase(_pollFds.begin() + clientIndex);
+void Server::handleClientWrite(size_t clientIndex) {
+    int clientFd = _pollFds[clientIndex].fd;
+
+    // Find the client with this fd
+    size_t i;
+    for (i = 0; i < _clients.size(); i++)
+        if (_clients[i].getSocket() == clientFd)
+            break;
+    if (i == _clients.size()) {
+        std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+        return;
+    }
+    Client& client = _clients[i];
+
+    // Send response
+    if (!client.sendResponse()) {
+        std::cerr << "Error sending response to fd " << clientFd << std::endl;
+    }
+
+    // Close connection and cleanup after sending
+    safeClose(client.getSocket());
+    _clients.erase(_clients.begin() + i);
+    _pollFds.erase(_pollFds.begin() + clientIndex);
 }
 
 void Server::cleanupSessions() {
