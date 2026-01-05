@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:48:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 10:15:08 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ void Server::checkTimeouts() {
 		// 30 seconds timeout for idle clients
 		if (_clients[i].hasTimedOut(30)) {
 			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
-			
+
 			// Find and remove corresponding pollfd
 			for (size_t j = 0; j < _pollFds.size(); j++) {
 				if (_pollFds[j].fd == _clients[i].getSocket()) {
@@ -63,7 +63,7 @@ void Server::checkTimeouts() {
 void Server::run() {
 	_running = true;
 	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
-	
+
 	while (_running) {
 		// Check for idle client timeouts
 		checkTimeouts();
@@ -114,14 +114,14 @@ void Server::setupListenSockets() {
 			close(listenFd);
 			throw std::runtime_error("bind() failed");
 		}
-		
+
 		// Start listening for incoming connections
 		if (listen(listenFd, 128) < 0) {
 			close(listenFd);
 			throw std::runtime_error("listen() failed");
 		}
 		_listenSockets.push_back(listenFd);
-		
+
 		// Add to poll to monitor incoming connections
 		struct pollfd pfd;
 		pfd.fd = listenFd;
@@ -143,7 +143,7 @@ bool Server::isListenSocket(int fd) const {
 void Server::acceptNewClient(int listenSocket) {
 	struct sockaddr_in clientAddr;
 	socklen_t addrLen = sizeof(clientAddr);
-	
+
 	// Accept a new incoming connection (non-blocking)
 	int clientFd = accept(listenSocket, (struct sockaddr*)&clientAddr, &addrLen);
 	if (clientFd < 0)
@@ -203,7 +203,7 @@ void Server::handleClientRead(size_t clientIndex) {
 		// Error or disconnection
 		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
 		close(client.getSocket());
-		_clients.erase(_clients.begin() + clientIndex);
+		_clients.erase(_clients.begin() + i);
 		_pollFds.erase(_pollFds.begin() + clientIndex);
 		return;
 	}
@@ -222,6 +222,6 @@ void Server::handleClientRead(size_t clientIndex) {
 
 	// Close connection and cleanup
 	close(client.getSocket());
-	_clients.erase(_clients.begin() + clientIndex);
+	_clients.erase(_clients.begin() + i);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
