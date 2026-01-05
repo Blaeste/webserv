@@ -274,6 +274,33 @@ void HttpResponse::serveDelete(const std::string &path)
 // 		setStatus(201);
 // }
 
+static std::string sanitizeFilename(const std::string &filename)
+{
+	std::string safe = filename;
+
+	// Block ".." (directory traversal)
+	size_t pos = 0;
+	while ((pos = safe.find("..", pos)) != std::string::npos)
+		safe.erase(pos, 2);
+
+
+	for (size_t i = 0; i < safe.size(); i++)
+	{
+		// Replace "/" and "\" with "_"
+		if (safe[i] == '/' || safe[i] == '\\')
+			safe[i] = '_';
+
+		// Block dangerous character (null bytes, control chars)
+		if (safe[i] == '\0' || safe[i] < 32)
+			safe[i] = '_';
+	}
+
+	if (safe.empty())
+		safe = "unnamed_file";
+
+	return safe;
+}
+
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
 {
 	const std::vector<UploadedFile> &files = request.getUploadedFiles();
@@ -287,7 +314,9 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 	// Save each file
 	for (size_t i = 0; i < files.size(); ++i)
 	{
-		std::string filePath = uploadDir + '/' + files[i].filename;
+
+		std::string safeName = sanitizeFilename(files[i].filename);
+		std::string filePath = uploadDir + '/' + safeName;
 
 		// Open file fpr writing
 		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);

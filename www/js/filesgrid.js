@@ -26,6 +26,9 @@ function loadFilesList() {
 								<img src="${href}" alt="${filename}">
 								<span>${filename}</span>
 							</a>
+							<button class="delete-btn" data-file="/uploads/${filename}" data-filename="${filename}">
+								Delete
+    						</button>
 						</li>
 					`;
 				} else {
@@ -35,6 +38,9 @@ function loadFilesList() {
 								<div class="file-icon">📄</div>
 								<span>${filename}</span>
 							</a>
+							<button class="delete-btn" data-file="/uploads/${filename}" data-filename="${filename}">
+								Delete
+    						</button>
 						</li>
 					`;
 				}
@@ -42,6 +48,16 @@ function loadFilesList() {
 			fileListHTML += '</ul>';
 
 			fileListDiv.innerHTML = fileListHTML;
+
+			const deleteButtons = document.querySelectorAll('.delete-btn');
+			deleteButtons.forEach(btn => {
+				btn.addEventListener('click', function(e) {
+					e.preventDefault();
+					const filepath = this.dataset.file;
+					const filename = this.dataset.filename;
+					deleteFile(filepath, filename);
+				});
+			});
 		})
 		.catch(err => {
 			console.error('Error:', err);
@@ -87,5 +103,37 @@ function setupUploadForm() {
 	});
 }
 
+function deleteFile(filepath, filename) {
+
+	// Ask confirmation
+	if (!confirm(`Voulez-vous vraiment supprimer "${filename}" ?`)) {
+		return;
+	}
+
+	// Send DELETE to server
+	fetch(filepath, {
+		method: 'DELETE'
+	})
+	.then(response => {
+		if (response.ok || response.status === 204) {
+			alert(`✓ "${filename}" supprimé avec succès!`);
+			loadFilesList();
+		} else {
+			alert(`✗ Erreur lors de la suppression`);
+		}
+	});
+}
+
 loadFilesList();
 setupUploadForm();
+
+// Display file names
+
+const fileInput = document.getElementById('fileInput');
+
+if (fileInput) {
+	fileInput.addEventListener('change', function() {
+		const fileNames = Array.from(this.files).map(f => f.name).join(', ');
+		document.getElementById('fileNames').textContent = fileNames || 'No files selected';
+	});
+}

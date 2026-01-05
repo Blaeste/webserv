@@ -9,20 +9,25 @@
 	</head>
 
 	<body>
+		<div class="container">
 
-		<h1>Uploaded Files</h1>
+			<h1>Uploaded Files</h1>
 
-		<div id="fileList">
-			<p>Loading files...</p>
+			<div id="fileList">
+				<p>Loading files...</p>
+			</div>
+
+			<h2 id="uploadTitle">Upload a file</h1>
+
+			<form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
+				<label for="fileInput">
+					📁 Click to select files
+					<span id="fileNames" style="display:block; margin-top:10px; font-size:12px;"></span>
+				</label>
+				<input type="file" id="fileInput" name="file" multiple required>
+				<input type="submit" value="Upload">
+			</form>
+			<div id="uploadStatus"></div>
 		</div>
-
-		<h2>Upload a file</h1>
-
-		<form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
-			<input type="file" name="file" multiple required>
-			<input type="submit" value="Upload">
-		</form>
-		<div id="uploadStatus"></div>
-
 	</body>
 </html>

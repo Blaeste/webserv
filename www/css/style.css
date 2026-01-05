@@ -1,3 +1,14 @@
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 20px;
+}
+
+h1 {
+	color:#0066cc;
+	margin-bottom: 30px;
+}
+
 header {
 	background-color: #333;
 	padding: 15px;
@@ -73,4 +84,154 @@ p {
 	margin-top: 10px;
 	font-size: 12px;
 	word-break: break-all;
+}
+
+.delete-btn {
+    margin-top: 10px;
+    background-color: #dc3545;  /* Rouge */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    width: 100%;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;  /* Rouge plus foncé au survol */
+}
+
+#uploadForm {
+	background-color: white;
+	padding: 30px;
+	border-radius: 10px;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+	max-width: 500px;
+	margin: 20px auto;
+}
+
+#uploadForm input[type="file"] {
+	display: none;
+}
+
+#uploadForm label {
+	display: block;
+    width: 100%;
+    padding: 20px;
+    margin-bottom: 15px;
+    border: 2px dashed #0066cc;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    color: #666;
+	box-sizing: border-box;
+}
+
+#uploadForm label:hover {
+	background-color: #e9ecef;
+    border-color: #0052a3;
+    color: #0052a3;
+}
+
+#uploadForm label span {
+	display: block;
+	margin-top: 10px;
+	font-size: 12px;
+	color: #999;
+	min-height: 0;
+}
+
+#uploadForm input[type="submit"] {
+	background-color: #0066cc;
+	color: white;
+	padding: 12px 30px;
+	border: none;
+	border-radius: 5px;
+	font-size: 16px;
+	font-weight: bold;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+	width: 100%;
+}
+
+#uploadForm input[type="submit"]:hover {
+	background-color: #0052a3;
+}
+
+#uploadForm input[type="submit"]:active {
+	transform: scale(0.98);
+}
+
+#uploadStatus {
+	margin-top: 15px;
+	padding: 10px;
+	border-radius: 5px;
+	text-align: center;
+	font-weight: bold;
+}
+
+#uploadStatus p {
+	margin: 0;
+}
+
+#uploadTitle {
+    text-align: center;
+    max-width: 500px;
+    margin: 40px auto 0 auto;
+    color: #333;
+}
+
+.error-container {
+	max-width: 600px;
+	margin: 100px auto;
+	text-align: center;
+	padding: 40px;
+}
+
+.error-code {
+	font-size: 120px;
+	font-weight: bold;
+	color: #0066cc;
+	margin: 0;
+	line-height: 1;
+	animation: bounce 1s ease infinite;
+}
+
+.error-emoji {
+	font-size: 80px;
+	margin: 20px 0;
+}
+
+.error-message {
+	font-size: 24px;
+	color: #333;
+	margin: 20px 0;
+}
+
+.error-description {
+	color: #666;
+	margin: 20px 0;
+}
+
+.home-button {
+	display: inline-block;
+	background-color: #0066cc;
+	color: white;
+	padding: 15px 30px;
+	text-decoration: none;
+	border-radius: 5px;
+	margin-top: 20px;
+	transition: background-color 0.3s;
+}
+
+.home-button:hover {
+	background-color: #0052a3;
+}
+
+@keyframes bounce {
+	0%, 100% { transform: translateY(0); }
+	50% { transform: translateY(-20px); }
 }
