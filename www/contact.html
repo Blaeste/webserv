@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>Contact</title>
+		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/contactForm.css">
+		<script src="/js/header.js" defer></script>
+	</head>
+
+	<body>
+		<div class="container">
+			<h1>Contact Us</h1>
+
+			<form id="contactForm" action="/cgi-bin/py/contact.py" method="POST">
+				<label>Your Name:</label>
+				<input type="text" name="name" required>
+
+				<label>Your Email:</label>
+				<input type="email" name="email" required>
+
+				<label>Your Message:</label>
+				<textarea name="message" rows="8" required></textarea>
+
+				<button type="submit">Send</button>
+			</form>
+		</div>
+	</body>
+</html>

@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 14:14:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 15:10:44 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 		CGIResult result = cgi.execute(match, _request);
 		if (result.statusCode == 200) {
 			_response.setStatus(200);
+			_response.setHeader("Content-Type", result.contentType);
 			_response.setBody(result.output);
 		} else
 			_response.serveError(result.statusCode, "");
