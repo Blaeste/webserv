@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 14:20:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 15:08:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,7 +234,7 @@ void Server::handleClientRead(size_t clientIndex) {
 
     // Build response
     const ServerConfig* config = selectConfig(client.getRequest());
-    client.buildResponse(*config, _router);
+    client.buildResponse(*config, _router, _sessions);
 
     // Enable POLLOUT to send response when socket is ready for writing
     _pollFds[clientIndex].events |= POLLOUT;

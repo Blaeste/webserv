@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 14:10:04 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 15:07:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@ struct SessionData {
 
 	time_t lastActive;
 	std::string username;
+	int visitCount;
 
 };
 

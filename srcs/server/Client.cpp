@@ -3,14 +3,15 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 14:14:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 15:20:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Client.hpp"
+#include "Server.hpp"
 #include "../cgi/CGI.hpp"
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
@@ -79,67 +80,130 @@ void Client::buildErrorResponse(int statusCode) {
 	}
 }
 
-void Client::handleSession() {
-	std::map<std::string, std::string> cookies = _request.getCookies();
-	std::string sessionId;
-	if (cookies.find("session_id") != cookies.end()) {
-		sessionId = cookies["session_id"];
-	} else {
-		sessionId = generateSessionId();
-		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-	}
+void Client::handleSession(std::map<std::string, SessionData>& sessions) {
+    std::map<std::string, std::string> cookies = _request.getCookies();
+    std::string sessionId;
+    
+    if (cookies.find("session_id") != cookies.end()) {
+        sessionId = cookies["session_id"];
+        
+        // Update existing session or create new if expired
+        if (sessions.find(sessionId) != sessions.end()) {
+            sessions[sessionId].lastActive = time(NULL);
+            sessions[sessionId].visitCount++;
+        } else {
+            // Invalid/expired session → create new
+            sessionId = generateSessionId();
+            sessions[sessionId].lastActive = time(NULL);
+            sessions[sessionId].visitCount = 1;
+            sessions[sessionId].username = "";
+            _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+        }
+    } else {
+        // New session
+        sessionId = generateSessionId();
+        sessions[sessionId].lastActive = time(NULL);
+        sessions[sessionId].visitCount = 1;
+        sessions[sessionId].username = "";
+        _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+    }
+    
+    _sessionId = sessionId;
 }
 
-void Client::buildResponse(const ServerConfig& config, Router& router) {
-	// Check body size limit
-	if (_request.getBody().size() > config.getMaxBodySize()) {
-		buildErrorResponse(413); // 413 Payload Too Large
-		_responseReady = true;
-		return;
-	}
+void Client::serveCounterPage(std::map<std::string, SessionData>& sessions) {
+    SessionData& session = sessions[_sessionId];
+    std::string html = 
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head>\n"
+        "  <title>Visit Counter</title>\n"
+        "  <style>\n"
+        "    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }\n"
+        "    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }\n"
+        "    h1 { color: #333; }\n"
+        "    .counter { font-size: 48px; color: #007bff; font-weight: bold; margin: 20px 0; }\n"
+        "    .info { color: #666; font-size: 14px; margin-top: 20px; }\n"
+        "    a { color: #007bff; text-decoration: none; }\n"
+        "    a:hover { text-decoration: underline; }\n"
+        "  </style>\n"
+        "</head>\n"
+        "<body>\n"
+        "  <div class=\"container\">\n"
+        "    <h1>🎉 Visit Counter</h1>\n"
+        "    <div class=\"counter\">" + intToString(session.visitCount) + "</div>\n"
+        "    <p>visits to this page</p>\n"
+        "    <div class=\"info\">\n"
+        "      <p>Session ID: <code>" + _sessionId.substr(0, 16) + "...</code></p>\n"
+        "      <p><a href=\"/\">← Back to home</a></p>\n"
+        "    </div>\n"
+        "  </div>\n"
+        "</body>\n"
+        "</html>";
+    _response.setStatus(200);
+    _response.setHeader("Content-Type", "text/html; charset=utf-8");
+    _response.setBody(html);
+    _responseReady = true;
+}
 
-	handleSession();
+void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
+    // Check body size limit
+    if (_request.getBody().size() > config.getMaxBodySize()) {
+        buildErrorResponse(413);
+        _responseReady = true;
+        return;
+    }
 
-	RouteMatch match = router.matchRoute(config, _request);
+    handleSession(sessions);
 
-	// Handle redirections
-	if (!match.redirectUrl.empty()) {
-		_response.setStatus(match.statusCode);
-		_response.setHeader("Location", match.redirectUrl);
-		_response.setBody("");
-	}
+    // Special route for visit counter
+    if (_request.getUri() == "/counter" || _request.getUri() == "/counter.html") {
+        serveCounterPage(sessions);
+        return;
+    }
 
-	// Handle errors (405 Method Not Allowed, 404 Not Found)
-	else if (match.statusCode == 405 || match.statusCode == 404)
-		_response.serveError(match.statusCode, "");
+    // Continue with normal routing
+    RouteMatch match = router.matchRoute(config, _request);
 
-	// Execute CGI script
-	else if (match.isCGI) {
-		CGI cgi;
-		CGIResult result = cgi.execute(match, _request);
-		if (result.statusCode == 200) {
-			_response.setStatus(200);
-			_response.setBody(result.output);
-		} else
-			_response.serveError(result.statusCode, "");
-	}
+    // Handle redirections
+    if (!match.redirectUrl.empty()) {
+        _response.setStatus(match.statusCode);
+        _response.setHeader("Location", match.redirectUrl);
+        _response.setBody("");
+    }
 
-	// Handle DELETE request
-	else if (_request.getMethod() == "DELETE")
-		_response.serveDelete(match.filePath);
+    // Handle errors (405 Method Not Allowed, 404 Not Found)
+    else if (match.statusCode == 405 || match.statusCode == 404)
+        _response.serveError(match.statusCode, "");
 
-	// Handle file upload (POST with uploaded files)
-	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
-		_response.handleUpload(_request, match.location->getUploadPath());
+    // Execute CGI script
+    else if (match.isCGI) {
+        CGI cgi;
+        CGIResult result = cgi.execute(match, _request);
+        if (result.statusCode == 200) {
+            _response.setStatus(200);
+            _response.setBody(result.output);
+        } else
+            _response.serveError(result.statusCode, "");
+    }
 
-	// Serve directory listing if autoindex is enabled
-	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
-		_response.serveDirectoryListing(match.filePath, _request.getUri());
+    // Handle DELETE request
+    else if (_request.getMethod() == "DELETE")
+        _response.serveDelete(match.filePath);
 
-	// Serve static file
-	else
-		_response.serveFile(match.filePath);
-	_responseReady = true;
+    // Handle file upload (POST with uploaded files)
+    else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
+        _response.handleUpload(_request, match.location->getUploadPath());
+
+    // Serve directory listing if autoindex is enabled
+    else if (isDirectory(match.filePath) && match.location->getAutoIndex())
+        _response.serveDirectoryListing(match.filePath, _request.getUri());
+
+    // Serve static file
+    else
+        _response.serveFile(match.filePath);
+    
+    _responseReady = true;
 }
 
 bool Client::sendResponse() {
