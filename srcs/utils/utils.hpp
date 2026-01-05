@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 19:00:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:00:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,3 +111,9 @@ std::vector<std::string> listDirectory(const std::string &path);
  * @return The normalized header key (e.g., "Content-Type").
  */
 std::string normalizeHeaderKey(const std::string &key);
+
+/**
+ * @brief Generates a random session identifier for HTTP session management.
+ * @return A unique string suitable for use as a session_id cookie value.
+ */
+std::string generateSessionId();

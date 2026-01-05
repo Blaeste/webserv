@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 10:16:34 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/05 11:32:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,6 +72,17 @@ void Client::buildErrorResponse(int statusCode) {
 		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 }
 
+void Client::handleSession() {
+    std::map<std::string, std::string> cookies = _request.getCookies();
+    std::string sessionId;
+    if (cookies.find("session_id") != cookies.end()) {
+        sessionId = cookies["session_id"];
+    } else {
+        sessionId = generateSessionId();
+        _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+    }
+}
+
 void Client::buildResponse(const ServerConfig& config, Router& router) {
 	// Check body size limit
 	if (_request.getBody().size() > config.getMaxBodySize()) {
@@ -79,6 +90,8 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 		_responseReady = true;
 		return;
 	}
+
+	handleSession();
 
 	RouteMatch match = router.matchRoute(config, _request);
 

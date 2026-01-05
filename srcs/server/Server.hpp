@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:24:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:19:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,16 @@
 #include "Router.hpp"
 #include "../config/Config.hpp"
 #include "../http/HttpResponse.hpp"
+#include <ctime>
 #include <poll.h>
 #include <vector>
+
+struct SessionData {
+
+	time_t lastActive;
+	std::string username;
+
+};
 
 class Server {
 
@@ -29,6 +37,7 @@ class Server {
 		std::vector<int> _listenSockets;
 		bool _running;
 		Router _router;
+		std::map<std::string, SessionData> _sessions;
 
 	public:
 
@@ -47,6 +56,7 @@ class Server {
 		void setupListenSockets();
 		bool isListenSocket(int fd) const;
 		void acceptNewClient(int listenSocket);
+		void cleanupSessions();
 
 		// Client handling
 		const ServerConfig* selectConfig(const HttpRequest& request) const;

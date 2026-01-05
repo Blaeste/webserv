@@ -6,16 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 16:08:39 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:34:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include <iostream>
-#include <string>
 #include "server/Server.hpp"
 #include "config/Config.hpp"
 #include "http/HttpRequest.hpp"
 #include "http/HttpResponse.hpp"
+#include <cstdlib>
+#include <iostream>
+#include <string>
 // #include "utils/utils.hpp" // Parsing test
 // #include <iomanip> // Parsing test
 
@@ -30,6 +31,9 @@ int main(int argc, char **argv)
 	// TODO: Setup signal handlers (SIGINT, SIGTERM)
 	// TODO: Run server loop
 	// TODO: Cleanup on exit
+
+	// Seed the random number generator for generateSessionId()
+	std::srand(static_cast<unsigned int>(std::time(0)));
 
 	if (argc != 2) {
 		std::cerr << "Usage: " << argv[0] << " <config_file>" << std::endl;

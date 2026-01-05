@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/24 18:46:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 11:23:38 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ public:
 	 * @brief Checks if the HTTP request is complete.
 	 * @return true if the request is complete, false otherwise.
 	 */
-    bool isComplete() const;
+	bool isComplete() const;
 
 	/**
 	 * @brief Gets a specific header value by key.
@@ -99,20 +99,22 @@ public:
 	 */
 	std::string getHeader(const std::string &key) const;
 
-    // =========================================================================
+	// =========================================================================
 	// Getters
 
-    const std::string &getMethod() const { return _method; }
+	const std::string &getMethod() const { return _method; }
 
-    const std::string &getUri() const { return _uri; }
+	const std::string &getUri() const { return _uri; }
 
-    const std::string &getVersion() const { return _version; }
+	const std::string &getVersion() const { return _version; }
 
 	const std::string& getBody() const { return _body; }
 
-    const std::map<std::string, std::string> &getHeaders() const { return _headers; }
+	const std::map<std::string, std::string> &getHeaders() const { return _headers; }
 
 	const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
+
+	std::map<std::string, std::string> getCookies() const;
 
 private:
 
@@ -152,4 +154,5 @@ private:
 	 * @return true if parsing was successful, false otherwise.
 	 */
 	bool parseMultipart(const std::string &boundary);
+
 };
