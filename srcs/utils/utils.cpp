@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 11:13:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 13:17:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <cstdlib> // for strtol
 #include <ctime> // for getHttpDate -> strftime
 #include <dirent.h> // for listDirectory
+#include <iostream>
 
 // =============================================================================
 // Functions
@@ -119,23 +120,23 @@ bool isDirectory(const std::string &path)
 
 std::string getFileExtension(const std::string &path)
 {
-	size_t pos = path.find_last_of('.');
-	size_t slash = path.find_last_of('/');
+    size_t pos = path.find_last_of('.');
+    size_t slash = path.find_last_of('/');
 
-	// If not '.' or if '.' is befor last '/'
-	if (pos == std::string::npos || (slash != std::string::npos && pos < slash))
-		return ""; // TODO: Throw exception
+    // Si pas de point ou le point est avant le dernier slash
+    if (pos == std::string::npos || (slash != std::string::npos && pos < slash))
+        throw std::runtime_error("getFileExtension: invalid or missing extension in path: " + path);
 
-	// If '.' is the first character of the file (hidden file) with path /path/.hidden
-	if (slash != std::string::npos && pos == slash + 1)
-		return ""; // TODO: Throw exception
+    // Si le point est juste après le slash (fichier caché)
+    if (slash != std::string::npos && pos == slash + 1)
+        throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-	// If '.' is the first character of the file (hidden file) .hidden
-	if (slash == std::string::npos && pos == 0)
-		return ""; // TODO: Throw exception
+    // Si le point est le premier caractère (fichier caché sans extension)
+    if (slash == std::string::npos && pos == 0)
+        throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-	// Return start '.' to the end => extension
-	return path.substr(pos);
+    // Extension valide
+    return path.substr(pos);
 }
 
 // std::string getHttpDate()
@@ -154,24 +155,23 @@ std::string getFileExtension(const std::string &path)
 
 std::string readFile(const std::string &path)
 {
-	int fd = open(path.c_str(), O_RDONLY);
+    int fd = open(path.c_str(), O_RDONLY);
+    if (fd < 0)
+        throw std::runtime_error("Failed to open file: " + path);
 
-	if (fd < 0)
-		return ""; // TODO: Throw exception
+    char buffer[4096];
+    std::string result;
+    ssize_t bytes_read;
 
-	char buffer[4096];
-	std::string result;
-	ssize_t bytes_read;
+    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+        result.append(buffer, bytes_read);
 
-	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
-		result.append(buffer, bytes_read);
+    close(fd);
 
-	close(fd);
+    if (bytes_read < 0)
+        throw std::runtime_error("Failed to read file: " + path);
 
-	if (bytes_read < 0)
-		return ""; // TODO: Throw exception
-
-	return result;
+    return result;
 }
 
 // size_t getFileSize(const std::string &path)
@@ -201,12 +201,14 @@ std::vector<std::string> listDirectory(const std::string &path)
 	std::vector<std::string> entries;
 
 	DIR *dir = opendir(path.c_str());
-	if (!dir)
+	if (!dir) {
+		std::cerr << "[listDirectory] opendir failed for path: " << path << std::endl;
 		return entries; // return empty vector if error
+	}
 
 	struct dirent *entry;
 
-	while ((entry = readdir(dir)) != NULL)
+	while ((entry = readdir(dir)))
 	{
 		std::string name = entry->d_name;
 		// skip . and ..
@@ -233,4 +235,12 @@ std::string generateSessionId() {
 	for (size_t i = 0; i < idLength; i++)
 		id += charset[std::rand() % (sizeof(charset) - 1)];
 	return id;
+}
+
+int safeClose(int fd) {
+    if (close(fd) < 0) {
+        std::cerr << "[safeClose] close failed on fd " << fd << std::endl;
+        return -1;
+    }
+    return 0;
 }

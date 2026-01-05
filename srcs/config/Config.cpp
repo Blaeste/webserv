@@ -6,12 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 15:25:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/05 13:46:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Config.hpp"
 #include "../utils/utils.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 
@@ -276,24 +277,20 @@ bool Config::validate() const {
 	return true;
 }
 
-bool Config::parse(const std::string &filePath)
-{
-	// Read file
-	std::string content = readFile(filePath);
-
-	if (content.empty())
+bool Config::parse(const std::string &filePath) {
+	try {
+		std::string content = readFile(filePath);
+		if (content.empty())
+			return false;
+		std::vector<std::string> serverBlocks = extractBlocks(content, "server");
+		for (size_t i = 0; i < serverBlocks.size(); i++) {
+			ServerConfig server;
+			parseServerBlock(serverBlocks[i], server);
+			_servers.push_back(server);
+		}
+		return validate();
+	} catch (const std::exception& e) {
+		std::cerr << "Config::parse error: " << e.what() << std::endl;
 		return false;
-
-	// Extract server block
-	std::vector<std::string> serverBlocks = extractBlocks(content, "server");
-
-	// Parse each server
-	for (size_t i = 0; i < serverBlocks.size(); i++) {
-		ServerConfig server;
-		parseServerBlock(serverBlocks[i], server);
-		_servers.push_back(server);
 	}
-
-	// return after validate()
-	return validate();
 }

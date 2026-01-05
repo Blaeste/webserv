@@ -14,6 +14,7 @@
 #include "../cgi/CGI.hpp"
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
+#include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -66,21 +67,27 @@ void Client::buildErrorResponse(int statusCode) {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
 	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-	if (fileExists(errorPage))
-		_response.setBody(readFile(errorPage));
-	else
+	if (fileExists(errorPage)) {
+		try {
+			_response.setBody(readFile(errorPage));
+		} catch (const std::exception& e) {
+			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
+			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+		}
+	} else {
 		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+	}
 }
 
 void Client::handleSession() {
-    std::map<std::string, std::string> cookies = _request.getCookies();
-    std::string sessionId;
-    if (cookies.find("session_id") != cookies.end()) {
-        sessionId = cookies["session_id"];
-    } else {
-        sessionId = generateSessionId();
-        _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-    }
+	std::map<std::string, std::string> cookies = _request.getCookies();
+	std::string sessionId;
+	if (cookies.find("session_id") != cookies.end()) {
+		sessionId = cookies["session_id"];
+	} else {
+		sessionId = generateSessionId();
+		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+	}
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router) {
@@ -138,8 +145,20 @@ void Client::buildResponse(const ServerConfig& config, Router& router) {
 
 bool Client::sendResponse() {
 	std::string rawResponse = _response.build();
-	int bytesSent = send(_socket, rawResponse.data(), rawResponse.size(), 0);
-	if (bytesSent < 0)
-		return false;
-	return true;
+	
+	// Send with partial send handling
+	ssize_t totalSent = 0;
+	ssize_t remaining = rawResponse.size();
+	while (remaining > 0) {
+		ssize_t sent = send(_socket, rawResponse.data() + totalSent, remaining, 0);
+		if (sent < 0) {
+			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << std::endl;
+			return false;
+		}
+		if (sent == 0)
+			break;  // Connection closed by peer
+		totalSent += sent;
+		remaining -= sent;
+	}
+	return (remaining == 0);  // true if everything was sent
 }
