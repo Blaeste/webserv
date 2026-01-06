@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 15:14:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 10:44:45 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ class Client {
 		// std::string _writeBuffer;
 
 		void handleSession(std::map<std::string, SessionData>& sessions);
-		void serveCounterPage(std::map<std::string, SessionData>& sessions);
+		//void serveCounterPage(std::map<std::string, SessionData>& sessions);
 
 	public:
 

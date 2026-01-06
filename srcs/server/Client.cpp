@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 09:43:26 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/06 10:56:54 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,15 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
         // Update existing session or create new if expired
         if (sessions.find(sessionId) != sessions.end()) {
             sessions[sessionId].lastActive = time(NULL);
-            sessions[sessionId].visitCount++;
+            // Only count html request (for good count page visit)
+            std::string uri = _request.getUri();
+            if (uri.find(".css") == std::string::npos &&
+                uri.find(".js") == std::string::npos &&
+                uri.find(".png") == std::string::npos &&
+                uri.find(".jpg") == std::string::npos &&
+                uri != "/counter-api") {
+                    sessions[sessionId].visitCount++;
+                }
         } else {
             // Invalid/expired session → create new
             sessionId = generateSessionId();
@@ -111,41 +119,6 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
     _sessionId = sessionId;
 }
 
-void Client::serveCounterPage(std::map<std::string, SessionData>& sessions) {
-    SessionData& session = sessions[_sessionId];
-    std::string html =
-        "<!DOCTYPE html>\n"
-        "<html>\n"
-        "<head>\n"
-        "  <title>Visit Counter</title>\n"
-        "  <style>\n"
-        "    body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background: #f5f5f5; }\n"
-        "    .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }\n"
-        "    h1 { color: #333; }\n"
-        "    .counter { font-size: 48px; color: #007bff; font-weight: bold; margin: 20px 0; }\n"
-        "    .info { color: #666; font-size: 14px; margin-top: 20px; }\n"
-        "    a { color: #007bff; text-decoration: none; }\n"
-        "    a:hover { text-decoration: underline; }\n"
-        "  </style>\n"
-        "</head>\n"
-        "<body>\n"
-        "  <div class=\"container\">\n"
-        "    <h1>🎉 Visit Counter</h1>\n"
-        "    <div class=\"counter\">" + intToString(session.visitCount) + "</div>\n"
-        "    <p>visits to this page</p>\n"
-        "    <div class=\"info\">\n"
-        "      <p>Session ID: <code>" + _sessionId.substr(0, 16) + "...</code></p>\n"
-        "      <p><a href=\"/\">← Back to home</a></p>\n"
-        "    </div>\n"
-        "  </div>\n"
-        "</body>\n"
-        "</html>";
-    _response.setStatus(200);
-    _response.setHeader("Content-Type", "text/html; charset=utf-8");
-    _response.setBody(html);
-    _responseReady = true;
-}
-
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
     // Check body size limit
     if (_request.getBody().size() > config.getMaxBodySize()) {
@@ -156,10 +129,15 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 
     handleSession(sessions);
 
-    // Special route for visit counter
-    if (_request.getUri() == "/counter" || _request.getUri() == "/counter.html") {
-        serveCounterPage(sessions);
-        return;
+    if (_request.getUri() == "/counter-api") {
+        SessionData &session = sessions[_sessionId];
+
+        std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
+        _response.setStatus(200);
+        _response.setHeader("Content-Type", "application/json");
+        _response.setBody(json);
+        _responseReady = true;
+        return ;
     }
 
     // Continue with normal routing

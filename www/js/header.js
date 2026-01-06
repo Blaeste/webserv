@@ -6,6 +6,7 @@ function loadHeader() {
 				<a href="/files.html">Files</a>
 				<a href="/about.html">About</a>
 				<a href="/cgi-bin/php/qrcode.php">QR Code</a>
+				<a href="/counter.html">Visite count</a>
 				<a href="/contact.html">Contact</a>
 			</nav>
 		</header>
