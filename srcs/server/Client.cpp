@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 15:20:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 09:43:26 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,10 +83,10 @@ void Client::buildErrorResponse(int statusCode) {
 void Client::handleSession(std::map<std::string, SessionData>& sessions) {
     std::map<std::string, std::string> cookies = _request.getCookies();
     std::string sessionId;
-    
+
     if (cookies.find("session_id") != cookies.end()) {
         sessionId = cookies["session_id"];
-        
+
         // Update existing session or create new if expired
         if (sessions.find(sessionId) != sessions.end()) {
             sessions[sessionId].lastActive = time(NULL);
@@ -107,13 +107,13 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
         sessions[sessionId].username = "";
         _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
     }
-    
+
     _sessionId = sessionId;
 }
 
 void Client::serveCounterPage(std::map<std::string, SessionData>& sessions) {
     SessionData& session = sessions[_sessionId];
-    std::string html = 
+    std::string html =
         "<!DOCTYPE html>\n"
         "<html>\n"
         "<head>\n"
@@ -182,6 +182,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
         CGIResult result = cgi.execute(match, _request);
         if (result.statusCode == 200) {
             _response.setStatus(200);
+			_response.setHeader("Content-Type", result.contentType);
             _response.setBody(result.output);
         } else
             _response.serveError(result.statusCode, "");
@@ -202,13 +203,13 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
     // Serve static file
     else
         _response.serveFile(match.filePath);
-    
+
     _responseReady = true;
 }
 
 bool Client::sendResponse() {
 	std::string rawResponse = _response.build();
-	
+
 	// Send with partial send handling
 	ssize_t totalSent = 0;
 	ssize_t remaining = rawResponse.size();

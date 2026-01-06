@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 15:09:15 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/06 09:46:48 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -143,8 +143,8 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 	}
 
 	// Parent: send POST body, read output with timeout
-	safeClose(pipeOut[0]);
-	safeClose(pipeIn[1]);
+	safeClose(pipeOut[1]);
+	safeClose(pipeIn[0]);
 
 	// Send POST body to CGI stdin if present
 	if (request.getMethod() == "POST") {
