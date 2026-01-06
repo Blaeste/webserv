@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
 /*   Updated: 2026/01/06 12:39:23 by gdosch           ###   ########.fr       */
@@ -23,7 +23,7 @@ class ServerConfig;
 class Router;
 struct SessionData;
 
-class Client {
+class Client{
 
 	private:
 
