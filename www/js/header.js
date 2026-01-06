@@ -8,7 +8,7 @@ function loadHeader() {
 				<a href="/">Home</a>
 				<a href="/files.html">Files</a>
 				<a href="/about.html">About</a>
-				<a href="/cgi-bin/php/qrcode.php">QR Code</a>
+				<a href="/qrcode.html">QR Code</a>
 				<a href="/counter.html">Visite count</a>
 				<a href="/errors.html">Errors</a>
 				<a href="/contact.html">Contact</a>
