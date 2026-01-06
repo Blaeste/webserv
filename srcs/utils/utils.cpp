@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 13:17:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:42:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,43 +64,6 @@ std::vector<std::string> split(const std::string &str, char delimiter)
 	return result;
 }
 
-// bool isHexDigit(char c)
-// {
-// 	return	(c >= '0' && c <= '9') ||
-// 			(c >= 'A' && c <= 'Z') ||
-// 			(c >= 'a' && c <= 'z');
-// }
-
-// std::string urlDecode(const std::string &url)
-// {
-// 	std::string result;
-
-// 	for (size_t i = 0; i  < url.length(); i++)
-// 	{
-// 		if (url[i] == '%' && i + 2 < url.length() &&
-// 			isHexDigit(url[i + 1]) && isHexDigit(url[i + 2]))
-// 		{
-// 			// extract the 2 hex characters
-// 			char hex[3] = { url[i + 1], url[i + 2], '\0' };
-
-// 			// convert in ASCII
-// 			char decoded = static_cast<char>(strtol(hex, NULL, 16));
-// 			result += decoded;
-
-// 			i += 2; // jump 2 charactere (hex we just decode)
-// 		}
-
-// 		// Query + => espace
-// 		else if (url[i] == '+')
-// 			result += ' ';
-
-// 		// Just write url
-// 		else
-// 			result += url[i];
-// 	}
-// 	return result;
-// }
-
 bool fileExists(const std::string &path)
 {
 	return (access(path.c_str(), F_OK) == 0);
@@ -120,74 +83,45 @@ bool isDirectory(const std::string &path)
 
 std::string getFileExtension(const std::string &path)
 {
-    size_t pos = path.find_last_of('.');
-    size_t slash = path.find_last_of('/');
+	size_t pos = path.find_last_of('.');
+	size_t slash = path.find_last_of('/');
 
-    // Si pas de point ou le point est avant le dernier slash
-    if (pos == std::string::npos || (slash != std::string::npos && pos < slash))
-        throw std::runtime_error("getFileExtension: invalid or missing extension in path: " + path);
+	// Si pas de point ou le point est avant le dernier slash
+	if (pos == std::string::npos || (slash != std::string::npos && pos < slash))
+		throw std::runtime_error("getFileExtension: invalid or missing extension in path: " + path);
 
-    // Si le point est juste après le slash (fichier caché)
-    if (slash != std::string::npos && pos == slash + 1)
-        throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
+	// Si le point est juste après le slash (fichier caché)
+	if (slash != std::string::npos && pos == slash + 1)
+		throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-    // Si le point est le premier caractère (fichier caché sans extension)
-    if (slash == std::string::npos && pos == 0)
-        throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
+	// Si le point est le premier caractère (fichier caché sans extension)
+	if (slash == std::string::npos && pos == 0)
+		throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-    // Extension valide
-    return path.substr(pos);
+	// Extension valide
+	return path.substr(pos);
 }
-
-// std::string getHttpDate()
-// {
-// 	// Actual timestamp
-// 	time_t now = time(NULL);
-// 	// Convert into GMT
-// 	struct tm *gmt = gmtime(&now);
-
-// 	// Format it
-// 	char buffer[100];
-// 	strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
-
-// 	return std::string(buffer);
-// }
 
 std::string readFile(const std::string &path)
 {
-    int fd = open(path.c_str(), O_RDONLY);
-    if (fd < 0)
-        throw std::runtime_error("Failed to open file: " + path);
+	int fd = open(path.c_str(), O_RDONLY);
+	if (fd < 0)
+		throw std::runtime_error("Failed to open file: " + path);
 
-    char buffer[4096];
-    std::string result;
-    ssize_t bytes_read;
+	char buffer[4096];
+	std::string result;
+	ssize_t bytes_read;
 
-    while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
-        result.append(buffer, bytes_read);
+	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
+		result.append(buffer, bytes_read);
 
-    close(fd);
+	close(fd);
 
-    if (bytes_read < 0)
-        throw std::runtime_error("Failed to read file: " + path);
+	if (bytes_read < 0)
+		throw std::runtime_error("Failed to read file: " + path);
 
-    return result;
+	return result;
 }
-
-// size_t getFileSize(const std::string &path)
-// {
-// 	struct stat sb;
-
-// 	// check if file exist
-// 	if (stat(path.c_str(), &sb) != 0)
-// 		return 0; // TODO: Throw exception
-
-// 	// check if regular file (not folder etc.)
-// 	if (!S_ISREG(sb.st_mode))
-// 		return 0; // TODO: Throw exception
-
-// 	return sb.st_size;
-// }
 
 std::string intToString(int value)
 {
@@ -238,9 +172,9 @@ std::string generateSessionId() {
 }
 
 int safeClose(int fd) {
-    if (close(fd) < 0) {
-        std::cerr << "[safeClose] close failed on fd " << fd << std::endl;
-        return -1;
-    }
-    return 0;
+	if (close(fd) < 0) {
+		std::cerr << "[safeClose] close failed on fd " << fd << std::endl;
+		return -1;
+	}
+	return 0;
 }

@@ -6,16 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/05 14:24:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:41:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Router.hpp"
 #include "../utils/utils.hpp"
-
-Router::Router() {}
-
-Router::~Router() {}
 
 // Find location with longest matching path prefix
 const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const {

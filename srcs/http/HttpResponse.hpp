@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2025/12/26 13:43:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:54:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,7 @@
 #include <string>
 #include <map>
 
-#include "../http/HttpRequest.hpp"
+class HttpRequest;
 
 // =============================================================================
 // Class HttpResponse
@@ -47,9 +47,6 @@ public:
 
 	// Default constructor
 	HttpResponse();
-
-	// Destructor
-	~HttpResponse();
 
 	// =========================================================================
 	// Public methods

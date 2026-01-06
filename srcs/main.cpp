@@ -6,19 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 13:55:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:48:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server/Server.hpp"
 #include "config/Config.hpp"
-#include "http/HttpRequest.hpp"
-#include "http/HttpResponse.hpp"
 #include <cstdlib>
 #include <iostream>
-#include <string>
-// #include "utils/utils.hpp" // Parsing test
-// #include <iomanip> // Parsing test
+// #include <string>			// Parsing test
+// #include "utils/utils.hpp"	// Parsing test
+// #include <iomanip>			// Parsing test
 
 #define MAGENTA	"\033[35m"
 #define RESET	"\033[0m"
@@ -76,16 +74,16 @@ int main(int argc, char **argv)
 		// }
 
 		std::cout << MAGENTA "[ Welcome to webserv ]" RESET << std::endl;
-        Config config;
-        if (!config.parse(argv[1]))
-        {
-            std::cerr << "Error: Failed to parse configuration file" << std::endl;
-            return 1;
-        }
-        Server server;
-        server.init(config);
-        server.run();
-    }
+		Config config;
+		if (!config.parse(argv[1]))
+		{
+			std::cerr << "Error: Failed to parse configuration file" << std::endl;
+			return 1;
+		}
+		Server server;
+		server.init(config);
+		server.run();
+	}
 	catch (const std::exception& e)
 	{
 		std::cerr << "[main] Fatal error: " << e.what() << std::endl;

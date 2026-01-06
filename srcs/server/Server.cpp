@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 15:08:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:42:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,41 +61,41 @@ void Server::checkTimeouts() {
 }
 
 void Server::run() {
-    _running = true;
-    std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+	_running = true;
+	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
 	static time_t lastCleanup = 0;
 
-    while (_running) {
-        // Check for idle client timeouts
-        checkTimeouts();
+	while (_running) {
+		// Check for idle client timeouts
+		checkTimeouts();
 
 		// Cleanup expired sessions every 60 seconds
-        if (time(NULL) - lastCleanup > 60) {
-            cleanupSessions();
-            lastCleanup = time(NULL);
-        }
+		if (time(NULL) - lastCleanup > 60) {
+			cleanupSessions();
+			lastCleanup = time(NULL);
+		}
 
-        // Poll for events on all sockets (1 second timeout)
-        int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
-        if (ret < 0)
-            continue;
+		// Poll for events on all sockets (1 second timeout)
+		int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
+		if (ret < 0)
+			continue;
 
-        // Process events on each socket
-        for (size_t i = 0; i < _pollFds.size(); i++) {
-            // Handle POLLIN (incoming data to read)
-            if (_pollFds[i].revents & POLLIN) {
-                if (isListenSocket(_pollFds[i].fd))
-                    acceptNewClient(_pollFds[i].fd);
-                else
-                    handleClientRead(i);
-            }
-            
-            // Handle POLLOUT (socket ready to write)
-            if (_pollFds[i].revents & POLLOUT) {
-                handleClientWrite(i);
-            }
-        }
-    }
+		// Process events on each socket
+		for (size_t i = 0; i < _pollFds.size(); i++) {
+			// Handle POLLIN (incoming data to read)
+			if (_pollFds[i].revents & POLLIN) {
+				if (isListenSocket(_pollFds[i].fd))
+					acceptNewClient(_pollFds[i].fd);
+				else
+					handleClientRead(i);
+			}
+			
+			// Handle POLLOUT (socket ready to write)
+			if (_pollFds[i].revents & POLLOUT) {
+				handleClientWrite(i);
+			}
+		}
+	}
 }
 
 void Server::stop() {
@@ -203,66 +203,66 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
 }
 
 void Server::handleClientRead(size_t clientIndex) {
-    int clientFd = _pollFds[clientIndex].fd;
+	int clientFd = _pollFds[clientIndex].fd;
 
-    // Find the client with this fd
-    size_t i;
-    for (i = 0; i < _clients.size(); i++)
-        if (_clients[i].getSocket() == clientFd)
-            break;
-    if (i == _clients.size()) {
-        std::cerr << "Error: client not found for fd " << clientFd << std::endl;
-        return;
-    }
-    Client& client = _clients[i];
+	// Find the client with this fd
+	size_t i;
+	for (i = 0; i < _clients.size(); i++)
+		if (_clients[i].getSocket() == clientFd)
+			break;
+	if (i == _clients.size()) {
+		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		return;
+	}
+	Client& client = _clients[i];
 
-    // Read data from socket
-    if (!client.readData()) {
-        // Error or disconnection
-        std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
-        safeClose(client.getSocket());
-        _clients.erase(_clients.begin() + i);
-        _pollFds.erase(_pollFds.begin() + clientIndex);
-        return;
-    }
+	// Read data from socket
+	if (!client.readData()) {
+		// Error or disconnection
+		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
+		safeClose(client.getSocket());
+		_clients.erase(_clients.begin() + i);
+		_pollFds.erase(_pollFds.begin() + clientIndex);
+		return;
+	}
 
-    // Check if request is complete
-    if (!client.isRequestComplete())
-        return;
-    
-    std::cout << "📨 Request received" << std::endl;
+	// Check if request is complete
+	if (!client.isRequestComplete())
+		return;
+	
+	std::cout << "📨 Request received" << std::endl;
 
-    // Build response
-    const ServerConfig* config = selectConfig(client.getRequest());
-    client.buildResponse(*config, _router, _sessions);
+	// Build response
+	const ServerConfig* config = selectConfig(client.getRequest());
+	client.buildResponse(*config, _router, _sessions);
 
-    // Enable POLLOUT to send response when socket is ready for writing
-    _pollFds[clientIndex].events |= POLLOUT;
+	// Enable POLLOUT to send response when socket is ready for writing
+	_pollFds[clientIndex].events |= POLLOUT;
 }
 
 void Server::handleClientWrite(size_t clientIndex) {
-    int clientFd = _pollFds[clientIndex].fd;
+	int clientFd = _pollFds[clientIndex].fd;
 
-    // Find the client with this fd
-    size_t i;
-    for (i = 0; i < _clients.size(); i++)
-        if (_clients[i].getSocket() == clientFd)
-            break;
-    if (i == _clients.size()) {
-        std::cerr << "Error: client not found for fd " << clientFd << std::endl;
-        return;
-    }
-    Client& client = _clients[i];
+	// Find the client with this fd
+	size_t i;
+	for (i = 0; i < _clients.size(); i++)
+		if (_clients[i].getSocket() == clientFd)
+			break;
+	if (i == _clients.size()) {
+		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		return;
+	}
+	Client& client = _clients[i];
 
-    // Send response
-    if (!client.sendResponse()) {
-        std::cerr << "Error sending response to fd " << clientFd << std::endl;
-    }
+	// Send response
+	if (!client.sendResponse()) {
+		std::cerr << "Error sending response to fd " << clientFd << std::endl;
+	}
 
-    // Close connection and cleanup after sending
-    safeClose(client.getSocket());
-    _clients.erase(_clients.begin() + i);
-    _pollFds.erase(_pollFds.begin() + clientIndex);
+	// Close connection and cleanup after sending
+	safeClose(client.getSocket());
+	_clients.erase(_clients.begin() + i);
+	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
 
 void Server::cleanupSessions() {
