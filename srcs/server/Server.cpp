@@ -6,13 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:42:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:45:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+// Include(s)
 #include "Server.hpp"
-#include "Client.hpp"
-#include "Router.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
@@ -24,8 +23,10 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+// Default constructor
 Server::Server() : _running(false) {}
 
+// Destructor
 Server::~Server() {
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
@@ -35,29 +36,6 @@ Server::~Server() {
 void Server::init(const Config &config) {
 	_configs = config.getServers();
 	setupListenSockets();
-}
-
-void Server::checkTimeouts() {
-	for (size_t i = 0; i < _clients.size(); ) {
-
-		// 30 seconds timeout for idle clients
-		if (_clients[i].hasTimedOut(30)) {
-			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
-
-			// Find and remove corresponding pollfd
-			for (size_t j = 0; j < _pollFds.size(); j++) {
-				if (_pollFds[j].fd == _clients[i].getSocket()) {
-					safeClose(_pollFds[j].fd);
-					_pollFds.erase(_pollFds.begin() + j);
-					break;
-				}
-			}
-			_clients.erase(_clients.begin() + i);
-
-			// Don't increment i, element removed
-		} else
-			i++;
-	}
 }
 
 void Server::run() {
@@ -100,6 +78,30 @@ void Server::run() {
 
 void Server::stop() {
 	_running = false;
+}
+
+// Private method(s)
+void Server::checkTimeouts() {
+	for (size_t i = 0; i < _clients.size(); ) {
+
+		// 30 seconds timeout for idle clients
+		if (_clients[i].hasTimedOut(30)) {
+			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
+
+			// Find and remove corresponding pollfd
+			for (size_t j = 0; j < _pollFds.size(); j++) {
+				if (_pollFds[j].fd == _clients[i].getSocket()) {
+					safeClose(_pollFds[j].fd);
+					_pollFds.erase(_pollFds.begin() + j);
+					break;
+				}
+			}
+			_clients.erase(_clients.begin() + i);
+
+			// Don't increment i, element removed
+		} else
+			i++;
+	}
 }
 
 void Server::setupListenSockets() {

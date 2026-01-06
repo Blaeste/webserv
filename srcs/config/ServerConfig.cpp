@@ -6,18 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:29 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:40:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:25:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
-// Includes
-
+// Include(s)
 #include "ServerConfig.hpp"
-
-
-// =============================================================================
-// Handlers
 
 // Default constructor
 ServerConfig::ServerConfig() :
@@ -27,9 +21,7 @@ ServerConfig::ServerConfig() :
 {
 }
 
-// =============================================================================
-// Setters
-
+// Setter(s)
 void ServerConfig::setPort(int port)
 {
 	_port = port;
@@ -55,10 +47,7 @@ void ServerConfig::addLocation(const Location &location)
 	_locations.push_back(location);
 }
 
-
-// =============================================================================
 // Getters
-
 int ServerConfig::getPort() const
 {
 	return _port;
@@ -94,10 +83,7 @@ const std::vector<Location> &ServerConfig::getLocations() const
 	return _locations;
 }
 
-
-// =============================================================================
-// Methods
-
+// Public method(s)
 const Location *ServerConfig::matchLocation(const std::string &uri) const
 {
 	const Location *bestMatch = NULL;

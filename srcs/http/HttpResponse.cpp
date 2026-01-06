@@ -6,13 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:54:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:35:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
 // Includes
-
 #include "HttpResponse.hpp"
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
@@ -21,9 +19,6 @@
 #include <iostream>
 #include <unistd.h> // write(), close(), unlink()
 
-// =============================================================================
-// Handlers
-
 // Default constructor
 HttpResponse::HttpResponse() :
 	_statusCode(200),
@@ -31,9 +26,7 @@ HttpResponse::HttpResponse() :
 {
 }
 
-// =============================================================================
-// Setters
-
+// Setter(s)
 void HttpResponse::setStatus(int code)
 {
 	_statusCode = code;
@@ -50,9 +43,7 @@ void HttpResponse::setBody(const std::string &body)
 	_body = body;
 }
 
-// =============================================================================
-// Methods
-
+// Private Method(s)
 std::string HttpResponse::getStatusMessage(int code) const
 {
 	switch(code)
@@ -74,6 +65,7 @@ std::string HttpResponse::getStatusMessage(int code) const
 	}
 }
 
+// Public Method(s)
 std::string HttpResponse::build() const
 {
 	std::string response;
@@ -240,36 +232,6 @@ void HttpResponse::serveDelete(const std::string &path)
 		serveError(500, "");
 	}
 }
-
-// void HttpResponse::servePut(const std::string &path, const std::string &body)
-// {
-// 	// Check if file already exists
-// 	bool fileExisted = fileExists(path);
-
-// 	// Open file for writing (create or replace)
-// 	int fd = open(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-// 	if (fd < 0)
-// 	{
-// 		serveError(500, "");
-// 		return;
-// 	}
-
-// 	// Write body to file
-// 	ssize_t written = write(fd, body.c_str(), body.length());
-// 	close(fd);
-
-// 	if (written < 0 || (size_t)written != body.length())
-// 	{
-// 		serveError(500, "");
-// 		return;
-// 	}
-
-// 	// Success 201 Created if new, 204 No content if replaced
-// 	if (fileExisted)
-// 		setStatus(204);
-// 	else
-// 		setStatus(201);
-// }
 
 static std::string sanitizeFilename(const std::string &filename)
 {

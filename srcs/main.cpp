@@ -6,10 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:48:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:48:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+// Include(s)
 #include "server/Server.hpp"
 #include "config/Config.hpp"
 #include <cstdlib>
@@ -18,13 +19,13 @@
 // #include "utils/utils.hpp"	// Parsing test
 // #include <iomanip>			// Parsing test
 
+// Define(s)
 #define MAGENTA	"\033[35m"
 #define RESET	"\033[0m"
 
 int main(int argc, char **argv)
 {
 	try {
-		
 		// Seed the random number generator for generateSessionId()
 		std::srand(static_cast<unsigned int>(std::time(0)));
 

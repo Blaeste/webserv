@@ -6,14 +6,15 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:41:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:41:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+// Include(s)
 #include "Client.hpp"
+#include "Router.hpp"
 #include "Server.hpp"
 #include "../cgi/CGI.hpp"
-#include "../server/Router.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>
 #include <sys/socket.h>
@@ -27,57 +28,7 @@ Client::Client(int socket)
 	, _responseReady(false)
 {}
 
-int Client::getSocket() const {
-	return _socket;
-}
-
-bool Client::hasTimedOut(time_t timeout) const {
-	return time(NULL) - _lastActivity > timeout;
-}
-
-void Client::updateActivity() {
-	_lastActivity = time(NULL);
-}
-
-const HttpRequest& Client::getRequest() const {
-	return _request;
-}
-
-bool Client::isRequestComplete() const {
-	return _requestComplete;
-}
-
-// Read data from socket into buffer and parse request
-bool Client::readData() {
-	char buffer[4096];
-	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
-	if (bytesRead <= 0)
-		return false;
-	// Append only the new data to the request
-	std::string newData(buffer, bytesRead);
-	_request.appendData(newData);
-	if (_request.isComplete())
-		_requestComplete = true;
-	updateActivity();
-	return true;
-}
-
-void Client::buildErrorResponse(int statusCode) {
-	_response.setStatus(statusCode);
-	_response.setHeader("Content-Type", "text/html");
-	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-	if (fileExists(errorPage)) {
-		try {
-			_response.setBody(readFile(errorPage));
-		} catch (const std::exception& e) {
-			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
-			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
-		}
-	} else {
-		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
-	}
-}
-
+// Private method(s)
 void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 	std::map<std::string, std::string> cookies = _request.getCookies();
 	std::string sessionId;
@@ -115,6 +66,58 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 	}
 
 	_sessionId = sessionId;
+}
+
+// Accessor(s)
+int Client::getSocket() const {
+	return _socket;
+}
+
+bool Client::hasTimedOut(time_t timeout) const {
+	return time(NULL) - _lastActivity > timeout;
+}
+
+void Client::updateActivity() {
+	_lastActivity = time(NULL);
+}
+
+const HttpRequest& Client::getRequest() const {
+	return _request;
+}
+
+bool Client::isRequestComplete() const {
+	return _requestComplete;
+}
+
+// Public method(s)
+bool Client::readData() { // Read data from socket into buffer and parse request
+	char buffer[4096];
+	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
+	if (bytesRead <= 0)
+		return false;
+	// Append only the new data to the request
+	std::string newData(buffer, bytesRead);
+	_request.appendData(newData);
+	if (_request.isComplete())
+		_requestComplete = true;
+	updateActivity();
+	return true;
+}
+
+void Client::buildErrorResponse(int statusCode) {
+	_response.setStatus(statusCode);
+	_response.setHeader("Content-Type", "text/html");
+	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+	if (fileExists(errorPage)) {
+		try {
+			_response.setBody(readFile(errorPage));
+		} catch (const std::exception& e) {
+			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
+			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+		}
+	} else {
+		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+	}
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {

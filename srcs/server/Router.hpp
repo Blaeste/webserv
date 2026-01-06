@@ -6,12 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 11:41:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:41:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+// Include(s)
 #include "../config/ServerConfig.hpp"
 #include "../http/HttpRequest.hpp"
 #include <string>
@@ -32,9 +33,6 @@ struct RouteMatch {
 class Router {
 
 	private:
-
-		// Attribute(s)
-		// const ServerConfig& _config;
 
 		// Private method(s)
 		const Location* findMatchingLocation(const ServerConfig& config, const std::string& uri) const;

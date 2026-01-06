@@ -6,11 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:44:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:12:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "CGI.hpp"
+#include "../http/HttpRequest.hpp"
+#include "../server/Router.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>
 #include <ctime>

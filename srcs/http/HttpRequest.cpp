@@ -6,29 +6,22 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:40:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:31:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
 // Includes
-
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>
 #include <sstream>
-
-// =============================================================================
-// Handlers
 
 // Default constructor
 HttpRequest::HttpRequest() : _isComplete(false)
 {
 }
 
-// =============================================================================
-// Methods
-
+// Public method(s)
 std::map<std::string, std::string> HttpRequest::getCookies() const {
 	std::map<std::string, std::string> cookies;
 	std::string cookieHeader = getHeader("Cookie");
@@ -72,6 +65,7 @@ std::string HttpRequest::getHeader(const std::string &key) const
 	return "";
 }
 
+// Private method(s)
 bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 {
 	// Search the first line

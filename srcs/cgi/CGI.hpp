@@ -6,16 +6,18 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:46:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:13:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-#include "../http/HttpRequest.hpp"
-#include "../server/Router.hpp"
 #include <string>
 #include <map>
+
+// Forward declarations
+class HttpRequest;
+struct RouteMatch;
 
 struct CGIResult {
 
