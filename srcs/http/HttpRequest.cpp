@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 11:26:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:40:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,11 +23,6 @@
 
 // Default constructor
 HttpRequest::HttpRequest() : _isComplete(false)
-{
-}
-
-// Destructor
-HttpRequest::~HttpRequest()
 {
 }
 

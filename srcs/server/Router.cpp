@@ -13,10 +13,6 @@
 #include "Router.hpp"
 #include "../utils/utils.hpp"
 
-Router::Router() {}
-
-Router::~Router() {}
-
 // Find location with longest matching path prefix
 const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const {
 	const std::vector<Location>& locations = config.getLocations();

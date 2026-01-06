@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
 /*   Updated: 2026/01/06 12:25:16 by eschwart         ###   ########.fr       */
@@ -26,8 +26,6 @@ Client::Client(int socket)
 	, _requestComplete(false)
 	, _responseReady(false)
 {}
-
-Client::~Client() {}
 
 int Client::getSocket() const {
 	return _socket;
@@ -81,42 +79,42 @@ void Client::buildErrorResponse(int statusCode) {
 }
 
 void Client::handleSession(std::map<std::string, SessionData>& sessions) {
-    std::map<std::string, std::string> cookies = _request.getCookies();
-    std::string sessionId;
+	std::map<std::string, std::string> cookies = _request.getCookies();
+	std::string sessionId;
 
-    if (cookies.find("session_id") != cookies.end()) {
-        sessionId = cookies["session_id"];
+	if (cookies.find("session_id") != cookies.end()) {
+		sessionId = cookies["session_id"];
 
-        // Update existing session or create new if expired
-        if (sessions.find(sessionId) != sessions.end()) {
-            sessions[sessionId].lastActive = time(NULL);
-            // Only count html request (for good count page visit)
-            std::string uri = _request.getUri();
-            if (uri.find(".css") == std::string::npos &&
-                uri.find(".js") == std::string::npos &&
-                uri.find(".png") == std::string::npos &&
-                uri.find(".jpg") == std::string::npos &&
-                uri != "/counter-api") {
-                    sessions[sessionId].visitCount++;
-                }
-        } else {
-            // Invalid/expired session → create new
-            sessionId = generateSessionId();
-            sessions[sessionId].lastActive = time(NULL);
-            sessions[sessionId].visitCount = 1;
-            sessions[sessionId].username = "";
-            _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-        }
-    } else {
-        // New session
-        sessionId = generateSessionId();
-        sessions[sessionId].lastActive = time(NULL);
-        sessions[sessionId].visitCount = 1;
-        sessions[sessionId].username = "";
-        _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-    }
+		// Update existing session or create new if expired
+		if (sessions.find(sessionId) != sessions.end()) {
+			sessions[sessionId].lastActive = time(NULL);
+			// Only count html request (for good count page visit)
+			std::string uri = _request.getUri();
+			if (uri.find(".css") == std::string::npos &&
+				uri.find(".js") == std::string::npos &&
+				uri.find(".png") == std::string::npos &&
+				uri.find(".jpg") == std::string::npos &&
+				uri != "/counter-api") {
+					sessions[sessionId].visitCount++;
+				}
+		} else {
+			// Invalid/expired session → create new
+			sessionId = generateSessionId();
+			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].visitCount = 1;
+			sessions[sessionId].username = "";
+			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+		}
+	} else {
+		// New session
+		sessionId = generateSessionId();
+		sessions[sessionId].lastActive = time(NULL);
+		sessions[sessionId].visitCount = 1;
+		sessions[sessionId].username = "";
+		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+	}
 
-    _sessionId = sessionId;
+	_sessionId = sessionId;
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
@@ -161,28 +159,28 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
         if (result.statusCode == 200) {
             _response.setStatus(200);
 			_response.setHeader("Content-Type", result.contentType);
-            _response.setBody(result.output);
-        } else
-            _response.serveError(result.statusCode, "");
-    }
+			_response.setBody(result.output);
+		} else
+			_response.serveError(result.statusCode, "");
+	}
 
-    // Handle DELETE request
-    else if (_request.getMethod() == "DELETE")
-        _response.serveDelete(match.filePath);
+	// Handle DELETE request
+	else if (_request.getMethod() == "DELETE")
+		_response.serveDelete(match.filePath);
 
-    // Handle file upload (POST with uploaded files)
-    else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
-        _response.handleUpload(_request, match.location->getUploadPath());
+	// Handle file upload (POST with uploaded files)
+	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
+		_response.handleUpload(_request, match.location->getUploadPath());
 
-    // Serve directory listing if autoindex is enabled
-    else if (isDirectory(match.filePath) && match.location->getAutoIndex())
-        _response.serveDirectoryListing(match.filePath, _request.getUri());
+	// Serve directory listing if autoindex is enabled
+	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
+		_response.serveDirectoryListing(match.filePath, _request.getUri());
 
-    // Serve static file
-    else
-        _response.serveFile(match.filePath);
+	// Serve static file
+	else
+		_response.serveFile(match.filePath);
 
-    _responseReady = true;
+	_responseReady = true;
 }
 
 bool Client::sendResponse() {

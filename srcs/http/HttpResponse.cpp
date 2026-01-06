@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/05 13:49:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 11:54:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 // Includes
 
 #include "HttpResponse.hpp"
+#include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
 #include <fcntl.h>   // open()
@@ -27,10 +28,6 @@
 HttpResponse::HttpResponse() :
 	_statusCode(200),
 	_statusMessage("OK")
-{
-}
-
-HttpResponse::~HttpResponse()
 {
 }
 
@@ -105,118 +102,118 @@ std::string HttpResponse::build() const
 
 void HttpResponse::serveError(int code, const std::string &errorPagePath)
 {
-    setStatus(code);
+	setStatus(code);
 
-    try {
-        if (!errorPagePath.empty() && fileExists(errorPagePath)) {
-            std::string content = readFile(errorPagePath);
-            setHeader("Content-Type", "text/html");
-            setBody(content);
-            return;
-        }
+	try {
+		if (!errorPagePath.empty() && fileExists(errorPagePath)) {
+			std::string content = readFile(errorPagePath);
+			setHeader("Content-Type", "text/html");
+			setBody(content);
+			return;
+		}
 
-        std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
-        if (fileExists(defaultErrorPage)) {
-            std::string content = readFile(defaultErrorPage);
-            setHeader("Content-Type", "text/html");
-            setBody(content);
-            return;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "[HttpResponse] readFile error: " << e.what() << std::endl;
-    }
+		std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
+		if (fileExists(defaultErrorPage)) {
+			std::string content = readFile(defaultErrorPage);
+			setHeader("Content-Type", "text/html");
+			setBody(content);
+			return;
+		}
+	} catch (const std::exception& e) {
+		std::cerr << "[HttpResponse] readFile error: " << e.what() << std::endl;
+	}
 
-    // Default error page
-    std::string body =
-        "<html>\n"
-        "<head><title>Error " + intToString(code) + "</title></head>\n"
-        "<body>\n"
-        "<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
-        "<p>The requested resource could not be found.</p>"
-        "</body>\n"
-        "</html>";
+	// Default error page
+	std::string body =
+		"<html>\n"
+		"<head><title>Error " + intToString(code) + "</title></head>\n"
+		"<body>\n"
+		"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
+		"<p>The requested resource could not be found.</p>"
+		"</body>\n"
+		"</html>";
 
-    setHeader("Content-Type", "text/html");
-    setBody(body);
+	setHeader("Content-Type", "text/html");
+	setBody(body);
 }
 
 void HttpResponse::serveFile(const std::string &path)
 {
-    // Check if file exists
-    if (!fileExists(path))
-    {
-        serveError(404, "");
-        return;
-    }
+	// Check if file exists
+	if (!fileExists(path))
+	{
+		serveError(404, "");
+		return;
+	}
 
-    // Check if it's a directory
-    if (isDirectory(path))
-    {
-        serveError(403, "");
-        return;
-    }
+	// Check if it's a directory
+	if (isDirectory(path))
+	{
+		serveError(403, "");
+		return;
+	}
 
-    try {
-        // Read file content
-        std::string content = readFile(path);
+	try {
+		// Read file content
+		std::string content = readFile(path);
 
-        // Get MIME type using MimeTypes class
-        std::string ext = getFileExtension(path);
-        std::string contentType = MimeTypes::get(ext);
+		// Get MIME type using MimeTypes class
+		std::string ext = getFileExtension(path);
+		std::string contentType = MimeTypes::get(ext);
 
-        // Build response
-        setStatus(200);
-        setHeader("Content-Type", contentType);
-        setBody(content);
-    } catch (const std::exception& e) {
-        std::cerr << "[HttpResponse] serveFile error: " << e.what() << std::endl;
-        serveError(500, "");
-    }
+		// Build response
+		setStatus(200);
+		setHeader("Content-Type", contentType);
+		setBody(content);
+	} catch (const std::exception& e) {
+		std::cerr << "[HttpResponse] serveFile error: " << e.what() << std::endl;
+		serveError(500, "");
+	}
 }
 
 void HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
 {
-    // Check if path is a directory
-    if (!isDirectory(path))
-    {
-        serveError(404, "");
-        return;
-    }
+	// Check if path is a directory
+	if (!isDirectory(path))
+	{
+		serveError(404, "");
+		return;
+	}
 
-    // Get list of files/directories
-    std::vector<std::string> entries = listDirectory(path);
+	// Get list of files/directories
+	std::vector<std::string> entries = listDirectory(path);
 
-    // Generate HTML page with correct URI for links
-    std::string body =
-        "<html>\n"
-        "<head><title>Index of " + uri + "</title></head>\n"
-        "<body>\n"
-        "<h1>Index of " + uri + "</h1>\n"
-        "<hr>\n"
-        "<ul>";
+	// Generate HTML page with correct URI for links
+	std::string body =
+		"<html>\n"
+		"<head><title>Index of " + uri + "</title></head>\n"
+		"<body>\n"
+		"<h1>Index of " + uri + "</h1>\n"
+		"<hr>\n"
+		"<ul>";
 
-    // Add each entry as a clickable link
-    for (size_t i = 0; i < entries.size(); ++i)
-    {
-        std::string href = uri;
-        // Add trailing slash if needed
-        if (!uri.empty() && uri[uri.length() - 1] != '/')
-            href += "/";
-        href += entries[i];
+	// Add each entry as a clickable link
+	for (size_t i = 0; i < entries.size(); ++i)
+	{
+		std::string href = uri;
+		// Add trailing slash if needed
+		if (!uri.empty() && uri[uri.length() - 1] != '/')
+			href += "/";
+		href += entries[i];
 
-        body += "<li><a href=\"" + href + "\">" + entries[i] + "</a></li>\n";
-    }
+		body += "<li><a href=\"" + href + "\">" + entries[i] + "</a></li>\n";
+	}
 
-    body +=
-        "</ul>\n"
-        "<hr>\n"
-        "</body>\n"
-        "</html>";
+	body +=
+		"</ul>\n"
+		"<hr>\n"
+		"</body>\n"
+		"</html>";
 
-    // Build response
-    setStatus(200);
-    setHeader("Content-Type", "text/html");
-    setBody(body);
+	// Build response
+	setStatus(200);
+	setHeader("Content-Type", "text/html");
+	setBody(body);
 }
 
 void HttpResponse::serveDelete(const std::string &path)

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-label="Welcolm to Webserv Tester">
+  <defs>
+    <style>
+      /* 42-ish: bold geometric sans, tight tracking, black fill (falls back if font not installed) */
+      .sub {
+        font-family: Montserrat, Poppins, "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 800;
+        font-size: 44px;
+        letter-spacing: 6px;
+        fill: #020303;
+      }
+      .title {
+        font-family: Montserrat, Poppins, "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+        font-weight: 900;
+        font-size: 104px;
+        letter-spacing: -2px;
+        fill: #020303;
+      }
+      .mark { fill: #020303; opacity: 1; }
+    </style>
+  </defs>
+
+  <!-- Small "blocky" marks to hint at the 42 logo geometry -->
+  <rect class="mark" x="90" y="54" width="14" height="14"/>
+  <rect class="mark" x="114" y="54" width="14" height="14"/>
+  <rect class="mark" x="90" y="78" width="14" height="14"/>
+
+  <!-- Text (edit here if you meant "Welcome") -->
+  <text x="50%" y="90" class="sub" text-anchor="middle">WELCOM TO</text>
+  <text x="50%" y="190" class="title" text-anchor="middle">WEBSERV TESTER</text>
+</svg>

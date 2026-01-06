@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 09:46:48 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/06 11:44:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,22 +19,17 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-CGI::CGI() {}
-
-CGI::~CGI() {}
-
 std::string CGI::readFromPipe(int fd) {
-    char buffer[4096];
-    std::string result;
-    ssize_t bytesRead;
-    while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
-        result.append(buffer, bytesRead);
-    if (bytesRead < 0)
-        std::cerr << "[CGI] readFromPipe: read failed" << std::endl;
-    return result;
+	char buffer[4096];
+	std::string result;
+	ssize_t bytesRead;
+	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
+		result.append(buffer, bytesRead);
+	if (bytesRead < 0)
+		std::cerr << "[CGI] readFromPipe: read failed" << std::endl;
+	return result;
 }
 
-// Setup CGI environment variables
 void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) {
 	std::string uri = request.getUri();
 	size_t pos = uri.find('?');

@@ -3,18 +3,12 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 10:44:45 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/06 12:03:18 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
-// Un Client = une connexion socket
-// Buffer de lecture (requete)
-// Buffer decriture (reponse)
-// Etat de la connexion
-// Timestamp pour timeout
 
 #pragma once
 
@@ -28,7 +22,7 @@ class ServerConfig;
 class Router;
 struct SessionData;
 
-class Client {
+class Client{
 
 	private:
 
@@ -40,15 +34,12 @@ class Client {
 		bool _requestComplete;
 		bool _responseReady;
 		std::string _sessionId;
-		// std::string _writeBuffer;
 
 		void handleSession(std::map<std::string, SessionData>& sessions);
-		//void serveCounterPage(std::map<std::string, SessionData>& sessions);
 
 	public:
 
 		Client(int socket);
-		~Client();
 
 		int getSocket() const;
 		bool hasTimedOut(time_t timeout) const;
@@ -60,8 +51,5 @@ class Client {
 		void buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions);
 		void buildErrorResponse(int statusCode);
 		bool sendResponse();
-		// TODO: void writeData();
-		// TODO: void processRequest();
-		// TODO: void prepareResponse();
 
 };
