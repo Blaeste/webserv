@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 12:45:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,8 +147,7 @@ void Server::setupListenSockets() {
 	}
 }
 
-// Check if given fd is a listening socket
-bool Server::isListenSocket(int fd) const {
+bool Server::isListenSocket(int fd) const { // Check if given fd is a listening socket
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		if (_listenSockets[i] == fd)
 			return true;

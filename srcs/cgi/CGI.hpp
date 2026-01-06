@@ -6,43 +6,54 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 12:13:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:56:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+// Include(s)
 #include <string>
 #include <map>
 
-// Forward declarations
+// Forward declaration(s)
 class HttpRequest;
 struct RouteMatch;
 
+// Structure(s)
 struct CGIResult {
 
+	// Attribute(s)
 	int statusCode;
 	std::string output;
 	std::string contentType;
 
+	// Default constructor
 	CGIResult() : statusCode(200), contentType("text/html") {}
 
 };
 
+// Class
 class CGI {
 
 	private:
 
-		std::map<std::string, std::string> _env;
+		// Attribute(s)
+		
+			std::map<std::string, std::string> _env;
 
 	public:
 
-		CGIResult execute(const RouteMatch& match, const HttpRequest& request);
+		// Public method(s)
+
+			CGIResult execute(const RouteMatch& match, const HttpRequest& request);
 
 	private:
 
-		void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
-		std::string readFromPipe(int fd);
-		void parseHeaders(const std::string& output, CGIResult& result);
+		// Private method(s)
+		
+			void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
+			std::string readFromPipe(int fd);
+			void parseHeaders(const std::string& output, CGIResult& result);
 
 };

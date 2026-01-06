@@ -6,22 +6,18 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:57:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:38:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+// Include(s)
 #include "Config.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 
-// Getters
-const std::vector<ServerConfig> &Config::getServers() const {
-	return _servers;
-}
-
-// Methods
+// Private method(s)
 std::vector<std::string> Config::extractBlocks(const std::string &content, const std::string &keyword) {
 	std::vector<std::string> blocks;
 	size_t pos = 0;
@@ -273,6 +269,7 @@ bool Config::validate() const {
 	return true;
 }
 
+// Public method(s)
 bool Config::parse(const std::string &filePath) {
 	try {
 		std::string content = readFile(filePath);
@@ -289,4 +286,9 @@ bool Config::parse(const std::string &filePath) {
 		std::cerr << "Config::parse error: " << e.what() << std::endl;
 		return false;
 	}
+}
+
+// Getter(s)
+const std::vector<ServerConfig> &Config::getServers() const {
+	return _servers;
 }
