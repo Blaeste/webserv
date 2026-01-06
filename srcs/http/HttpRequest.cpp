@@ -6,11 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 12:31:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:40:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Includes
+// Include(s)
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>

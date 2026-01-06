@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 12:36:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:43:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "Router.hpp"
 #include "../utils/utils.hpp"
 
+// Private method(s)
 // Find location with longest matching path prefix
 const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const {
 	const std::vector<Location>& locations = config.getLocations();
@@ -31,6 +32,7 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 	return bestMatch;
 }
 
+// Public method(s)
 // Match request to appropriate route and determine response type
 RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
 	std::string uri = request.getUri();

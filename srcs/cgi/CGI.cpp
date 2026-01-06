@@ -6,10 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 12:12:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:30:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+// Include(s)
 #include "CGI.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
@@ -21,6 +22,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// Private method(s)
 std::string CGI::readFromPipe(int fd) {
 	char buffer[4096];
 	std::string result;
@@ -92,6 +94,43 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	}
 }
 
+void CGI::parseHeaders(const std::string& output, CGIResult& result) {
+	size_t headersEnd = output.find("\r\n\r\n");
+	if (headersEnd == std::string::npos) {
+		// No headers separator, treat all as body
+		result.output = output;
+		return;
+	}
+	std::string headersBlock = output.substr(0, headersEnd);
+	std::string body = output.substr(headersEnd + 4);
+
+	// Parse headers line by line
+	size_t pos = 0;
+	while (pos < headersBlock.length()) {
+		size_t lineEnd = headersBlock.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			lineEnd = headersBlock.length();
+		std::string line = headersBlock.substr(pos, lineEnd - pos);
+
+		// Check for Status header
+		if (line.find("Status: ") == 0) {
+			std::string statusLine = line.substr(8); // Skip "Status: "
+			// Extract status code (first 3 digits)
+			if (statusLine.length() >= 3) {
+				result.statusCode = atoi(statusLine.substr(0, 3).c_str());
+			}
+		}
+
+		// Check for Content-Type header
+		else if (line.find("Content-Type: ") == 0)
+			result.contentType = line.substr(14); // skip "Content-Type: "
+
+		pos = lineEnd + 2;
+	}
+	result.output = body;
+}
+
+// Public method(s)
 CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 	CGIResult result;
 	result.statusCode = 200;
@@ -176,40 +215,4 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 	// Parse CGI headers (Status, etc.)
 	parseHeaders(result.output, result);
 	return result;
-}
-
-void CGI::parseHeaders(const std::string& output, CGIResult& result) {
-	size_t headersEnd = output.find("\r\n\r\n");
-	if (headersEnd == std::string::npos) {
-		// No headers separator, treat all as body
-		result.output = output;
-		return;
-	}
-	std::string headersBlock = output.substr(0, headersEnd);
-	std::string body = output.substr(headersEnd + 4);
-
-	// Parse headers line by line
-	size_t pos = 0;
-	while (pos < headersBlock.length()) {
-		size_t lineEnd = headersBlock.find("\r\n", pos);
-		if (lineEnd == std::string::npos)
-			lineEnd = headersBlock.length();
-		std::string line = headersBlock.substr(pos, lineEnd - pos);
-
-		// Check for Status header
-		if (line.find("Status: ") == 0) {
-			std::string statusLine = line.substr(8); // Skip "Status: "
-			// Extract status code (first 3 digits)
-			if (statusLine.length() >= 3) {
-				result.statusCode = atoi(statusLine.substr(0, 3).c_str());
-			}
-		}
-
-		// Check for Content-Type header
-		else if (line.find("Content-Type: ") == 0)
-			result.contentType = line.substr(14); // skip "Content-Type: "
-
-		pos = lineEnd + 2;
-	}
-	result.output = body;
 }

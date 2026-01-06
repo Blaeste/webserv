@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 12:41:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 13:54:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "../http/HttpRequest.hpp"
 #include <string>
 
+// Structure(s)
 struct RouteMatch {
 
 	const Location* location;
@@ -30,16 +31,19 @@ struct RouteMatch {
 
 };
 
+// Class
 class Router {
-
-	private:
-
-		// Private method(s)
-		const Location* findMatchingLocation(const ServerConfig& config, const std::string& uri) const;
 
 	public:
 	
 		// Public method(s)
-		RouteMatch matchRoute(const ServerConfig& config, const HttpRequest& request) const;
+	
+			RouteMatch matchRoute(const ServerConfig& config, const HttpRequest& request) const;
+
+	private:
+
+		// Private method(s)
+	
+			const Location* findMatchingLocation(const ServerConfig& config, const std::string& uri) const;
 
 };
