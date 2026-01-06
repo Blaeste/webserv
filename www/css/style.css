@@ -31,6 +31,12 @@
 	object-fit: contain;
 }
 
+.error-marvin {
+	height: 380px;
+	width: auto;
+	object-fit: contain;
+}
+
 .home-button {
 	display: flex;
 	align-items: center;
