@@ -1,0 +1,67 @@
+/* Error Tester page styles */
+
+#errorTester {
+    max-width: 600px;
+    margin: 40px auto;
+    text-align: center;
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+#errorTester h1 {
+    color: #333;
+    margin-bottom: 10px;
+}
+
+#errorTester p {
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.error-selector {
+    margin: 30px 0;
+}
+
+.error-selector label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #333;
+}
+
+.error-selector select {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    box-sizing: border-box;
+    background: white;
+}
+
+.error-selector button {
+    background-color: #dc3545;
+    color: white;
+    padding: 12px 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+.error-selector button:hover {
+    background-color: #c82333;
+}
+
+.result-box {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 5px;
+    min-height: 50px;
+    color: #666;
+}

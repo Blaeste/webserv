@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 10:56:54 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/06 12:25:16 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -150,8 +150,8 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
         _response.setBody("");
     }
 
-    // Handle errors (405 Method Not Allowed, 404 Not Found)
-    else if (match.statusCode == 405 || match.statusCode == 404)
+    // Handle errors (405 Method Not Allowed, 404 Not Found, 501 Not Implemented)
+    else if (match.statusCode == 405 || match.statusCode == 404 || match.statusCode == 501)
         _response.serveError(match.statusCode, "");
 
     // Execute CGI script
