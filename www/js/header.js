@@ -10,6 +10,7 @@ function loadHeader() {
 				<a href="/about.html">About</a>
 				<a href="/cgi-bin/php/qrcode.php">QR Code</a>
 				<a href="/counter.html">Visite count</a>
+				<a href="/errors.html">Errors</a>
 				<a href="/contact.html">Contact</a>
 			</nav>
 			<div id="status-pill" class="status-pill status-loading">Loading status...</div>

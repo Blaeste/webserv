@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 11:41:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:24:33 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,43 +44,55 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 	match.location = findMatchingLocation(config, uri);
 	if (!match.location)
 		match.statusCode = 404;
-	else if (!match.location->isMethodAllowed(request.getMethod())) // Check if HTTP method is allowed
-		match.statusCode = 405;
-	else if (!(match.redirectUrl = match.location->getRedirect()).empty()) {
-		match.isRedirect = true;
-		match.statusCode = 301;
-	}
 	else {
-		// Try index files for root or directory paths
-		if (uri == "/" || uri.empty()) {
-			const std::vector<std::string>& indexes = match.location->getIndex();
-			for (size_t i = 0; i < indexes.size(); i++) {
-				std::string indexPath = match.location->getRoot() + "/" + indexes[i];
-				if (fileExists(indexPath)) {
-					uri = "/" + indexes[i];
-					break;
-				}
-			}
+		std::string method = request.getMethod();
+
+		// Check if method is implemented
+		if (method != "GET" && method != "POST" && method != "DELETE" && method != "PUT" && method != "HEAD" && method != "OPTIONS")
+			match.statusCode = 501;
+
+		// Check if HTTP method is allowed
+		else if (!match.location->isMethodAllowed(method))
+			match.statusCode = 405;
+
+		else if (!(match.redirectUrl = match.location->getRedirect()).empty()) {
+			match.isRedirect = true;
+			match.statusCode = 301;
 		}
 
-		// Remove query string from path
-		std::string pathPart = uri;
-		size_t queryPos = uri.find('?');
-		if (queryPos != std::string::npos)
-			pathPart = uri.substr(0, queryPos);
+		// Only proceed with file resolution if no error yet
+		if (match.statusCode == 200) {
+			// Try index files for root or directory paths
+			if (uri == "/" || uri.empty()) {
+				const std::vector<std::string>& indexes = match.location->getIndex();
+				for (size_t i = 0; i < indexes.size(); i++) {
+					std::string indexPath = match.location->getRoot() + "/" + indexes[i];
+					if (fileExists(indexPath)) {
+						uri = "/" + indexes[i];
+						break;
+					}
+				}
+			}
 
-		// Build full file path
-		match.filePath = match.location->getRoot() + pathPart;
+			// Remove query string from path
+			std::string pathPart = uri;
+			size_t queryPos = uri.find('?');
+			if (queryPos != std::string::npos)
+				pathPart = uri.substr(0, queryPos);
 
-		// Check if request should be handled by CGI
-		std::string cgiExt = match.location->getCgiExtension();
-		if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
-			match.isCGI = true;
+			// Build full file path
+			match.filePath = match.location->getRoot() + pathPart;
 
-		// Check if file exists (skip for POST and CGI)
-		if (!match.isCGI && request.getMethod() != "POST"
-			&& (!fileExists(match.filePath) || (isDirectory(match.filePath) && !match.location->getAutoIndex())))
-			match.statusCode = 404;
+			// Check if request should be handled by CGI
+			std::string cgiExt = match.location->getCgiExtension();
+			if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
+				match.isCGI = true;
+
+			// Check if file exists (skip for POST and CGI)
+			if (match.statusCode == 200 && !match.isCGI && request.getMethod() != "POST"
+				&& (!fileExists(match.filePath) || (isDirectory(match.filePath) && !match.location->getAutoIndex())))
+				match.statusCode = 404;
+		}
 	}
 	return match;
 }
