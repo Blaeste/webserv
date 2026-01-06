@@ -6,17 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:39:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:18:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
 // Includes
-
 #include "Location.hpp"
-
-// =============================================================================
-// Handlers
 
 // Default constructor
 Location::Location() :
@@ -30,9 +25,7 @@ Location::Location() :
 {
 }
 
-// =============================================================================
 // Setters
-
 void Location::setPath(const std::string &path)
 {
 	_path = path;
@@ -78,9 +71,8 @@ void Location::setCgiPath(const std::string &path)
 	_cgiPath = path;
 }
 
-// =============================================================================
-// Getters
 
+// Getters
 const std::string &Location::getPath() const
 {
 	return _path;
@@ -126,8 +118,7 @@ const std::string &Location::getCgiPath() const
 	return _cgiPath;
 }
 
-// =============================================================================
-// Methods
+// Public Method(s)
 
 bool Location::isMethodAllowed(const std::string &method) const {
 	for (size_t i = 0; i < _allowedMethods.size(); i++)

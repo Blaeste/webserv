@@ -6,81 +6,38 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:39:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:21:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Path de la location ("/", "/upload", etc.)
-// Methode autorisees
-// Root directory
-// Index files
-// CGI settings
-// Upload path
-// Redirection
-
-// =============================================================================
-// Includes
-
 #pragma once
 
+// Includes
 #include <string>
 #include <vector>
-
-// =============================================================================
-// Typedef
-
-
-// =============================================================================
-// Defines
-
-
-// =============================================================================
-// Class Location
 
 class Location
 {
 
 private:
-	// =========================================================================
-	// Attributs
 
-	// "/", "/uploads", etc.
-	std::string _path;
-
-	// "./wwww"
-	std::string _root;
-
-	// ["GET", "POST"]
-	std::vector<std::string> _allowedMethods;
-
-	// ["index.html"]
-	std::vector<std::string> _index;
-
-	// true/false
-	bool _autoIndex;
-
-	// "./uploads"
-	std::string _uploadPath;
-
-	// "" or URL redirection
-	std::string _redirect;
-
-	// ".php"
-	std::string _cgiExtension;
-
-	// "usr/bin/php-cgi"
-	std::string _cgiPath;
+	// Attribute(s)
+	std::string _path; // "/", "/uploads", etc.
+	std::string _root; // "./wwww"
+	std::vector<std::string> _allowedMethods; // ["GET", "POST"]
+	std::vector<std::string> _index; // ["index.html"]
+	bool _autoIndex; // true/false
+	std::string _uploadPath; // "./uploads"
+	std::string _redirect; // "" or URL redirection
+	std::string _cgiExtension; // ".php"
+	std::string _cgiPath; // "usr/bin/php-cgi"
 
 public:
-	// =========================================================================
-	// Handlers
 
 	// Default constructor
 	Location();
 
-
-	// =========================================================================
-	// Setters => set replace val, add add val
+	// Setter(s) => set replace val, add add val
 
 	/**
 	 * @brief Sets the path of the location.
@@ -136,8 +93,7 @@ public:
 	 */
 	void setCgiPath(const std::string &path);
 
-	// =========================================================================
-	// Getters
+	// Getter(s)
 
 	/**
 	 * @brief Gets the path of the location.
@@ -194,7 +150,7 @@ public:
 	const std::string &getCgiPath() const;
 
 	// =========================================================================
-	// Methods
+	// Public method(s)
 
 	/**
 	 * @brief Checks if a given HTTP method is allowed in this location.
@@ -202,4 +158,5 @@ public:
 	 * @return true if the method is allowed, false otherwise.
 	 */
 	bool isMethodAllowed(const std::string &method) const;
+
 };

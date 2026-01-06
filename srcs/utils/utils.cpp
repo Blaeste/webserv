@@ -6,13 +6,11 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:42:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:47:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// =============================================================================
-// Includes
-
+// Include(s)
 #include "utils.hpp"
 #include <fcntl.h> // open(), O_RDONLY
 #include <unistd.h> // read(), close()
@@ -23,9 +21,7 @@
 #include <dirent.h> // for listDirectory
 #include <iostream>
 
-// =============================================================================
-// Functions
-
+// Function(s)
 std::string trim(const std::string &str)
 {
 	const std::string whitespace = " \t\n\r\f\v";

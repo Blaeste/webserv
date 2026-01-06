@@ -6,19 +6,24 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 11:42:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/06 12:44:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+// Include(s)
 #include "Client.hpp"
 #include "Router.hpp"
 #include "../config/Config.hpp"
-#include "../http/HttpResponse.hpp"
 #include <ctime>
 #include <poll.h>
 #include <vector>
+#include <map>
+#include <string>
+
+// Forward declaration(s)
+class HttpRequest;
 
 struct SessionData {
 
@@ -63,7 +68,5 @@ class Server {
 		const ServerConfig* selectConfig(const HttpRequest& request) const;
 		void handleClientRead(size_t clientIndex);
 		void handleClientWrite(size_t clientIndex);
-		// TODO: void closeClient(int clientIndex);
-		// TODO: void checkTimeouts();
 
 };
