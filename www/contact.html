@@ -1,29 +1,43 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset="UTF-8">
-		<title>Contact</title>
-		<link rel="stylesheet" href="/css/style.css">
-		<link rel="stylesheet" href="/css/contactForm.css">
-		<script src="/js/header.js" defer></script>
-	</head>
 
-	<body>
-		<div class="container">
-			<h1>Contact Us</h1>
+<head>
+	<meta charset="UTF-8">
+	<title>Contact</title>
+	<link rel="stylesheet" href="/css/style.css">
+	<link rel="stylesheet" href="/css/contactForm.css">
+	<script src="/js/header.js" defer></script>
+	<script src="/js/footer.js" defer></script>
+</head>
 
-			<form id="contactForm" action="/cgi-bin/py/contact.py" method="POST">
-				<label>Your Name:</label>
-				<input type="text" name="name" required>
+<body>
+	<main class="page">
+		<div class="page-layout">
+			<div class="marvin">
+				<!-- Add a specific Marvin image for the Contact page here -->
+				<!-- Example: <img src="/image/Marvin.png" alt="Contact Marvin"> -->
+			</div>
+			<div class="whiteBox">
+				<h1>Contact Us</h1>
 
-				<label>Your Email:</label>
-				<input type="email" name="email" required>
+				<form id="contactForm" action="/cgi-bin/py/contact.py" method="POST">
+					<label>Your Name:</label>
+					<input type="text" name="name" required>
 
-				<label>Your Message:</label>
-				<textarea name="message" rows="8" required></textarea>
+					<label>Your Email:</label>
+					<input type="email" name="email" required>
 
-				<button type="submit">Send</button>
-			</form>
+					<label>Your Message:</label>
+					<textarea name="message" rows="8" required></textarea>
+
+					<button type="submit">Send</button>
+				</form>
+			</div>
 		</div>
-	</body>
+
+		<div class="pageSpacer" aria-hidden="true"></div>
+		</div>
+	</main>
+</body>
+
 </html>

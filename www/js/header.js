@@ -28,7 +28,7 @@ function updateStatusCode() {
 	fetch(window.location.pathname, { cache: 'no-store' })
 		.then(response => {
 			const code = response.status;
-			let label = code + ' ' + (response.statusText || '');
+			let label ='status code: ' + code + ' ' + (response.statusText || '');
 			pill.textContent = label.trim();
 
 			pill.classList.remove('status-loading', 'status-2xx', 'status-4xx', 'status-5xx');

@@ -5,28 +5,50 @@
 
 	<title>Webserv Tester</title>
 	<link rel="stylesheet" href="/css/style.css">
+	<link rel="stylesheet" href="/css/marvin.css">
 	<script src="/js/header.js" defer></script>
-	<script src="/js/footer.js" defer></script>
 </head>
 
 <body>
-	<div class="container">
-		<img src="/image/welcom.svg" alt="Welcom" class="welcome-image">
-		<div class="home-layout">
-			<img src="/image/Marvin.png" alt="Marvin" class="home-marvin">
-			<div class="home-links">
-				<a href="/errors.html" class="home-button">
-					<span>Test error</span>
-				</a>
-				<a href="/files.html" class="home-button">
-					<span>Upload files</span>
-				</a>
-				<a href="/counter" class="home-button">
-					<span>Counter</span>
-				</a>
+	<main class="page">
+		<div class="pageLayout">
+			<aside class="marvin">
+				<img src="/image/Marvin.png" alt="Home Marvin">
+			</aside>
+
+			<div class="whiteBox">
+				<img src="/image/welcom.png" alt="Welcom" class="welcome-image">
+				<div class="container home-container">
+					<div class="home-layout">
+						<div class="home-links">
+							<a href="/errors.html" class="home-button">
+								<span>Test errors</span>
+							</a>
+							<a href="/files.html" class="home-button">
+								<span>Upload files</span>
+							</a>
+							<a href="/counter" class="home-button">
+								<span>Visit Counter</span>
+							</a>
+							<a href="/qrcode.html" class="home-button">
+								<span>QR Code Generator</span>
+							</a>
+							<a href="/contact.html" class="home-button">
+								<span>Contact Form</span>
+							</a>
+							<a href="/about.html" class="home-button">
+								<span>About Webserv</span>
+							</a>
+						</div>
+					</div>
+				</div>
 			</div>
+
+			<div class="pageSpacer" aria-hidden="true"></div>
 		</div>
-	</div>
+	</main>
 </body>
+
+<script src="/js/footer.js" defer></script>
 
 </html>
