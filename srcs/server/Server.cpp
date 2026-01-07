@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:44:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/07 22:29:02 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,33 +22,45 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cerrno>
+
+// Signal handler statics
+//volatile sig_atomic_t Server::s_stop = 0;
+int Server::s_sigpipe[2] = {-1, -1};
 
 // Default constructor
-Server::Server() : _running(false) {}
+Server::Server() : _running(false)
+{}
 
 // Destructor
-Server::~Server() {
+Server::~Server()
+{
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
+	std::cout << "destructor called properly" << std::endl;
 }
 
-// Public method(s)
-void Server::init(const Config &config) {
+void Server::init(const Config &config)
+{
 	_configs = config.getServers();
 	setupListenSockets();
+	installSignals();
 }
 
-void Server::run() {
+void Server::run()
+{
 	_running = true;
 	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
 	static time_t lastCleanup = 0;
 
-	while (_running) {
+	while (_running)
+	{
 		// Check for idle client timeouts
 		checkTimeouts();
 
 		// Cleanup expired sessions every 60 seconds
-		if (time(NULL) - lastCleanup > 60) {
+		if (time(NULL) - lastCleanup > 60)
+		{
 			cleanupSessions();
 			lastCleanup = time(NULL);
 		}
@@ -59,38 +71,53 @@ void Server::run() {
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size(); i++) {
+		for (size_t i = 0; i < _pollFds.size(); i++)
+		{
+			// trigered by SIGINT OR SIGTERM handler
+			if (_pollFds[i].fd == s_sigpipe[0] && (_pollFds[i].revents & POLLIN))
+			{
+				handleSignalPipeReadable();
+				break;
+			}
 			// Handle POLLIN (incoming data to read)
-			if (_pollFds[i].revents & POLLIN) {
+			if (_pollFds[i].revents & POLLIN)
+			{
 				if (isListenSocket(_pollFds[i].fd))
 					acceptNewClient(_pollFds[i].fd);
 				else
 					handleClientRead(i);
 			}
-			
+
 			// Handle POLLOUT (socket ready to write)
-			if (_pollFds[i].revents & POLLOUT) {
+			if (_pollFds[i].revents & POLLOUT)
+			{
 				handleClientWrite(i);
 			}
 		}
 	}
 }
 
-void Server::stop() {
+void Server::stop()
+{
 	_running = false;
 }
 
 // Private method(s)
-void Server::checkTimeouts() {
-	for (size_t i = 0; i < _clients.size(); ) {
+void Server::checkTimeouts()
+{
+	for (size_t i = 0; i < _clients.size();)
+	{
 
 		// 30 seconds timeout for idle clients
-		if (_clients[i].hasTimedOut(30)) {
+		if (_clients[i].hasTimedOut(30))
+		{
 			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
 
 			// Find and remove corresponding pollfd
-			for (size_t j = 0; j < _pollFds.size(); j++) {
-				if (_pollFds[j].fd == _clients[i].getSocket()) {
+			for (size_t j = 0; j < _pollFds.size(); j++)
+			{
+				if (_pollFds[j].fd == _clients[i].getSocket())
+				{
 					safeClose(_pollFds[j].fd);
 					_pollFds.erase(_pollFds.begin() + j);
 					break;
@@ -99,14 +126,17 @@ void Server::checkTimeouts() {
 			_clients.erase(_clients.begin() + i);
 
 			// Don't increment i, element removed
-		} else
+		}
+		else
 			i++;
 	}
 }
 
-void Server::setupListenSockets() {
+void Server::setupListenSockets()
+{
 	// Create one listening socket per configuration (one per port)
-	for (size_t i = 0; i < _configs.size(); i++) {
+	for (size_t i = 0; i < _configs.size(); i++)
+	{
 		int port = _configs[i].getPort();
 		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // IPv4, TCP
 		if (listenFd < 0)
@@ -114,7 +144,8 @@ void Server::setupListenSockets() {
 
 		// Configure SO_REUSEADDR to allow address reuse and prevent "Address already in use" error
 		int opt = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("setsockopt() failed");
 		}
@@ -122,16 +153,18 @@ void Server::setupListenSockets() {
 		// Configure the server address structure
 		struct sockaddr_in addr;
 		std::memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET; // IPv4
+		addr.sin_family = AF_INET;		   // IPv4
 		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
-		addr.sin_port = htons(port); // Convert port to network byte order
-		if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+		addr.sin_port = htons(port);	   // Convert port to network byte order
+		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("bind() failed");
 		}
 
 		// Start listening for incoming connections
-		if (listen(listenFd, 128) < 0) {
+		if (listen(listenFd, 128) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("listen() failed");
 		}
@@ -147,26 +180,30 @@ void Server::setupListenSockets() {
 	}
 }
 
-bool Server::isListenSocket(int fd) const { // Check if given fd is a listening socket
+bool Server::isListenSocket(int fd) const
+{ // Check if given fd is a listening socket
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		if (_listenSockets[i] == fd)
 			return true;
 	return false;
 }
 
-void Server::acceptNewClient(int listenSocket) {
+void Server::acceptNewClient(int listenSocket)
+{
 	struct sockaddr_in clientAddr;
 	socklen_t addrLen = sizeof(clientAddr);
 
 	// Accept a new incoming connection (non-blocking)
-	int clientFd = accept(listenSocket, (struct sockaddr*)&clientAddr, &addrLen);
-	if (clientFd < 0) {
+	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
+	if (clientFd < 0)
+	{
 		std::cerr << "[Server] accept failed on fd " << listenSocket << std::endl;
 		return; // No connection available right now
-	}	
+	}
 
 	// Set the client socket to non-blocking mode
-	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
+	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0)
+	{
 		std::cerr << "[Server] fcntl failed for fd " << clientFd << std::endl;
 		safeClose(clientFd);
 		return;
@@ -184,8 +221,9 @@ void Server::acceptNewClient(int listenSocket) {
 	std::cout << "New client connected (fd " << clientFd << ")" << std::endl;
 }
 
-const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
-	const ServerConfig* config = &_configs[0];
+const ServerConfig *Server::selectConfig(const HttpRequest &request) const
+{
+	const ServerConfig *config = &_configs[0];
 	std::string host = request.getHeader("Host");
 
 	// Remove port from Host header if present
@@ -194,8 +232,10 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
 		host = host.substr(0, colonPos);
 
 	// Find config matching server_name
-	for (size_t i = 0; i < _configs.size(); i++) {
-		if (_configs[i].getServerName() == host) {
+	for (size_t i = 0; i < _configs.size(); i++)
+	{
+		if (_configs[i].getServerName() == host)
+		{
 			config = &_configs[i];
 			break;
 		}
@@ -203,7 +243,8 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request) const {
 	return config;
 }
 
-void Server::handleClientRead(size_t clientIndex) {
+void Server::handleClientRead(size_t clientIndex)
+{
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
@@ -211,14 +252,16 @@ void Server::handleClientRead(size_t clientIndex) {
 	for (i = 0; i < _clients.size(); i++)
 		if (_clients[i].getSocket() == clientFd)
 			break;
-	if (i == _clients.size()) {
+	if (i == _clients.size())
+	{
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client& client = _clients[i];
+	Client &client = _clients[i];
 
 	// Read data from socket
-	if (!client.readData()) {
+	if (!client.readData())
+	{
 		// Error or disconnection
 		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
 		safeClose(client.getSocket());
@@ -230,18 +273,19 @@ void Server::handleClientRead(size_t clientIndex) {
 	// Check if request is complete
 	if (!client.isRequestComplete())
 		return;
-	
+
 	std::cout << "📨 Request received" << std::endl;
 
 	// Build response
-	const ServerConfig* config = selectConfig(client.getRequest());
+	const ServerConfig *config = selectConfig(client.getRequest());
 	client.buildResponse(*config, _router, _sessions);
 
 	// Enable POLLOUT to send response when socket is ready for writing
 	_pollFds[clientIndex].events |= POLLOUT;
 }
 
-void Server::handleClientWrite(size_t clientIndex) {
+void Server::handleClientWrite(size_t clientIndex)
+{
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
@@ -249,14 +293,16 @@ void Server::handleClientWrite(size_t clientIndex) {
 	for (i = 0; i < _clients.size(); i++)
 		if (_clients[i].getSocket() == clientFd)
 			break;
-	if (i == _clients.size()) {
+	if (i == _clients.size())
+	{
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client& client = _clients[i];
+	Client &client = _clients[i];
 
 	// Send response
-	if (!client.sendResponse()) {
+	if (!client.sendResponse())
+	{
 		std::cerr << "Error sending response to fd " << clientFd << std::endl;
 	}
 
@@ -266,15 +312,74 @@ void Server::handleClientWrite(size_t clientIndex) {
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
 
-void Server::cleanupSessions() {
+void Server::cleanupSessions()
+{
 	time_t now = time(NULL);
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
-	while (it != _sessions.end()) {
-		if (now - it->second.lastActive > 1800) { // 30 minutes
+	while (it != _sessions.end())
+	{
+		if (now - it->second.lastActive > 1800)
+		{ // 30 minutes
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
 			_sessions.erase(toErase);
-		} else
+		}
+		else
 			it++;
 	}
+}
+
+static int set_nonblocking(int fd)
+{
+	int flags = fcntl(fd, F_GETFL, 0);
+	if (flags == -1)
+		return -1;
+	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
+void Server::signalHandler(int /*sig*/)
+{
+	//s_stop = 1;
+	if (s_sigpipe[1] != -1)
+		write(s_sigpipe[1], "1", 1);
+}
+
+// drain pipe so it doesn't remain readable forever
+void Server::handleSignalPipeReadable()
+{
+	char buf[64];
+	while (read(s_sigpipe[0], buf, sizeof(buf)) > 0)
+	{
+	}
+	_running = false;
+}
+
+void Server::installSignals()
+{
+	// create self-pipe
+	if (pipe(s_sigpipe) == -1)
+		throw std::runtime_error(std::string("pipe() failed: ") + std::strerror(errno));
+	set_nonblocking(s_sigpipe[0]);
+	set_nonblocking(s_sigpipe[1]);
+
+	addSignalPipeToPoll();
+
+	struct sigaction sa;
+	memset(&sa, 0, sizeof(sa));
+	sa.sa_handler = &Server::signalHandler;
+	sigemptyset(&sa.sa_mask);
+	sigaction(SIGINT, &sa, 0);
+	sigaction(SIGTERM, &sa, 0);
+
+	// avoid process death on send() to closed socket
+	signal(SIGPIPE, SIG_IGN);
+}
+
+void Server::addSignalPipeToPoll()
+{
+	struct pollfd p;
+	p.fd = s_sigpipe[0];
+	p.events = POLLIN;
+	p.revents = 0;
+	_pollFds.push_back(p);
 }
