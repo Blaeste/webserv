@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>HTTP Methods Tester</title>
+		<link rel="stylesheet" href="/css/style.css">
+		<link rel="stylesheet" href="/css/http-test.css">
+		<script src="/js/header.js" defer></script>
+		<script src="/js/footer.js" defer></script>
+		<script src="/js/http-test.js" defer></script>
+	</head>
+
+	<body>
+		<div class="container">
+			<h1>🔧 HTTP Methods Tester</h1>
+
+			<div class="request-form">
+				<div class="method-url-row">
+					<select id="method">
+						<option value="GET">GET</option>
+						<option value="POST">POST</option>
+						<option value="DELETE">DELETE</option>
+						<option value="PUT">PUT</option>
+					</select>
+					<input type="text" id="url" placeholder="/path/to/resource" value="/">
+					<button id="sendBtn">Send</button>
+				</div>
+
+				<div class="body-section">
+					<label>Request body (for POST/PUT)</label>
+					<textarea id="requestBody" placeholder='{"key": "value"}'></textarea>
+				</div>
+			</div>
+
+			<div id="response" class="response-box">
+				<h3>Response</h3>
+				<div id="statusCode"></div>
+				<div id="responseHeaders"></div>
+				<div id="responseBody"></div>
+			</div>
+		</div>
+	</body>
+</html>
