@@ -40,12 +40,14 @@ async function sendRequest() {
 			options.headers['Content-Type'] = 'application/json';
 		}
 
+		const startTime = Date.now();
 		const response = await fetch(url, options);
+		const responseTime = Date.now() - startTime;
 
 		// Display status code
 		const statusClass = 'status-' + Math.floor(response.status / 100) + 'xx';
 		statusDiv.className = statusClass;
-		statusDiv.innerHTML = `Status: ${response.status} ${response.statusText}`;
+		statusDiv.innerHTML = `Status: ${response.status} ${response.statusText} ⏱️ ${responseTime}ms`;
 
 		// Display headers
 		let headersHTML = '<strong>Response Headers:</strong><br>';
@@ -56,7 +58,16 @@ async function sendRequest() {
 
 		// Display body
 		const responseText = await response.text();
-		bodyDiv.innerHTML = '<strong>Response Body:</strong><br><pre>' + escapeHtml(responseText) + '</pre>';
+
+		try {
+			// try to parse JSON for pretty print
+			const json = JSON.parse(responseText);
+			bodyDiv.innerHTML = '<strong>Response Body (JSON):</strong><br><pre>' + JSON.stringify(json, null, 2) + '</pre>';
+
+		} catch {
+			// Error => display a text
+			bodyDiv.innerHTML = '<strong>Response Body:</strong><br><pre>' + escapeHtml(responseText) + '</pre>';
+		}
 
 	} catch (error) {
 		statusDiv.className = 'status-5xx';
@@ -70,4 +81,12 @@ function escapeHtml(text) {
 	const div = document.createElement('div');
 	div.textContent = text;
 	return div.innerHTML;
+}
+
+// Quick test function
+function quickTest(method, url, body = '') {
+	document.getElementById('method').value = method;
+	document.getElementById('url').value = url;
+	document.getElementById('requestBody').value = body;
+	sendRequest();
 }

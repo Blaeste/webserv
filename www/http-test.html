@@ -14,6 +14,14 @@
 		<div class="container">
 			<h1>🔧 HTTP Methods Tester</h1>
 
+			<div class="quick-tests">
+				<h3>Quick Tests</h3>
+				<button onclick="quickTest('GET', '/')">GET Homepage</button>
+				<button onclick="quickTest('GET', '/uploads')">List Uploads</button>
+				<button onclick="quickTest('GET', '/nonexistent')">404 Error</button>
+				<button onclick="quickTest('POST', '/')">No no no</button>
+			</div>
+
 			<div class="request-form">
 				<div class="method-url-row">
 					<select id="method">
