@@ -18,7 +18,7 @@ function loadFooter() {
   `;
 
 
-	document.body.insertAdjacentHTML('afterend', footer);
+	document.body.insertAdjacentHTML('beforeend', footer);
 }
 
 loadFooter();

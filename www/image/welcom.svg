@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="260" viewBox="0 0 1200 260" role="img" aria-label="Welcolm to Webserv Tester">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="220" viewBox="0 0 1200 220" role="img" aria-label="Welcolme to Webserv Tester">
   <defs>
     <style>
       /* 42-ish: bold geometric sans, tight tracking, black fill (falls back if font not installed) */
@@ -27,6 +27,6 @@
   <rect class="mark" x="90" y="78" width="14" height="14"/>
 
   <!-- Text (edit here if you meant "Welcome") -->
-  <text x="50%" y="90" class="sub" text-anchor="middle">WELCOM TO</text>
+  <text x="50%" y="90" class="sub" text-anchor="middle">WELCOME TO</text>
   <text x="50%" y="190" class="title" text-anchor="middle">WEBSERV TESTER</text>
 </svg>

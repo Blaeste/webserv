@@ -1,80 +1,80 @@
+@import url('marvin.css');
+@import url('home.css');
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	font-size: 100%;
+	font: inherit;
+	vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+	display: block;
+}
+body {
+	line-height: 1;
+}
+ol, ul {
+	list-style: none;
+}
+blockquote, q {
+	quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+	content: '';
+	content: none;
+}
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+}
+
 .container {
 	max-width: 1200px;
-	margin: 0 auto;
+	margin: 40px;
 	padding: 0 20px;
-	flex: 1;
+	flex: 1 1 auto;
+	overflow-y: auto;
 }
 
-.home-layout {
-	display: flex;
-	align-items: center;
-	gap: 40px;
+.whiteBox {
+	margin: 80px auto;
+	max-width: 1200px;
+	padding: 45px 50px;
+	background-color: white;
+	border-radius: 15px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.50);
 }
 
-.welcome-image {
-	width: 1000px;
-	max-width: 100%;
-	height: auto;
-	display: block;
-	margin: 30px auto 40px auto;
-}
-
-.home-links {
+body {
+	margin: 0;
+	background-color: #b3b3f3;
+	font-family: Arial, sans-serif;
+	min-height: 100vh;
 	display: flex;
 	flex-direction: column;
-	gap: 15px;
-}
-
-.home-marvin {
-	height: 380px;
-	width: auto;
-	object-fit: contain;
-}
-
-.error-marvin {
-	height: 380px;
-	width: auto;
-	object-fit: contain;
-}
-
-.home-button {
-	display: flex;
-	align-items: center;
-	gap: 12px;
-	text-decoration: none;
-	background-color: #0066cc;
-	color: white;
-	padding: 10px 18px;
-	border-radius: 8px;
-	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-	transition: background-color 0.2s, transform 0.1s;
-}
-
-.home-button:hover {
-	background-color: #0052a3;
-	transform: translateY(-1px);
-}
-
-.home-button-icon {
-	height: 32px;
-	width: 32px;
-	object-fit: contain;
-}
-
-.home-button span {
-	font-weight: bold;
-	font-size: 16px;
-}
-
-h1 {
-	color: #0066cc;
-	margin-bottom: 30px;
 }
 
 header {
+	height: 5vh;
 	background-color: #532f5e;
-	padding: 15px;
-	margin: 0 -20px 20px -20px;
+	padding: 20px 100px;
 	display: flex;
 	align-items: center;
 	gap: 20px;
@@ -85,8 +85,8 @@ header {
 	width: auto;
 }
 
+
 footer {
-	margin: auto -20px -20px -20px;
 	margin-top: auto;
 	background-color: #3c4057;
 	color: white;
@@ -99,6 +99,61 @@ footer {
 	justify-content: center;
 	gap: 12px;
 	flex-wrap: wrap;
+}
+
+.page {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: flex-start;
+	justify-content: center;
+	padding: 40px 20px;
+}
+
+.pageLayout {
+	--side: 220px;
+	display: grid;
+	grid-template-columns: var(--side) minmax(0, 1200px) var(--side);
+	gap: 24px;
+	align-items: start;
+	width: 100%;
+	max-width: 1800px;
+}
+
+.pageContent {
+	grid-column: 2;
+	min-width: 0;
+}
+
+
+.pageSpacer {
+	grid-column: 3;
+}
+
+@media (max-width: 900px) {
+	.pageLayout {
+		grid-template-columns: 1fr;
+	}
+
+	.marvin,
+	.pageContent,
+	.pageSpacer {
+		grid-column: auto;
+	}
+
+	.pageSpacer {
+		display: none;
+	}
+
+	.marvin {
+		position: static;
+		justify-self: center;
+	}
+}
+
+h1 {
+	color: #0066cc;
+	margin-bottom: 30px;
+	margin-top: 0px;
 }
 
 .status-pill {
@@ -142,15 +197,6 @@ footer {
 	text-overflow: ellipsis;
 }
 
-footer {
-	margin: auto -20px -20px -20px;
-	margin-top: auto;
-	background-color: #3c4057;
-	color: white;
-	padding: 15px;
-	position: relative;
-}
-
 .footer-logo {
 	height: 60px;
 	width: auto;
@@ -180,18 +226,6 @@ nav a {
 nav a:hover {
 	background-color: #555;
 	border-color: rgba(255, 255, 255, 0.5);
-}
-
-body {
-	background-color: #b3b3f3;
-	color: #333;
-	font-family: Arial, sans-serif;
-	margin: 0;
-	padding: 20px 20px 0 20px;
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
-	box-sizing: border-box;
 }
 
 html {
@@ -399,16 +433,6 @@ p {
 	margin: 20px 0;
 }
 
-.home-button {
-	display: inline-block;
-	background-color: #0066cc;
-	color: white;
-	padding: 15px 30px;
-	text-decoration: none;
-	border-radius: 5px;
-	margin-top: 20px;
-	transition: background-color 0.3s;
-}
 
 .home-button:hover {
 	background-color: #0052a3;

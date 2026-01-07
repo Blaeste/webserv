@@ -11,26 +11,40 @@
 </head>
 
 <body>
-	<div class="container">
+	<main class="page">
+		<div class="pageLayout">
+			<aside class="marvin">
+				<img src="/image/marvin_files.png" alt="Files Marvin">
+			</aside>
 
-		<h1>Uploaded Files</h1>
+			<div class="pageContent">
+				<div class="container">
+					<div class="whiteBox">
 
-		<div id="fileList">
-			<p>Loading files...</p>
+						<h1>Uploaded Files</h1>
+
+						<div id="fileList">
+							<p>Loading files...</p>
+						</div>
+
+						<h2 id="uploadTitle">Upload a file</h2>
+
+						<form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
+							<label for="fileInput">
+								📁 Click to select files
+								<span id="fileNames" style="display:block; margin-top:10px; font-size:12px;"></span>
+							</label>
+							<input type="file" id="fileInput" name="file" multiple required>
+							<input type="submit" value="Upload">
+						</form>
+						<div id="uploadStatus"></div>
+					</div>
+				</div>
+			</div>
+
+			<div class="pageSpacer" aria-hidden="true"></div>
 		</div>
-
-		<h2 id="uploadTitle">Upload a file</h1>
-
-			<form id="uploadForm" action="/uploads" method="POST" enctype="multipart/form-data">
-				<label for="fileInput">
-					📁 Click to select files
-					<span id="fileNames" style="display:block; margin-top:10px; font-size:12px;"></span>
-				</label>
-				<input type="file" id="fileInput" name="file" multiple required>
-				<input type="submit" value="Upload">
-			</form>
-			<div id="uploadStatus"></div>
-	</div>
+	</main>
 </body>
 
 </html>

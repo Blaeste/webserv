@@ -1,26 +1,40 @@
 <!DOCTYPE html>
 
 <html>
-	<head>
-		<meta charset="UTF-8">
-		<title>QR Code Generator</title>
-		<link rel="stylesheet" href="/css/style.css">
-		<link rel="stylesheet" href="/css/qrcode.css">
-		<script src="/js/header.js" defer></script>
-		<script src="/js/footer.js" defer></script>
-		<script src="/js/qrcode.js" defer></script>
-	</head>
 
-	<body>
-		<div class="container">
-			<div id="qrGenerator">
-				<h1>📱 QR Code Generator</h1>
-				<form id="qrForm">
-					<input type="text" id="qrText" placeholder="Enter text..." required>
-					<button type="submit">Generate</button>
-				</form>
-				<div id="result"></div>
+<head>
+	<meta charset="UTF-8">
+	<title>QR Code Generator</title>
+	<link rel="stylesheet" href="/css/style.css">
+	<link rel="stylesheet" href="/css/qrcode.css">
+	<script src="/js/header.js" defer></script>
+	<script src="/js/footer.js" defer></script>
+	<script src="/js/qrcode.js" defer></script>
+</head>
+
+<body>
+	<main class="page">
+		<div class="pageLayout">
+			<aside class="marvin">
+				<img src="/image/Marvin.png" alt="QR Marvin">
+			</aside>
+
+			<div class="pageContent">
+				<div class="container">
+					<div id="qrGenerator">
+						<h1>📱 QR Code Generator</h1>
+						<form id="qrForm">
+							<input type="text" id="qrText" placeholder="Enter text..." required>
+							<button type="submit">Generate</button>
+						</form>
+						<div id="result"></div>
+					</div>
+				</div>
 			</div>
+
+			<div class="pageSpacer" aria-hidden="true"></div>
 		</div>
-	</body>
+	</main>
+</body>
+
 </html>

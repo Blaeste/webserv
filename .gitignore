@@ -1,6 +1,9 @@
 # Build directories
 obj/
 
+# Uploaded files
+uploads/
+
 #binarie
 webserv
 

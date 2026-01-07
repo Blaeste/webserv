@@ -1,0 +1,74 @@
+.container.home-container {
+	/* Override the generic .container margins for the homepage */
+	margin: 24px auto 0;
+	padding: 0 10px;
+	display: flex;
+	justify-content: center;
+}
+
+.home-layout {
+	width: 100%;
+	display: flex;
+	justify-content: center;
+	margin: 10px;
+}
+
+.welcome-image {
+	width: 1200px;
+	max-width: 100%;
+	height: auto;
+	display: block;
+	margin: 0 auto 22px;
+}
+
+.home-links {
+	display: grid;
+	width: 100%;
+	max-width: 900px;
+	margin: 0 auto;
+	padding: 0;
+
+	/* Auto-wrap + keep cards aligned */
+	grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+	gap: 22px;
+	justify-items: center;
+	align-items: stretch;
+}
+
+.home-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 15px;
+	text-decoration: none;
+	background-color: #0066cc;
+	color: rgb(255, 255, 255);
+	padding: 18px 24px;
+	border-radius: 12px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+	transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
+	text-align: center;
+
+	/* Make every card the same width inside its grid cell */
+	width: 100%;
+	max-width: 320px;
+	min-width: 0;
+	box-sizing: border-box;
+}
+
+.home-button:hover {
+	background-color: #0052a3;
+	transform: translateY(2px);
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+.home-button-icon {
+	height: 32px;
+	width: 32px;
+	object-fit: contain;
+}
+
+.home-button span {
+	font-weight: bold;
+	font-size: 20px;
+}
