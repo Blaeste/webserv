@@ -11,6 +11,7 @@ function loadHeader() {
 				<a href="/qrcode.html">QR Code</a>
 				<a href="/counter.html">Visite count</a>
 				<a href="/errors.html">Errors</a>
+				<a href="/http-test.html">HTTP</a>
 				<a href="/contact.html">Contact</a>
 			</nav>
 			<div id="status-pill" class="status-pill status-loading">Loading status...</div>
