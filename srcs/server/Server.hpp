@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:54:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/07 22:24:44 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <signal.h>
 
 // Forward declaration(s)
 class HttpRequest;
@@ -48,6 +49,7 @@ class Server {
 			bool _running;
 			Router _router;
 			std::map<std::string, SessionData> _sessions;
+			int _g_sigpipe[2];
 
 	public:
 
@@ -78,4 +80,13 @@ class Server {
 			void handleClientRead(size_t clientIndex);
 			void handleClientWrite(size_t clientIndex);
 
+		// Signal handling
+
+			//static volatile sig_atomic_t s_stop;
+			static int s_sigpipe[2];
+
+			static void signalHandler(int sig);
+			void installSignals();
+			void addSignalPipeToPoll();
+			void handleSignalPipeReadable();
 };
