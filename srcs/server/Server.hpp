@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/08 09:46:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/08 15:16:37 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ class Server {
 
 		// Client handling
 
-			const ServerConfig* selectConfig(const HttpRequest& request) const;
+			const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
 			void handleClientRead(size_t clientIndex);
 			void handleClientWrite(size_t clientIndex);
 
