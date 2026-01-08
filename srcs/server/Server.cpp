@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/07 22:29:02 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/08 17:01:55 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,11 @@ Server::~Server()
 {
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
-	std::cout << "destructor called properly" << std::endl;
+	if(s_sigpipe[0] >= 0)
+		close(s_sigpipe[0]);
+	if(s_sigpipe[1] >= 0)
+		close(s_sigpipe[1]);
+	std::cout << "\nServer was closed" << std::endl;
 }
 
 void Server::init(const Config &config)
@@ -221,26 +225,39 @@ void Server::acceptNewClient(int listenSocket)
 	std::cout << "New client connected (fd " << clientFd << ")" << std::endl;
 }
 
-const ServerConfig *Server::selectConfig(const HttpRequest &request) const
+static int getLocalPort(int fd)
 {
-	const ServerConfig *config = &_configs[0];
+	sockaddr_in addr;
+
+	socklen_t len = sizeof(addr);
+	if (getsockname(fd, (sockaddr*)&addr, &len) == 0)
+		return ntohs(addr.sin_port);
+	return -1;
+}
+
+const ServerConfig *Server::selectConfig(const HttpRequest &request,  int clientFd) const
+{
 	std::string host = request.getHeader("Host");
+	int localPort = getLocalPort(clientFd);
 
 	// Remove port from Host header if present
 	size_t colonPos = host.find(':');
+
+	const ServerConfig* defaultForPort = NULL;
 	if (colonPos != std::string::npos)
 		host = host.substr(0, colonPos);
 
 	// Find config matching server_name
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
-		if (_configs[i].getServerName() == host)
-		{
-			config = &_configs[i];
-			break;
-		}
+		if (_configs[i].getPort() != localPort)
+			continue;
+		if (!defaultForPort)
+			defaultForPort = &_configs[i];
+		if (!host.empty() && _configs[i].getServerName() == host)
+			return &_configs[i];
 	}
-	return config;
+	return defaultForPort;
 }
 
 void Server::handleClientRead(size_t clientIndex)
@@ -277,7 +294,7 @@ void Server::handleClientRead(size_t clientIndex)
 	std::cout << "📨 Request received" << std::endl;
 
 	// Build response
-	const ServerConfig *config = selectConfig(client.getRequest());
+	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 	client.buildResponse(*config, _router, _sessions);
 
 	// Enable POLLOUT to send response when socket is ready for writing
