@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 13:52:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 14:06:59 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,14 +73,17 @@ void Server::run() {
 
 		// Process events on each socket
 		for (size_t i = 0; i < _pollFds.size(); i++) {
-			// trigered by SIGINT OR SIGTERM handler
-			if (_pollFds[i].fd == _s_sigpipe[0] && (_pollFds[i].revents & POLLIN)) {
-				handleSignalPipeReadable();
-				break;
-			}
 
 			// Handle POLLIN (incoming data to read)
 			if (_pollFds[i].revents & POLLIN) {
+
+				// Handle SIGINT or SIGTERM
+				if (_pollFds[i].fd == _s_sigpipe[0]) {
+					handleSignalPipeReadable();
+					break;
+				}
+
+				// Handle listen or client socket
 				if (isListenSocket(_pollFds[i].fd))
 					acceptNewClient(_pollFds[i].fd);
 				else
