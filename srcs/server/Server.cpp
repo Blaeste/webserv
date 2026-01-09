@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/08 17:01:55 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/09 11:09:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,12 +25,17 @@
 #include <cerrno>
 
 // Signal handler statics
-//volatile sig_atomic_t Server::s_stop = 0;
+// volatile sig_atomic_t Server::s_stop = 0;
 int Server::s_sigpipe[2] = {-1, -1};
 
 // Default constructor
-Server::Server() : _running(false)
-{}
+Server::Server(const Config& config)
+	: _configs(config.getServers())
+	, _running(false)
+{
+	setupListenSockets();
+	installSignals();
+}
 
 // Destructor
 Server::~Server()
@@ -42,13 +47,6 @@ Server::~Server()
 	if(s_sigpipe[1] >= 0)
 		close(s_sigpipe[1]);
 	std::cout << "\nServer was closed" << std::endl;
-}
-
-void Server::init(const Config &config)
-{
-	_configs = config.getServers();
-	setupListenSockets();
-	installSignals();
 }
 
 void Server::run()

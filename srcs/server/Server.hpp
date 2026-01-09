@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/08 15:16:37 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/09 11:02:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,12 +55,11 @@ class Server {
 
 		// Special member function(s)
 
-			Server();
+			Server(const Config& config);
 			~Server();
 
 		// Public method(s)
 
-			void init(const Config &config);
 			void run();
 			void stop();
 
