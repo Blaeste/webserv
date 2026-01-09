@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
 /*   Updated: 2026/01/09 13:39:12 by gdosch           ###   ########.fr       */
@@ -15,6 +15,7 @@
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/Logger.hpp"
 #include <cstring>
 #include <fcntl.h>
 #include <iostream>
@@ -23,6 +24,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cerrno>
+#include <arpa/inet.h> // ip client
 
 // Signal handler statics
 // volatile sig_atomic_t Server::s_stop = 0;
@@ -180,6 +182,10 @@ void Server::acceptNewClient(int listenSocket) {
 		return; // No connection available right now
 	}
 
+	// Get client IP
+	char clientIp[INET_ADDRSTRLEN];
+	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
+
 	// Set the client socket to non-blocking mode
 	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
 		std::cerr << "[Server] fcntl failed for fd " << clientFd << std::endl;
@@ -187,7 +193,7 @@ void Server::acceptNewClient(int listenSocket) {
 		return;
 	}
 	// Add a Client to the vector
-	Client newClient(clientFd);
+	Client newClient(clientFd, std::string(clientIp));
 	_clients.push_back(newClient);
 
 	// Add the new client socket to poll() to monitor incoming data
@@ -196,7 +202,7 @@ void Server::acceptNewClient(int listenSocket) {
 	pfd.events = POLLIN; // Triggered when client sends data
 	pfd.revents = 0;
 	_pollFds.push_back(pfd);
-	std::cout << "New client connected (fd " << clientFd << ")" << std::endl;
+	Logger::logConnection(clientFd, std::string(clientIp));
 }
 
 static int getLocalPort(int fd) {
@@ -258,8 +264,6 @@ void Server::handleClientRead(size_t clientIndex) {
 	// Check if request is complete
 	if (!client.isRequestComplete())
 		return;
-
-	std::cout << "📨 Request received" << std::endl;
 
 	// Build response
 	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);

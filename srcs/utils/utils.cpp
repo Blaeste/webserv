@@ -182,12 +182,12 @@ bool isPathSafe(const std::string &path) {
 		return false;
 
 	// Check if path start ith allowed directories
-	if (path.find("./www/") == 0 ||
-		path.find("www/") == 0 ||
-		path.find("./uploads/") == 0 ||
-		path.find("uploads/") == 0 ||
-		path.find("./cgi-bin/") == 0 ||
-		path.find("cgi-bin/") == 0)
+	if (path.find("./www") == 0 ||
+		path.find("www") == 0 ||
+		path.find("./uploads") == 0 ||
+		path.find("uploads") == 0 ||
+		path.find("./cgi-bin") == 0 ||
+		path.find("cgi-bin") == 0)
 		return true;
 
 	return false;

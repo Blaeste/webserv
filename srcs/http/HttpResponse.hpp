@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:58:41 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 12:01:56 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,10 @@ class HttpResponse
 			HttpResponse();
 
 		// Public method(s)
+
+			int getStatus();
+
+			const std::string &getBody() const;
 
 			/**
 			 * @brief Sets the HTTP status code and corresponding message.

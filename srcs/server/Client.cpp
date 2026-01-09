@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 10:11:54 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 13:21:51 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,6 +14,7 @@
 #include "Client.hpp"
 #include "Router.hpp"
 #include "Server.hpp"
+#include "../utils/Logger.hpp"
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>
@@ -21,8 +22,9 @@
 #include <unistd.h>
 
 // Constructor: initialize socket and activity timestamp
-Client::Client(int socket)
+Client::Client(int socket, const std::string &clientIp)
 	: _socket(socket)
+	, _clientIp(clientIp)
 	, _lastActivity(time(NULL))
 	, _requestComplete(false)
 	, _responseReady(false)
@@ -75,6 +77,10 @@ int Client::getSocket() const {
 	return _socket;
 }
 
+const std::string &Client::getClientIp() const {
+	return _clientIp;
+}
+
 bool Client::hasTimedOut(time_t timeout) const {
 	return time(NULL) - _lastActivity > timeout;
 }
@@ -123,10 +129,19 @@ void Client::buildErrorResponse(int statusCode) {
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
+
+	// Timer
+	struct timeval start, end;
+	gettimeofday(&start, NULL);
+
     // Check body size limit
     if (_request.getBody().size() > config.getMaxBodySize()) {
         buildErrorResponse(413);
         _responseReady = true;
+		// log + return
+		gettimeofday(&end, NULL);
+        double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
         return;
     }
 
@@ -140,6 +155,11 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
         _response.setHeader("Content-Type", "application/json");
         _response.setBody(json);
         _responseReady = true;
+
+		// log and return
+		gettimeofday(&end, NULL);
+        double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+        Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
         return ;
     }
 
@@ -186,6 +206,19 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		_response.serveFile(match.filePath);
 
 	_responseReady = true;
+
+	// Logging
+	gettimeofday(&end, NULL);
+	double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+
+	Logger::logRequest(
+		_request.getMethod(),
+		_request.getUri(),
+		_clientIp,
+		_response.getStatus(),
+		_response.getBody().size(),
+		responseTime
+	);
 }
 
 bool Client::sendResponse() {

@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/09 11:05:32 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 13:00:40 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,6 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 // Match request to appropriate route and determine response type
 RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
 	std::string uri = request.getUri();
-	std::cout << "[DEBUG Router] Received URI: '" << uri << "'" << std::endl;
 	RouteMatch match;
 	match.serverName = config.getServerName();
 	match.serverPort = config.getPort();
@@ -50,7 +49,6 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 		uri.find("%2e%2e") != std::string::npos ||
 		uri.find("%2E%2E") != std::string::npos)
 	{
-		std::cout << "[DEBUG Router] BLOCKED: Path traversal detected in URI!" << std::endl;
 		match.statusCode = 403;
 		return match;
 	}
