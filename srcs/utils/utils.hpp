@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 10:28:16 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 14:33:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,5 +122,16 @@
 	 */
 	int safeClose(int fd);
 
-
+	/**
+	 * @brief Validates that a file path is safe and within allowed directories.
+	 * @param path The file path to validate.
+	 * @return true if the path is safe (no directory traversal, starts with allowed prefix), false otherwise.
+	 */
 	bool isPathSafe(const std::string &path);
+
+	/**
+	 * @brief Sets a file descriptor to non-blocking mode.
+	 * @param fd The file descriptor to configure.
+	 * @throws std::runtime_error if fcntl() fails.
+	 */
+	void setNonBlocking(int fd);

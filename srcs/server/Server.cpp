@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 14:06:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 14:30:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
 #include <cstring>
-#include <fcntl.h>
 #include <iostream>
 #include <netinet/in.h>
 #include <stdexcept>
@@ -190,8 +189,10 @@ void Server::acceptNewClient(int listenSocket) {
 	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
 
 	// Set the client socket to non-blocking mode
-	if (fcntl(clientFd, F_SETFL, O_NONBLOCK) < 0) {
-		std::cerr << "[Server] fcntl failed for fd " << clientFd << std::endl;
+	try {
+		setNonBlocking(clientFd);
+	} catch (const std::exception& e) {
+		std::cerr << "[Server] " << e.what() << " for fd " << clientFd << std::endl;
 		safeClose(clientFd);
 		return;
 	}
@@ -314,13 +315,6 @@ void Server::cleanupSessions() {
 	}
 }
 
-static int set_nonblocking(int fd) {
-	int flags = fcntl(fd, F_GETFL, 0);
-	if (flags == -1)
-		return -1;
-	return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-
 void Server::signalHandler(int /*sig*/) {
 	//s_stop = 1;
 	if (_s_sigpipe[1] != -1)
@@ -338,8 +332,8 @@ void Server::installSignals() {
 	// create self-pipe
 	if (pipe(_s_sigpipe) == -1)
 		throw std::runtime_error(std::string("pipe() failed: ") + std::strerror(errno));
-	set_nonblocking(_s_sigpipe[0]);
-	set_nonblocking(_s_sigpipe[1]);
+	setNonBlocking(_s_sigpipe[0]);
+	setNonBlocking(_s_sigpipe[1]);
 
 	addSignalPipeToPoll();
 
