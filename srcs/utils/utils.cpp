@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 10:52:36 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 13:38:09 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -182,12 +182,12 @@ bool isPathSafe(const std::string &path) {
 		return false;
 
 	// Check if path start ith allowed directories
-	if (path.find("./www/") == 0 ||
-		path.find("www/") == 0 ||
-		path.find("./uploads/") == 0 ||
-		path.find("uploads/") == 0 ||
-		path.find("./cgi-bin/") == 0 ||
-		path.find("cgi-bin/") == 0)
+	if (path.find("./www") == 0 ||
+		path.find("www") == 0 ||
+		path.find("./uploads") == 0 ||
+		path.find("uploads") == 0 ||
+		path.find("./cgi-bin") == 0 ||
+		path.find("cgi-bin") == 0)
 		return true;
 
 	return false;
