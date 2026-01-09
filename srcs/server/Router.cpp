@@ -3,16 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 13:43:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 11:05:32 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s)
 #include "Router.hpp"
 #include "../utils/utils.hpp"
+#include <iostream>
 
 // Private method(s)
 // Find location with longest matching path prefix
@@ -36,12 +37,23 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 // Match request to appropriate route and determine response type
 RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
 	std::string uri = request.getUri();
+	std::cout << "[DEBUG Router] Received URI: '" << uri << "'" << std::endl;
 	RouteMatch match;
 	match.serverName = config.getServerName();
 	match.serverPort = config.getPort();
 	match.statusCode = 200;
 	match.isRedirect = false;
 	match.isCGI = false;
+
+	// Security: block path traversal in URI (both raw and encoded)
+	if (uri.find("..") != std::string::npos ||
+		uri.find("%2e%2e") != std::string::npos ||
+		uri.find("%2E%2E") != std::string::npos)
+	{
+		std::cout << "[DEBUG Router] BLOCKED: Path traversal detected in URI!" << std::endl;
+		match.statusCode = 403;
+		return match;
+	}
 
 	// Find matching location block
 	match.location = findMatchingLocation(config, uri);
@@ -85,6 +97,13 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 
 			// Build full file path
 			match.filePath = match.location->getRoot() + pathPart;
+
+			// Security check
+			if (!isPathSafe(match.filePath))
+			{
+				match.statusCode = 403;
+				return match;
+			}
 
 			// Check if request should be handled by CGI
 			std::string cgiExt = match.location->getCgiExtension();

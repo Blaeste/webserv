@@ -18,7 +18,7 @@ function updateRequestPreview() {
 			break;
 		case '403':
 			path = '/error_pages/403.html';
-			description = 'Direct navigation to 403 error page (actual forbidden errors require specific server configuration)';
+			description = 'Direct access to the 403 Forbidden error page. Note: Path traversal attacks (../...) are blocked server-side, but browsers/curl normalize URLs before sending. Use netcat for raw testing: echo -e "GET /www/../config/default.conf HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n" | nc localhost 8080';
 			break;
 		case '404':
 			path = '/nonexistent-page-' + Date.now();

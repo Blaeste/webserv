@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:56:28 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 10:28:16 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,3 +121,6 @@
 	 * @return 0 en cas de succès, -1 en cas d’échec.
 	 */
 	int safeClose(int fd);
+
+
+	bool isPathSafe(const std::string &path);
