@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 14:31:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 19:49:24 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,7 +175,7 @@ int safeClose(int fd) {
 	return 0;
 }
 
-bool isPathSafe(const std::string &path) {
+bool isPathSafe(const std::string &path){
 
 	// Refuse any path containing ".."
 	if (path.find("..") != std::string::npos)
@@ -192,6 +192,24 @@ bool isPathSafe(const std::string &path) {
 
 	return false;
 }
+
+bool isPathSafeForUploadsAndDelet(const std::string &path)
+{
+
+	if (path.find("..") != std::string::npos)
+		return false;
+
+	const std::string allowed1 = "./uploads";
+	const std::string allowed2 = "uploads";
+
+	if (path.compare(0, allowed1.size(), allowed1) == 0)
+		return true;
+	if (path.compare(0, allowed2.size(), allowed2) == 0)
+		return true;
+
+	return false;
+}
+
 
 void setNonBlocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 14:33:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 19:33:25 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,6 +128,8 @@
 	 * @return true if the path is safe (no directory traversal, starts with allowed prefix), false otherwise.
 	 */
 	bool isPathSafe(const std::string &path);
+
+	bool isPathSafeForUploadsAndDelet(const std::string &path);
 
 	/**
 	 * @brief Sets a file descriptor to non-blocking mode.

@@ -5,7 +5,9 @@ function loadFilesList() {
 	if (!fileListDiv) return; // error if not on the good page
 
 	// Fetch and display list of files
-	fetch('/uploads')
+	fetch('/uploads', {
+		headers: { 'X-Internal-Request': 'true' }
+	})
 		.then(response => response.text())
 		.then(html => {
 			const parser = new DOMParser();

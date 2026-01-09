@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 14:30:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 17:43:38 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -315,8 +315,8 @@ void Server::cleanupSessions() {
 	}
 }
 
-void Server::signalHandler(int /*sig*/) {
-	//s_stop = 1;
+void Server::signalHandler(int /*sig*/)
+{
 	if (_s_sigpipe[1] != -1)
 		write(_s_sigpipe[1], "1", 1);
 }

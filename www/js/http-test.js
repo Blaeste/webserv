@@ -14,14 +14,14 @@ async function sendRequest() {
 	const bodyDiv = document.getElementById('responseBody');
 
 	// Security only on uploads
-	if ((method === 'POST' || method === 'PUT' || method === 'DELETE') && !url.startsWith('/uploads/')) {
+	/*if ((method === 'POST' || method === 'PUT' || method === 'DELETE') && !url.startsWith('/uploads/')) {
 		responseBox.classList.add('visible');
 		statusDiv.className = 'status-4xx';
 		statusDiv.innerHTML = '⚠️ POST, PUT and DELETE is only allowed on /uploads/* paths for safety';
 		headersDiv.innerHTML = '';
 		bodyDiv.innerHTML = '<p>Please use a path starting with /uploads/</p>';
 		return;
-	}
+	}*/
 
 	// Show loading
 	responseBox.classList.add('visible');
