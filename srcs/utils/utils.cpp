@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 12:47:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 10:52:36 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -174,3 +174,22 @@ int safeClose(int fd) {
 	}
 	return 0;
 }
+
+bool isPathSafe(const std::string &path) {
+
+	// Refuse any path containing ".."
+	if (path.find("..") != std::string::npos)
+		return false;
+
+	// Check if path start ith allowed directories
+	if (path.find("./www/") == 0 ||
+		path.find("www/") == 0 ||
+		path.find("./uploads/") == 0 ||
+		path.find("uploads/") == 0 ||
+		path.find("./cgi-bin/") == 0 ||
+		path.find("cgi-bin/") == 0)
+		return true;
+
+	return false;
+}
+

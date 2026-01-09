@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:42:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 10:36:06 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,6 +131,13 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 
 void HttpResponse::serveFile(const std::string &path)
 {
+	// Security check
+	if (!isPathSafe(path))
+	{
+		serveError(403, "Access forbidden");
+		return;
+	}
+
 	// Check if file exists
 	if (!fileExists(path))
 	{
@@ -262,6 +269,13 @@ static std::string sanitizeFilename(const std::string &filename)
 
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
 {
+	// Security check
+	if (!isPathSafe(uploadDir))
+	{
+		serveError(403, "Access forbidden");
+		return;
+	}
+
 	const std::vector<UploadedFile> &files = request.getUploadedFiles();
 
 	if (files.empty())
