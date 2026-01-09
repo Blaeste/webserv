@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 13:39:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 13:52:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 
 // Signal handler statics
 // volatile sig_atomic_t Server::s_stop = 0;
-int Server::s_sigpipe[2] = {-1, -1};
+int Server::_s_sigpipe[2] = {-1, -1};
 
 // Default constructor
 Server::Server(const Config& config)
@@ -44,10 +44,10 @@ Server::~Server() {
 		safeClose(_clients[i].getSocket());
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
-	if(s_sigpipe[0] >= 0)
-		close(s_sigpipe[0]);
-	if(s_sigpipe[1] >= 0)
-		close(s_sigpipe[1]);
+	if(_s_sigpipe[0] >= 0)
+		close(_s_sigpipe[0]);
+	if(_s_sigpipe[1] >= 0)
+		close(_s_sigpipe[1]);
 	std::cout << "\nServer was closed" << std::endl;
 }
 
@@ -74,7 +74,7 @@ void Server::run() {
 		// Process events on each socket
 		for (size_t i = 0; i < _pollFds.size(); i++) {
 			// trigered by SIGINT OR SIGTERM handler
-			if (_pollFds[i].fd == s_sigpipe[0] && (_pollFds[i].revents & POLLIN)) {
+			if (_pollFds[i].fd == _s_sigpipe[0] && (_pollFds[i].revents & POLLIN)) {
 				handleSignalPipeReadable();
 				break;
 			}
@@ -320,23 +320,23 @@ static int set_nonblocking(int fd) {
 
 void Server::signalHandler(int /*sig*/) {
 	//s_stop = 1;
-	if (s_sigpipe[1] != -1)
-		write(s_sigpipe[1], "1", 1);
+	if (_s_sigpipe[1] != -1)
+		write(_s_sigpipe[1], "1", 1);
 }
 
 // drain pipe so it doesn't remain readable forever
 void Server::handleSignalPipeReadable() {
 	char buf[64];
-	while (read(s_sigpipe[0], buf, sizeof(buf)) > 0);
+	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0);
 	_running = false;
 }
 
 void Server::installSignals() {
 	// create self-pipe
-	if (pipe(s_sigpipe) == -1)
+	if (pipe(_s_sigpipe) == -1)
 		throw std::runtime_error(std::string("pipe() failed: ") + std::strerror(errno));
-	set_nonblocking(s_sigpipe[0]);
-	set_nonblocking(s_sigpipe[1]);
+	set_nonblocking(_s_sigpipe[0]);
+	set_nonblocking(_s_sigpipe[1]);
 
 	addSignalPipeToPoll();
 
@@ -353,7 +353,7 @@ void Server::installSignals() {
 
 void Server::addSignalPipeToPoll() {
 	struct pollfd p;
-	p.fd = s_sigpipe[0];
+	p.fd = _s_sigpipe[0];
 	p.events = POLLIN;
 	p.revents = 0;
 	_pollFds.push_back(p);

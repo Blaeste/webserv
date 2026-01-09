@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 11:46:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 13:51:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ class Server {
 			bool _running;
 			Router _router;
 			std::map<std::string, SessionData> _sessions;
-			// int _g_sigpipe[2];
+			static int _s_sigpipe[2]; //static volatile sig_atomic_t s_stop;
 
 	public:
 
@@ -80,9 +80,6 @@ class Server {
 			void handleClientWrite(size_t clientIndex);
 
 		// Signal handling
-
-			//static volatile sig_atomic_t s_stop;
-			static int s_sigpipe[2];
 
 			static void signalHandler(int sig);
 			void installSignals();
