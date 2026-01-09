@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/09 13:00:40 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 19:57:46 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,17 +17,20 @@
 
 // Private method(s)
 // Find location with longest matching path prefix
-const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const {
-	const std::vector<Location>& locations = config.getLocations();
-	const Location* bestMatch = NULL;
+const Location *Router::findMatchingLocation(const ServerConfig &config, const std::string &uri) const
+{
+	const std::vector<Location> &locations = config.getLocations();
+	const Location *bestMatch = NULL;
 	size_t longestMatch = 0;
-	for (size_t i = 0; i < locations.size(); i++) {
-		const std::string& path = locations[i].getPath();
+	for (size_t i = 0; i < locations.size(); i++)
+	{
+		const std::string &path = locations[i].getPath();
 
 		// Check if URI starts with location path
-		if (uri.find(path) == 0 && path.length() > longestMatch) {
-				longestMatch = path.length();
-				bestMatch = &locations[i];
+		if (uri.find(path) == 0 && path.length() > longestMatch)
+		{
+			longestMatch = path.length();
+			bestMatch = &locations[i];
 		}
 	}
 	return bestMatch;
@@ -35,7 +38,8 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 
 // Public method(s)
 // Match request to appropriate route and determine response type
-RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const {
+RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &request) const
+{
 	std::string uri = request.getUri();
 	RouteMatch match;
 	match.serverName = config.getServerName();
@@ -57,7 +61,8 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 	match.location = findMatchingLocation(config, uri);
 	if (!match.location)
 		match.statusCode = 404;
-	else {
+	else
+	{
 		std::string method = request.getMethod();
 
 		// Check if method is implemented
@@ -68,19 +73,24 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 		else if (!match.location->isMethodAllowed(method))
 			match.statusCode = 405;
 
-		else if (!(match.redirectUrl = match.location->getRedirect()).empty()) {
+		else if (!(match.redirectUrl = match.location->getRedirect()).empty())
+		{
 			match.isRedirect = true;
 			match.statusCode = 301;
 		}
 
 		// Only proceed with file resolution if no error yet
-		if (match.statusCode == 200) {
+		if (match.statusCode == 200)
+		{
 			// Try index files for root or directory paths
-			if (uri == "/" || uri.empty()) {
-				const std::vector<std::string>& indexes = match.location->getIndex();
-				for (size_t i = 0; i < indexes.size(); i++) {
+			if (uri == "/" || uri.empty())
+			{
+				const std::vector<std::string> &indexes = match.location->getIndex();
+				for (size_t i = 0; i < indexes.size(); i++)
+				{
 					std::string indexPath = match.location->getRoot() + "/" + indexes[i];
-					if (fileExists(indexPath)) {
+					if (fileExists(indexPath))
+					{
 						uri = "/" + indexes[i];
 						break;
 					}
@@ -103,14 +113,20 @@ RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& req
 				return match;
 			}
 
+			// DELETE is allowed by config but must target uploads
+			if (method == "DELETE" && !isPathSafeForUploadsAndDelet(match.filePath))
+			{
+				match.statusCode = 403;
+				return match;
+			}
+
 			// Check if request should be handled by CGI
 			std::string cgiExt = match.location->getCgiExtension();
 			if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
 				match.isCGI = true;
 
 			// Check if file exists (skip for POST and CGI)
-			if (match.statusCode == 200 && !match.isCGI && request.getMethod() != "POST"
-				&& (!fileExists(match.filePath) || (isDirectory(match.filePath) && !match.location->getAutoIndex())))
+			if (match.statusCode == 200 && !match.isCGI && request.getMethod() != "POST" && (!fileExists(match.filePath) || (isDirectory(match.filePath) && !match.location->getAutoIndex())))
 				match.statusCode = 404;
 		}
 	}

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 12:02:50 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 19:35:34 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,6 +229,13 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 
 void HttpResponse::serveDelete(const std::string &path)
 {
+	// Enforce upload-only delete policy
+	if (!isPathSafeForUploadsAndDelet(path))
+	{
+		serveError(403, "");
+		return;
+	}
+
 	// Check if file exist
 	if (!fileExists(path))
 	{
@@ -237,7 +244,7 @@ void HttpResponse::serveDelete(const std::string &path)
 	}
 
 	// Check if it directory (cannot del dir)
-	if (isDirectory(path))
+	if (isDirectory(path) || !isPathSafeForUploadsAndDelet(path))
 	{
 		serveError(403, "");
 		return;
@@ -281,8 +288,10 @@ static std::string sanitizeFilename(const std::string &filename)
 
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
 {
-	// Security check
-	if (!isPathSafe(uploadDir))
+	// Security check only allow to upload and delet in /uploads
+	std::cout<<std::endl<<"\nUPLOADDRIR"<<uploadDir<<std::endl;
+
+	if (!isPathSafeForUploadsAndDelet(uploadDir))
 	{
 		serveError(403, "Access forbidden");
 		return;

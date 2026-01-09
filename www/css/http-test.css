@@ -83,11 +83,6 @@
     border-radius: 4px;
 }
 
-.status-2xx { background: #4CAF50; color: white; }
-.status-3xx { background: #FF9800; color: white; }
-.status-4xx { background: #f44336; color: white; }
-.status-5xx { background: #9C27B0; color: white; }
-
 #responseHeaders {
     margin: 15px 0;
     padding: 10px;
@@ -203,12 +198,6 @@
 	transform: translateY(2px);
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
-
-/* Avoid overriding global status classes used elsewhere */
-.response-box .status-2xx { background: #4CAF50; color: #fff; }
-.response-box .status-3xx { background: #FF9800; color: #fff; }
-.response-box .status-4xx { background: #f44336; color: #fff; }
-.response-box .status-5xx { background: #9C27B0; color: #fff; }
 
 /* Slightly more consistent rounding */
 .request-form,
