@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/08 16:22:02 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/09 12:52:02 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ class Client{
 
 			int _socket;
 			int _localPort;
+			std::string _clientIp;
 			std::string _readBuffer;
 			HttpRequest _request;
 			HttpResponse _response;
@@ -44,12 +45,13 @@ class Client{
 
 		// Default constructor
 
-			Client(int socket);
+			Client(int socket, const std::string &clientIp);
 
 		// Accessor(s)
 
 			int getLocalPort()const;
 			int getSocket() const;
+			const std::string &getClientIp() const;
 			bool hasTimedOut(time_t timeout) const;
 			void updateActivity();
 			const HttpRequest& getRequest() const;

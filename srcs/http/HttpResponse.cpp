@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 10:36:06 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/09 12:02:50 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,17 @@ void HttpResponse::setHeader(const std::string &key, const std::string &value)
 void HttpResponse::setBody(const std::string &body)
 {
 	_body = body;
+}
+
+// Getters(s)
+int HttpResponse::getStatus()
+{
+	return _statusCode;
+}
+
+const std::string &HttpResponse::getBody() const
+{
+	return _body;
 }
 
 // Private Method(s)
