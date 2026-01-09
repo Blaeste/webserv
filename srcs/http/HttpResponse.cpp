@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:42:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 10:49:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,10 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
-#include <fcntl.h>   // open()
+#include <cstdio>	// remove()
+#include <fcntl.h>	// open()
 #include <iostream>
-#include <unistd.h> // write(), close(), unlink()
+#include <unistd.h>	// write(), close()
 
 // Default constructor
 HttpResponse::HttpResponse() :
@@ -225,10 +226,10 @@ void HttpResponse::serveDelete(const std::string &path)
 	}
 
 	// Try to delete the file
-	if (unlink(path.c_str()) == 0)
+	if (std::remove(path.c_str()) == 0) {
 		setStatus(204); // Success: 204 No Content
-	else {
-		std::cerr << "[HttpResponse] serveDelete: unlink failed for " << path << std::endl;
+	} else {
+		std::cerr << "[HttpResponse] serveDelete: remove failed for " << path << std::endl;
 		serveError(500, "");
 	}
 }
