@@ -9,24 +9,30 @@ function loadHeader() {
 				<a href="/files.html">Files</a>
 				<a href="/about.html">About</a>
 				<a href="/qrcode.html">QR Code</a>
-				<a href="/counter.html">Visite count</a>
 				<a href="/errors.html">Errors</a>
 				<a href="/http-test.html">HTTP</a>
 				<a href="/contact.html">Contact</a>
 			</nav>
-			<div id="status-pill" class="status-pill status-loading">Loading status...</div>
+			<div class="header-info">
+				<div id="svisit-counter" class="visit-counter"><span id ="visit-count">-</span> pages visited</div>
+				<div id="status-pill" class="status-pill status-loading">Loading status...</div>
+			</div>
 		</header>
 	`;
 
 	document.body.insertAdjacentHTML('afterbegin', header);
 	updateStatusCode();
+	updateVisitCounter();
 }
 
 function updateStatusCode() {
 	const pill = document.getElementById('status-pill');
 	if (!pill) return;
 
-	fetch(window.location.pathname, { cache: 'no-store' })
+	fetch(window.location.pathname, {
+		cache: 'no-store',
+		headers: { 'X-Internal-Request': 'true' }
+	})
 		.then(response => {
 			const code = response.status;
 			let label ='status code: ' + code + ' ' + (response.statusText || '');
@@ -40,6 +46,21 @@ function updateStatusCode() {
 		.catch(() => {
 			pill.textContent = 'Status unavailable';
 			pill.classList.remove('status-loading');
+		});
+}
+
+function updateVisitCounter() {
+	fetch('/counter-api', {
+		headers: { 'X-Internal-Request': 'true' }
+	})
+		.then(response => response.json())
+		.then(data => {
+			const countSpan = document.getElementById('visit-count');
+			if (countSpan) countSpan.textContent = data.visitCount;
+		})
+		.catch(() => {
+			const countSpan = document.getElementById('visit-count');
+			if (countSpan) countSpan.textContent = '?';
 		});
 }
 

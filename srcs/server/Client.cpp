@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:42:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 10:11:54 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,6 +30,7 @@ Client::Client(int socket)
 
 // Private method(s)
 void Client::handleSession(std::map<std::string, SessionData>& sessions) {
+
 	std::map<std::string, std::string> cookies = _request.getCookies();
 	std::string sessionId;
 
@@ -39,15 +40,16 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 		// Update existing session or create new if expired
 		if (sessions.find(sessionId) != sessions.end()) {
 			sessions[sessionId].lastActive = time(NULL);
+
 			// Only count html request (for good count page visit)
 			std::string uri = _request.getUri();
-			if (uri.find(".css") == std::string::npos &&
-				uri.find(".js") == std::string::npos &&
-				uri.find(".png") == std::string::npos &&
-				uri.find(".jpg") == std::string::npos &&
-				uri != "/counter-api") {
+			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
+			bool isHtmlPage = (uri == "/" ||
+							uri.find(".html") != std::string::npos ||
+							(uri.find('.') == std::string::npos && uri != "/counter-api"));
+			if (isHtmlPage && !isInternalRequest) {
 					sessions[sessionId].visitCount++;
-				}
+			}
 		} else {
 			// Invalid/expired session → create new
 			sessionId = generateSessionId();
