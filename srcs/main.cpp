@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:22:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/09 11:05:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,8 +81,7 @@ int main(int argc, char **argv)
 			std::cerr << "Error: Failed to parse configuration file" << std::endl;
 			return 1;
 		}
-		Server server;
-		server.init(config);
+		Server server(config);
 		server.run();
 	}
 	catch (const std::exception& e)
