@@ -237,11 +237,17 @@ footer {
 	}
 }
 
+
 h1 {
 	font-size: 40px;
-	color: #000000;
+	color: #0009b9;
 	margin-bottom: 30px;
 	margin-top: 0px;
+}
+
+h2
+{
+	margin: 7px;
 }
 
 .header-info {
@@ -329,10 +335,6 @@ nav a:hover {
 
 html {
 	height: 100%;
-}
-
-h1 {
-	color: #0066cc;
 }
 
 p {
