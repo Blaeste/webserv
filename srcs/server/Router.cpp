@@ -113,13 +113,6 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				return match;
 			}
 
-			// DELETE is allowed by config but must target uploads
-			if (method == "DELETE" && !isPathSafeForUploadsAndDelet(match.filePath))
-			{
-				match.statusCode = 403;
-				return match;
-			}
-
 			// Check if request should be handled by CGI
 			std::string cgiExt = match.location->getCgiExtension();
 			if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))

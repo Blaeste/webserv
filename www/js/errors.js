@@ -17,17 +17,22 @@ function updateRequestPreview() {
 			description = 'Direct navigation to 400 error page (actual bad request errors are difficult to trigger from browser)';
 			break;
 		case '403':
-			path = '/error_pages/403.html';
-			description = 'Direct access to the 403 Forbidden error page. Note: Path traversal attacks (../...) are blocked server-side, but browsers/curl normalize URLs before sending. Use netcat for raw testing: echo -e "GET /www/../config/default.conf HTTP/1.1\\r\\nHost: localhost\\r\\n\\r\\n" | nc localhost 8080';
+			path = '/..%2Fconfig/default.conf';
+			description = 'Attempt encoded path traversal (../) which the server blocks with a 403';
 			break;
 		case '404':
-			path = '/nonexistent-page-' + Date.now();
+			path = '/nonexistent-page-';
 			description = 'Request to a non-existent URL to trigger a genuine 404 Not Found error';
 			break;
 		case '405':
 			method = 'PUT';
 			path = '/';
 			description = 'Attempt to use PUT method on the root path (which only allows GET), triggering a 405 Method Not Allowed error';
+			break;
+		case '413':
+			method = 'POST';
+			path = '/';
+			description = 'Send an oversized POST body to exceed the 10MB limit and trigger 413';
 			break;
 		case '504':
 			path = '/cgi-bin/py/timeout.py';
@@ -62,7 +67,17 @@ function testError() {
 			window.location.href = '/error_pages/400.html';
 			break;
 		case '403':
-			window.location.href = '/error_pages/403.html';
+			fetch('/..%2Fconfig/default.conf', { headers: { 'X-Internal-Request': 'true' } })
+				.then(response => {
+					if (response.status === 403) {
+						window.location.href = '/error_pages/403.html';
+					} else {
+						resultDiv.innerHTML = '<p>Unexpected status: ' + response.status + ' ' + response.statusText + '</p>';
+					}
+				})
+				.catch(err => {
+					resultDiv.innerHTML = '<p class="error">Request failed: ' + err.message + '</p>';
+				});
 			break;
 		case '404':
 			window.location.href = '/nonexistent-page-' + Date.now();
@@ -75,6 +90,21 @@ function testError() {
 					}
 				});
 			break;
+		case '413': {
+			const oversized = 'a'.repeat(11 * 1024 * 1024); // ~11MB
+			fetch('/', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: oversized })
+				.then(response => {
+					if (response.status === 413) {
+						window.location.href = '/error_pages/413.html';
+					} else {
+						resultDiv.innerHTML = '<p>Unexpected status: ' + response.status + ' ' + response.statusText + '</p>';
+					}
+				})
+				.catch(err => {
+					resultDiv.innerHTML = '<p class="error">Request failed: ' + err.message + '</p>';
+				});
+			break;
+		}
 		case '504':
 			resultDiv.innerHTML = '<p>Triggering CGI timeout (this will take 5+ seconds)...</p>';
 			setTimeout(() => {

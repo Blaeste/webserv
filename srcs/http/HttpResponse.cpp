@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 19:35:34 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/10 13:55:34 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -229,13 +229,6 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 
 void HttpResponse::serveDelete(const std::string &path)
 {
-	// Enforce upload-only delete policy
-	if (!isPathSafeForUploadsAndDelet(path))
-	{
-		serveError(403, "");
-		return;
-	}
-
 	// Check if file exist
 	if (!fileExists(path))
 	{
