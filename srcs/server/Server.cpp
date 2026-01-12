@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 15:57:14 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 16:31:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,8 +37,9 @@ Server::Server(const Config& config)
 
 // Destructor
 Server::~Server() {
-	for (size_t i = 0; i < _clients.size(); i++)
-		safeClose(_clients[i].getSocket());
+	// Close all client connections
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+		safeClose(it->first);
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
 	if(_s_sigpipe[0] >= 0)
@@ -168,9 +169,9 @@ void Server::acceptNewClient(int listenSocket) {
 		safeClose(clientFd);
 		return;
 	}
-	// Add a Client to the vector
+	// Add a Client to the map
 	Client newClient(clientFd, std::string(clientIp));
-	_clients.push_back(newClient);
+	_clients.insert(std::make_pair(clientFd, newClient));
 
 	// Add the new client socket to poll() to monitor incoming data
 	struct pollfd pfd;
@@ -182,24 +183,27 @@ void Server::acceptNewClient(int listenSocket) {
 }
 
 void Server::handleClientTimeouts() {
-	for (size_t i = 0; i < _clients.size();) {
-		// Use different timeouts based on client state
-		if (_clients[i].hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
-			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
+	std::map<int, Client>::iterator it = _clients.begin();
+	while (it != _clients.end()) {
+		if (it->second.hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
+			int fd = it->first;
+			std::cout << "Client timeout (fd " << fd << ")" << std::endl;
 
 			// Find and remove corresponding pollfd
 			for (size_t j = 0; j < _pollFds.size(); j++) {
-				if (_pollFds[j].fd == _clients[i].getSocket()) {
-					safeClose(_pollFds[j].fd);
+				if (_pollFds[j].fd == fd) {
+					safeClose(fd);
 					_pollFds.erase(_pollFds.begin() + j);
 					break;
 				}
 			}
-			_clients.erase(_clients.begin() + i);
-			// Don't increment i, element removed
+
+			std::map<int, Client>::iterator toErase = it;
+			++it;
+			_clients.erase(toErase);
 		}
 		else
-			i++;
+			++it;
 	}
 }
 
@@ -207,22 +211,19 @@ void Server::handleClientRead(size_t clientIndex) {
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
-	size_t i;
-	for (i = 0; i < _clients.size(); i++)
-		if (_clients[i].getSocket() == clientFd)
-			break;
-	if (i == _clients.size()) {
+	std::map<int, Client>::iterator it = _clients.find(clientFd);
+	if (it == _clients.end()) {
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client& client = _clients[i];
+	Client &client = it->second;
 
 	// Read data from socket
 	if (!client.readData()) {
 		// Error or disconnection
-		std::cout << "Client disconnected (fd " << client.getSocket() << ")" << std::endl;
-		safeClose(client.getSocket());
-		_clients.erase(_clients.begin() + i);
+		std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
+		safeClose(clientFd);
+		_clients.erase(it);
 		_pollFds.erase(_pollFds.begin() + clientIndex);
 		return;
 	}
@@ -248,23 +249,20 @@ void Server::handleClientWrite(size_t clientIndex) {
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
-	size_t i;
-	for (i = 0; i < _clients.size(); i++)
-		if (_clients[i].getSocket() == clientFd)
-			break;
-	if (i == _clients.size()) {
+	std::map<int, Client>::iterator it = _clients.find(clientFd);
+	if (it == _clients.end()) {
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client &client = _clients[i];
+	Client &client = it->second;
 
 	// Send response
 	if (!client.sendResponse())
 		std::cerr << "Error sending response to fd " << clientFd << std::endl;
 
 	// Close connection and cleanup after sending
-	safeClose(client.getSocket());
-	_clients.erase(_clients.begin() + i);
+	safeClose(clientFd);
+	_clients.erase(it);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
 

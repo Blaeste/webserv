@@ -49,7 +49,7 @@ class Server {
 				CLIENT_PROCESSING_TIMEOUT = 300 // 5 minutes - timeout for processing/CGI execution
 			};
 			std::vector<ServerConfig> _configs;
-			std::vector<Client> _clients;
+		std::map<int, Client> _clients;  // fd → Client (O(log n) lookup)
 			std::vector<pollfd> _pollFds;
 			std::vector<int> _listenSockets;
 			bool _running;
