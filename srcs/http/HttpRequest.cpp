@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:00:24 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:16:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -222,6 +222,7 @@ bool HttpRequest::parseChunked()
 	std::string &data = _rawData;
 	std::string body;
 	size_t pos = 0;
+	size_t totalBodySize = 0;
 
 	while (true)
 	{
@@ -232,7 +233,31 @@ bool HttpRequest::parseChunked()
 
 		// Parse chunk size (hexa)
 		std::string sizeStr = data.substr(pos, lineEnd - pos);
+
+		// Security: Validate chunk size format (must be hex)
+		if (sizeStr.empty() || sizeStr.length() > 16)
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+
+		for (size_t i = 0; i < sizeStr.length(); i++)
+		{
+			if (!std::isxdigit(sizeStr[i]))
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+		}
+
 		size_t chunkSize = std::strtol(sizeStr.c_str(), NULL, 16);
+
+		// Security: Check individuak chunk size
+		if (chunkSize > MAX_CHUNK_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
 
 		pos = lineEnd + 2; // skip "\r\n"
 
@@ -241,6 +266,14 @@ bool HttpRequest::parseChunked()
 		{
 			_body = body;
 			return true;
+		}
+
+		// Security: Check total accumulated body size
+		totalBodySize += chunkSize;
+		if (totalBodySize > MAX_BODY_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
 		}
 
 		// Check if chunk is complet (full data)
@@ -357,7 +390,39 @@ bool HttpRequest::parse()
 	// Cas 2 Content Length
 	else if (!getHeader("content-length").empty())
 	{
-		size_t contentLength = atoi(getHeader("content-length").c_str());
+		std::string clStr = getHeader("content-length");
+
+		// Security: Validate Content-Length format (only digit)
+		if (clStr.empty())
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+
+		for (size_t i = 0; i < clStr.length(); i++)
+		{
+			if (!std::isdigit(clStr[i]))
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+		}
+
+		// Security: Check for overflow (max 20 digits)
+		if (clStr.length() > 20)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
+
+		size_t contentLength = atoi(clStr.c_str());
+
+		// Security: Check Content-Length against max body size
+		if (contentLength > MAX_BODY_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
 
 		if (_rawData.length() < bodyStart + contentLength)
 			return false; // incomplet body
