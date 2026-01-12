@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 17:43:38 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 10:33:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,10 +23,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <cerrno>
-#include <arpa/inet.h> // ip client
+#include <arpa/inet.h> // IP client
 
-// Signal handler statics
-// volatile sig_atomic_t Server::s_stop = 0;
+// Self-pipe for signal handling in poll()
 int Server::_s_sigpipe[2] = {-1, -1};
 
 // Default constructor
@@ -34,22 +33,24 @@ Server::Server(const Config& config)
 	: _configs(config.getServers())
 	, _running(false)
 {
-	setupListenSockets();
 	installSignals();
+	setupListenSockets();
 }
 
+// Destructor
 Server::~Server() {
 	for (size_t i = 0; i < _clients.size(); i++)
 		safeClose(_clients[i].getSocket());
 	for (size_t i = 0; i < _listenSockets.size(); i++)
 		safeClose(_listenSockets[i]);
 	if(_s_sigpipe[0] >= 0)
-		close(_s_sigpipe[0]);
+		safeClose(_s_sigpipe[0]);
 	if(_s_sigpipe[1] >= 0)
-		close(_s_sigpipe[1]);
+		safeClose(_s_sigpipe[1]);
 	std::cout << "\nServer was closed" << std::endl;
 }
 
+// Public method(s)
 void Server::run() {
 	_running = true;
 	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
@@ -315,13 +316,13 @@ void Server::cleanupSessions() {
 	}
 }
 
-void Server::signalHandler(int /*sig*/)
-{
+// Called by OS when SIGINT/SIGTERM received (async-signal-safe)
+void Server::signalHandler(int) {
 	if (_s_sigpipe[1] != -1)
 		write(_s_sigpipe[1], "1", 1);
 }
 
-// drain pipe so it doesn't remain readable forever
+// Drain pipe so it doesn't remain readable and stop server
 void Server::handleSignalPipeReadable() {
 	char buf[64];
 	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0);
@@ -329,14 +330,14 @@ void Server::handleSignalPipeReadable() {
 }
 
 void Server::installSignals() {
-	// create self-pipe
+	// Create self-pipe for safe signal handling in poll()
 	if (pipe(_s_sigpipe) == -1)
 		throw std::runtime_error(std::string("pipe() failed: ") + std::strerror(errno));
 	setNonBlocking(_s_sigpipe[0]);
 	setNonBlocking(_s_sigpipe[1]);
-
 	addSignalPipeToPoll();
 
+	// Register signal handlers for graceful shutdown
 	struct sigaction sa;
 	memset(&sa, 0, sizeof(sa));
 	sa.sa_handler = &Server::signalHandler;
@@ -344,7 +345,7 @@ void Server::installSignals() {
 	sigaction(SIGINT, &sa, 0);
 	sigaction(SIGTERM, &sa, 0);
 
-	// avoid process death on send() to closed socket
+	// Ignore SIGPIPE to prevent termination on broken socket writes
 	signal(SIGPIPE, SIG_IGN);
 }
 
