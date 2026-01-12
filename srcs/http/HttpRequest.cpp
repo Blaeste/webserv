@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:16:23 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:25:42 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,14 @@ bool HttpRequest::appendData(const std::string &data)
 
 	// if not complete try to parse
 	if (!_isComplete)
+	{
 		_isComplete = parse();
+
+		// If parsing failed with an error, mark as complete anyway
+		// so we can send the error response immediately
+		if (!_isComplete && _errorCode != 0)
+			_isComplete = true;
+	}
 
 	return _isComplete;
 }
