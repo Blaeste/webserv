@@ -6,17 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:50:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 13:19:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Includes
+#include "Location.hpp"
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
-#include "Location.hpp"
 
 // Class
 class ServerConfig
@@ -30,7 +30,7 @@ class ServerConfig
 			std::string _serverName; // "localhost"
 			std::map<int, std::string> _errorPages; // {404: "/error_pages/404.html", 500: ...}
 			size_t _maxBodySize; // 10485760 (10M en bytes)
-			std::vector<Location> _locations; // Liste des locations
+			std::vector<Location> _locations; // Location list
 
 	public:
 
@@ -109,14 +109,5 @@ class ServerConfig
 			 * @return A constant reference to a vector of Location objects.
 			 */
 			const std::vector<Location> &getLocations() const;
-
-		// Public method(s)
-
-			/**
-			 * @brief Matches a URI to the most appropriate Location.
-			 * @param uri The request URI.
-			 * @return A pointer to the matched Location, or nullptr if no match is found.
-			 */
-			const Location *matchLocation(const std::string &uri) const;
 
 };

@@ -18,9 +18,7 @@
 #include "../utils/Logger.hpp"
 #include <cstring>
 #include <iostream>
-#include <netinet/in.h>
 #include <stdexcept>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <cerrno>
 #include <arpa/inet.h> // IP client
@@ -28,10 +26,10 @@
 // Self-pipe for signal handling in poll()
 int Server::_s_sigpipe[2] = {-1, -1};
 
-// Default constructor
 Server::Server(const Config& config)
 	: _configs(config.getServers())
 	, _running(false)
+	, _lastSessionCleanup(0)
 {
 	installSignals();
 	setupListenSockets();
@@ -54,17 +52,11 @@ Server::~Server() {
 void Server::run() {
 	_running = true;
 	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
-	static time_t lastCleanup = 0;
 
 	while (_running) {
 		// Check for idle client timeouts
-		checkTimeouts();
-
-		// Cleanup expired sessions every 60 seconds
-		if (time(NULL) - lastCleanup > SESSION_CLEANUP_INTERVAL) {
-			cleanupSessions();
-			lastCleanup = time(NULL);
-		}
+		handleClientTimeouts();
+		handleSessionTimeouts();
 
 		// Poll for events on all sockets (1 second timeout)
 		int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
@@ -102,27 +94,6 @@ void Server::stop() {
 }
 
 // Private method(s)
-void Server::checkTimeouts() {
-	for (size_t i = 0; i < _clients.size();) {
-		// Use different timeouts based on client state
-		if (_clients[i].hasTimedOut(CLIENT_READ_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
-			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
-
-			// Find and remove corresponding pollfd
-			for (size_t j = 0; j < _pollFds.size(); j++) {
-				if (_pollFds[j].fd == _clients[i].getSocket()) {
-					safeClose(_pollFds[j].fd);
-					_pollFds.erase(_pollFds.begin() + j);
-					break;
-				}
-			}
-			_clients.erase(_clients.begin() + i);
-			// Don't increment i, element removed
-		}
-		else
-			i++;
-	}
-}
 
 void Server::setupListenSockets() {
 	// Create one listening socket per configuration (one per port)
@@ -210,36 +181,26 @@ void Server::acceptNewClient(int listenSocket) {
 	Logger::logConnection(clientFd, std::string(clientIp));
 }
 
-static int getLocalPort(int fd) {
-	sockaddr_in addr;
+void Server::handleClientTimeouts() {
+	for (size_t i = 0; i < _clients.size();) {
+		// Use different timeouts based on client state
+		if (_clients[i].hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
+			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
 
-	socklen_t len = sizeof(addr);
-	if (getsockname(fd, (sockaddr*)&addr, &len) == 0)
-		return ntohs(addr.sin_port);
-	return -1;
-}
-
-const ServerConfig *Server::selectConfig(const HttpRequest &request,  int clientFd) const {
-	std::string host = request.getHeader("Host");
-	int localPort = getLocalPort(clientFd);
-
-	// Remove port from Host header if present
-	size_t colonPos = host.find(':');
-
-	const ServerConfig* defaultForPort = NULL;
-	if (colonPos != std::string::npos)
-		host = host.substr(0, colonPos);
-
-	// Find config matching server_name
-	for (size_t i = 0; i < _configs.size(); i++) {
-		if (_configs[i].getPort() != localPort)
-			continue;
-		if (!defaultForPort)
-			defaultForPort = &_configs[i];
-		if (!host.empty() && _configs[i].getServerName() == host)
-			return &_configs[i];
+			// Find and remove corresponding pollfd
+			for (size_t j = 0; j < _pollFds.size(); j++) {
+				if (_pollFds[j].fd == _clients[i].getSocket()) {
+					safeClose(_pollFds[j].fd);
+					_pollFds.erase(_pollFds.begin() + j);
+					break;
+				}
+			}
+			_clients.erase(_clients.begin() + i);
+			// Don't increment i, element removed
+		}
+		else
+			i++;
 	}
-	return defaultForPort;
 }
 
 void Server::handleClientRead(size_t clientIndex) {
@@ -311,10 +272,39 @@ void Server::handleClientWrite(size_t clientIndex) {
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
 
-void Server::cleanupSessions() {
+const ServerConfig *Server::selectConfig(const HttpRequest &request,  int clientFd) const {
+	std::string host = request.getHeader("Host");
+	int localPort = getSocketPort(clientFd);
+
+	// Remove port from Host header if present
+	size_t colonPos = host.find(':');
+
+	const ServerConfig* defaultForPort = NULL;
+	if (colonPos != std::string::npos)
+		host = host.substr(0, colonPos);
+
+	// Find config matching server_name
+	for (size_t i = 0; i < _configs.size(); i++) {
+		if (_configs[i].getPort() != localPort)
+			continue;
+		if (!defaultForPort)
+			defaultForPort = &_configs[i];
+		if (!host.empty() && _configs[i].getServerName() == host)
+			return &_configs[i];
+	}
+	return defaultForPort;
+}
+
+void Server::handleSessionTimeouts() {
+	// Check cleanup interval
+	if (time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
+		return;
+	_lastSessionCleanup = time(NULL);
+	
+	// Remove expired sessions
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
 	while (it != _sessions.end()) {
-		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT) { //
+		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT) {
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
 			_sessions.erase(toErase);
@@ -324,17 +314,25 @@ void Server::cleanupSessions() {
 	}
 }
 
-// Called by OS when SIGINT/SIGTERM received (async-signal-safe)
-void Server::signalHandler(int) {
-	if (_s_sigpipe[1] != -1)
-		write(_s_sigpipe[1], "1", 1);
-}
-
 // Drain pipe so it doesn't remain readable and stop server
 void Server::handleSignalPipeReadable() {
 	char buf[64];
 	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0);
 	_running = false;
+}
+
+void Server::addSignalPipeToPoll() {
+	struct pollfd p;
+	p.fd = _s_sigpipe[0];
+	p.events = POLLIN;
+	p.revents = 0;
+	_pollFds.push_back(p);
+}
+
+// Called by OS when SIGINT/SIGTERM received (async-signal-safe)
+void Server::signalHandler(int) {
+	if (_s_sigpipe[1] != -1)
+		write(_s_sigpipe[1], "1", 1);
 }
 
 void Server::installSignals() {
@@ -355,12 +353,4 @@ void Server::installSignals() {
 
 	// Ignore SIGPIPE to prevent termination on broken socket writes
 	signal(SIGPIPE, SIG_IGN);
-}
-
-void Server::addSignalPipeToPoll() {
-	struct pollfd p;
-	p.fd = _s_sigpipe[0];
-	p.events = POLLIN;
-	p.revents = 0;
-	_pollFds.push_back(p);
 }

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:40:25 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:21:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 #include <sstream> // for urlDecode
 #include <sys/stat.h> // stat() => files info
 #include <unistd.h> // read(), close()
+#include <sys/socket.h>  // for getsockname()
+#include <netinet/in.h>  // for sockaddr_in, ntohs()
 
 // Function(s)
 std::string trim(const std::string &str) {
@@ -225,4 +227,13 @@ std::vector<std::string> splitTokens(const std::string &str, char delimiter) {
 		result.push_back(buffer);
 
 	return result;
+}
+
+int getSocketPort(int fd) {
+	sockaddr_in addr;
+
+	socklen_t len = sizeof(addr);
+	if (getsockname(fd, (sockaddr*)&addr, &len) == 0)
+		return ntohs(addr.sin_port);
+	return -1;
 }
