@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
 /*   Updated: 2026/01/12 14:14:06 by gdosch           ###   ########.fr       */
@@ -119,7 +119,13 @@ bool Client::readData() { // Read data from socket into buffer and parse request
 	std::string newData(buffer, bytesRead);
 	_request.appendData(newData);
 	if (_request.isComplete())
+	{
 		_requestComplete = true;
+
+		if (_request.getErrorCode() != 0)
+			buildErrorResponse(_request.getErrorCode());
+	}
+
 	updateActivity();
 	return true;
 }
