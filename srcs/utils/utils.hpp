@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 19:33:25 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 10:49:15 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,14 +24,6 @@
 	 * @return A new string with leading and trailing whitespace removed.
 	 */
 	std::string trim(const std::string &str);
-
-	/**
-	 * @brief Splits a string into a vector of substrings based on a delimiter.
-	 * @param str The input string to split.
-	 * @param delimiter The character used as the delimiter.
-	 * @return A vector containing the split substrings.
-	 */
-	std::vector<std::string> split(const std::string &str, char delimiter);
 
 	/**
 	 * @brief Checks if a character is a hexadecimal digit.
@@ -137,3 +129,18 @@
 	 * @throws std::runtime_error if fcntl() fails.
 	 */
 	void setNonBlocking(int fd);
+
+	/**
+	 * @brief Converts a size_t value to a string.
+	 * @param n The size_t value to convert.
+	 * @return A string representation of the size_t value.
+	 */
+	std::string sizetToString(size_t n);
+
+	/**
+	 * @brief Split string and filter empty tokens
+	 * @param str String to split
+	 * @param delimiter Delimiter character
+	 * @return Vector of non-empty tokens
+	 */
+	std::vector<std::string> splitTokens(const std::string &str, char delimiter);
