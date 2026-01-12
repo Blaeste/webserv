@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:26:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:57:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,6 @@ Client::Client(int socket, const std::string &clientIp)
 	, _clientIp(clientIp)
 	, _lastActivity(time(NULL))
 	, _requestComplete(false)
-	, _responseReady(false)
 	, _state(STATE_IDLE)
 {}
 
@@ -150,7 +149,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	// Check body size limit
 	if (_request.getBody().size() > config.getMaxBodySize()) {
 		buildErrorResponse(413);
-		_responseReady = true;
 		// log + return
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
@@ -167,7 +165,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		_response.setStatus(200);
 		_response.setHeader("Content-Type", "application/json");
 		_response.setBody(json);
-		_responseReady = true;
 
 		// log and return
 		gettimeofday(&end, NULL);
@@ -217,8 +214,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	// Serve static file
 	else
 		_response.serveFile(match.filePath);
-
-	_responseReady = true;
 
 	// Logging
 	gettimeofday(&end, NULL);

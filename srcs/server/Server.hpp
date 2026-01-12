@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:27:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:57:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,4 +91,5 @@ class Server {
 			void installSignals();
 			void addSignalPipeToPoll();
 			void handleSignalPipeReadable();
+
 };
