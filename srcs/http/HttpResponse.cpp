@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/10 13:55:34 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 11:12:38 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -236,12 +236,12 @@ void HttpResponse::serveDelete(const std::string &path)
 		return;
 	}
 
-	// Check if it directory (cannot del dir)
-	if (isDirectory(path) || !isPathSafeForUploadsAndDelet(path))
-	{
-		serveError(403, "");
-		return;
-	}
+    // Security check: only allow deletion in /uploads directory
+    bool isInUploads = (!path.compare(0, 10, "./uploads/") || !path.compare(0, 8, "uploads/"));
+    if (isDirectory(path) || path.find("..") != std::string::npos || !isInUploads) {
+        serveError(403, "");
+        return;
+    }
 
 	// Try to delete the file
 	if (std::remove(path.c_str()) == 0) {
@@ -279,36 +279,30 @@ static std::string sanitizeFilename(const std::string &filename)
 	return safe;
 }
 
-void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
-{
-	// Security check only allow to upload and delet in /uploads
-	std::cout<<std::endl<<"\nUPLOADDRIR"<<uploadDir<<std::endl;
-
-	if (!isPathSafeForUploadsAndDelet(uploadDir))
-	{
-		serveError(403, "Access forbidden");
-		return;
-	}
+void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir) {
+    // Security check: only allow uploads in /uploads directory
+    bool isInUploads = (!uploadDir.compare(0, 10, "./uploads/") || !uploadDir.compare(0, 8, "uploads/"));
+    if (uploadDir.find("..") != std::string::npos || !isInUploads) {
+        serveError(403, "Access forbidden");
+        return;
+    }
 
 	const std::vector<UploadedFile> &files = request.getUploadedFiles();
 
-	if (files.empty())
-	{
+	if (files.empty()) {
 		serveError(400, ""); // Bad request - no files
 		return;
 	}
 
 	// Save each file
-	for (size_t i = 0; i < files.size(); ++i)
-	{
+	for (size_t i = 0; i < files.size(); ++i) {
 
 		std::string safeName = sanitizeFilename(files[i].filename);
 		std::string filePath = uploadDir + '/' + safeName;
 
 		// Open file fpr writing
 		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
-		if (fd < 0)
-		{
+		if (fd < 0) {
 			std::cerr << "[handleUpload] open failed: " << filePath << std::endl;
 			serveError(500, ""); // Failed to save
 			return;

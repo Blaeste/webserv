@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 19:33:25 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 11:14:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,11 +116,10 @@
 	std::string generateSessionId();
 
 	/**
-	 * @brief Ferme un descripteur de fichier et log une erreur si la fermeture échoue.
-	 * @param fd Le descripteur de fichier à fermer.
-	 * @return 0 en cas de succès, -1 en cas d’échec.
+	 * @brief Closes a file descriptor and logs an error if the operation fails.
+	 * @param fd The file descriptor to close.
 	 */
-	int safeClose(int fd);
+	void safeClose(int fd);
 
 	/**
 	 * @brief Validates that a file path is safe and within allowed directories.
@@ -128,8 +127,6 @@
 	 * @return true if the path is safe (no directory traversal, starts with allowed prefix), false otherwise.
 	 */
 	bool isPathSafe(const std::string &path);
-
-	bool isPathSafeForUploadsAndDelet(const std::string &path);
 
 	/**
 	 * @brief Sets a file descriptor to non-blocking mode.

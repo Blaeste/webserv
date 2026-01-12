@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 13:51:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 09:46:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,7 +49,7 @@ class Server {
 			bool _running;
 			Router _router;
 			std::map<std::string, SessionData> _sessions;
-			static int _s_sigpipe[2]; //static volatile sig_atomic_t s_stop;
+			static int _s_sigpipe[2];
 
 	public:
 

@@ -3,27 +3,28 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 19:49:24 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 11:14:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s)
 #include "utils.hpp"
-#include <fcntl.h> // open(), O_RDONLY
-#include <unistd.h> // read(), close()
-#include <sys/stat.h> // stat() => files info
-#include <sstream> // for urlDecode
+#include <cerrno>
 #include <cstdlib> // for strtol
+#include <cstring>
 #include <ctime> // for getHttpDate -> strftime
 #include <dirent.h> // for listDirectory
+#include <fcntl.h> // open(), O_RDONLY
 #include <iostream>
+#include <sstream> // for urlDecode
+#include <sys/stat.h> // stat() => files info
+#include <unistd.h> // read(), close()
 
 // Function(s)
-std::string trim(const std::string &str)
-{
+std::string trim(const std::string &str) {
 	const std::string whitespace = " \t\n\r\f\v";
 
 	// Search for first none-whitespace character
@@ -40,16 +41,13 @@ std::string trim(const std::string &str)
 	return str.substr(start, end - start + 1);
 }
 
-std::vector<std::string> split(const std::string &str, char delimiter)
-{
+std::vector<std::string> split(const std::string &str, char delimiter) {
 	std::vector<std::string> result;
 	std::string buffer;
 
-	for (size_t i = 0; i < str.length(); i++)
-	{
+	for (size_t i = 0; i < str.length(); i++) {
 		// Search for delimiter
-		if (str[i] == delimiter)
-		{
+		if (str[i] == delimiter) {
 			result.push_back(buffer);
 			buffer.clear();
 		}
@@ -60,13 +58,11 @@ std::vector<std::string> split(const std::string &str, char delimiter)
 	return result;
 }
 
-bool fileExists(const std::string &path)
-{
+bool fileExists(const std::string &path) {
 	return (access(path.c_str(), F_OK) == 0);
 }
 
-bool isDirectory(const std::string &path)
-{
+bool isDirectory(const std::string &path) {
 	struct stat sb;
 
 	// Check if file exist else return false
@@ -77,8 +73,7 @@ bool isDirectory(const std::string &path)
 	return S_ISDIR(sb.st_mode);
 }
 
-std::string getFileExtension(const std::string &path)
-{
+std::string getFileExtension(const std::string &path) {
 	size_t pos = path.find_last_of('.');
 	size_t slash = path.find_last_of('/');
 
@@ -98,8 +93,7 @@ std::string getFileExtension(const std::string &path)
 	return path.substr(pos);
 }
 
-std::string readFile(const std::string &path)
-{
+std::string readFile(const std::string &path) {
 	int fd = open(path.c_str(), O_RDONLY);
 	if (fd < 0)
 		throw std::runtime_error("Failed to open file: " + path);
@@ -119,15 +113,13 @@ std::string readFile(const std::string &path)
 	return result;
 }
 
-std::string intToString(int value)
-{
+std::string intToString(int value) {
 	std::stringstream ss;
 	ss << value;
 	return ss.str();
 }
 
-std::vector<std::string> listDirectory(const std::string &path)
-{
+std::vector<std::string> listDirectory(const std::string &path) {
 	std::vector<std::string> entries;
 
 	DIR *dir = opendir(path.c_str());
@@ -137,11 +129,9 @@ std::vector<std::string> listDirectory(const std::string &path)
 	}
 
 	struct dirent *entry;
-
-	while ((entry = readdir(dir)))
-	{
+	while ((entry = readdir(dir))) {
 		std::string name = entry->d_name;
-		// skip . and ..
+		// Skip . and ..
 		if (name != "." && name != "..")
 			entries.push_back(name);
 	}
@@ -167,49 +157,22 @@ std::string generateSessionId() {
 	return id;
 }
 
-int safeClose(int fd) {
-	if (close(fd) < 0) {
-		std::cerr << "[safeClose] close failed on fd " << fd << std::endl;
-		return -1;
-	}
-	return 0;
+void safeClose(int fd) {
+	if (close(fd) < 0)
+		std::cerr << "[safeClose] close failed on fd " << fd << ": " << std::strerror(errno) << std::endl;
 }
 
-bool isPathSafe(const std::string &path){
-
+bool isPathSafe(const std::string &path) {
 	// Refuse any path containing ".."
 	if (path.find("..") != std::string::npos)
 		return false;
-
-	// Check if path start ith allowed directories
-	if (path.find("./www") == 0 ||
-		path.find("www") == 0 ||
-		path.find("./uploads") == 0 ||
-		path.find("uploads") == 0 ||
-		path.find("./cgi-bin") == 0 ||
-		path.find("cgi-bin") == 0)
-		return true;
-
+	// Check if path starts with allowed directories
+	const std::string allowedDirs[] = {"./www/", "www/", "./uploads/", "uploads/", "./cgi-bin/", "cgi-bin/"};
+	for (size_t i = 0; i < sizeof(allowedDirs) / sizeof(allowedDirs[0]); i++)
+		if (path.compare(0, allowedDirs[i].size(), allowedDirs[i]) == 0)
+			return true;
 	return false;
 }
-
-bool isPathSafeForUploadsAndDelet(const std::string &path)
-{
-
-	if (path.find("..") != std::string::npos)
-		return false;
-
-	const std::string allowed1 = "./uploads";
-	const std::string allowed2 = "uploads";
-
-	if (path.compare(0, allowed1.size(), allowed1) == 0)
-		return true;
-	if (path.compare(0, allowed2.size(), allowed2) == 0)
-		return true;
-
-	return false;
-}
-
 
 void setNonBlocking(int fd) {
 	int flags = fcntl(fd, F_GETFL, 0);
