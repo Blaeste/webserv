@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 09:46:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:57:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,12 @@ class Server {
 
 		// Attribute(s)
 
+			enum {
+				SESSION_TIMEOUT = 1800, // 30 minutes
+				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
+				CLIENT_READ_TIMEOUT = 30, // 30 seconds
+				CLIENT_PROCESSING_TIMEOUT = 300 // 5 minutes - timeout for processing/CGI execution
+			};
 			std::vector<ServerConfig> _configs;
 			std::vector<Client> _clients;
 			std::vector<pollfd> _pollFds;
@@ -85,4 +91,5 @@ class Server {
 			void installSignals();
 			void addSignalPipeToPoll();
 			void handleSignalPipeReadable();
+
 };

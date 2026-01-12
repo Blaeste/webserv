@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/10 14:46:06 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:57:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@ Client::Client(int socket, const std::string &clientIp)
 	, _clientIp(clientIp)
 	, _lastActivity(time(NULL))
 	, _requestComplete(false)
-	, _responseReady(false)
+	, _state(STATE_IDLE)
 {}
 
 // Private method(s)
@@ -81,7 +81,15 @@ const std::string &Client::getClientIp() const {
 	return _clientIp;
 }
 
-bool Client::hasTimedOut(time_t timeout) const {
+bool Client::hasTimedOut(time_t readTimeout, time_t processingTimeout) const {
+	time_t timeout;
+
+	// Use longer timeout during processing to allow CGI scripts to complete
+	if (_state == STATE_PROCESSING)
+		timeout = processingTimeout;
+	else
+		timeout = readTimeout;
+
 	return time(NULL) - _lastActivity > timeout;
 }
 
@@ -95,6 +103,10 @@ const HttpRequest& Client::getRequest() const {
 
 bool Client::isRequestComplete() const {
 	return _requestComplete;
+}
+
+void Client::setState(ClientState state) {
+	_state = state;
 }
 
 // Public method(s)
@@ -134,55 +146,53 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	struct timeval start, end;
 	gettimeofday(&start, NULL);
 
-    // Check body size limit
-    if (_request.getBody().size() > config.getMaxBodySize()) {
-        buildErrorResponse(413);
-        _responseReady = true;
+	// Check body size limit
+	if (_request.getBody().size() > config.getMaxBodySize()) {
+		buildErrorResponse(413);
 		// log + return
 		gettimeofday(&end, NULL);
-        double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-        Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
-        return;
-    }
+		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		return;
+	}
 
-    handleSession(sessions);
+	handleSession(sessions);
 
-    if (_request.getUri() == "/counter-api") {
-        SessionData &session = sessions[_sessionId];
+	if (_request.getUri() == "/counter-api") {
+		SessionData &session = sessions[_sessionId];
 
-        std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
-        _response.setStatus(200);
-        _response.setHeader("Content-Type", "application/json");
-        _response.setBody(json);
-        _responseReady = true;
+		std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
+		_response.setStatus(200);
+		_response.setHeader("Content-Type", "application/json");
+		_response.setBody(json);
 
 		// log and return
 		gettimeofday(&end, NULL);
-        double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-        Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
-        return ;
-    }
+		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		return ;
+	}
 
-    // Continue with normal routing
-    RouteMatch match = router.matchRoute(config, _request);
+	// Continue with normal routing
+	RouteMatch match = router.matchRoute(config, _request);
 
-    // Handle redirections
-    if (!match.redirectUrl.empty()) {
-        _response.setStatus(match.statusCode);
-        _response.setHeader("Location", match.redirectUrl);
-        _response.setBody("");
-    }
+	// Handle redirections
+	if (!match.redirectUrl.empty()) {
+		_response.setStatus(match.statusCode);
+		_response.setHeader("Location", match.redirectUrl);
+		_response.setBody("");
+	}
 
-    // Handle errors (405 Method Not Allowed, 404 Not Found, 501 Not Implemented)
-    else if (match.statusCode == 405 || match.statusCode == 404 || match.statusCode == 501)
-        _response.serveError(match.statusCode, "");
+	// Handle errors (405 Method Not Allowed, 404 Not Found, 501 Not Implemented)
+	else if (match.statusCode == 405 || match.statusCode == 404 || match.statusCode == 501)
+		_response.serveError(match.statusCode, "");
 
-    // Execute CGI script
-    else if (match.isCGI) {
-        CGI cgi;
-        CGIResult result = cgi.execute(match, _request);
-        if (result.statusCode == 200) {
-            _response.setStatus(200);
+	// Execute CGI script
+	else if (match.isCGI) {
+		CGI cgi;
+		CGIResult result = cgi.execute(match, _request);
+		if (result.statusCode == 200) {
+			_response.setStatus(200);
 			_response.setHeader("Content-Type", result.contentType);
 			_response.setBody(result.output);
 		} else
@@ -204,8 +214,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	// Serve static file
 	else
 		_response.serveFile(match.filePath);
-
-	_responseReady = true;
 
 	// Logging
 	gettimeofday(&end, NULL);
@@ -240,3 +248,4 @@ bool Client::sendResponse() {
 	}
 	return (remaining == 0);  // true if everything was sent
 }
+
