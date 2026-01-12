@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:57:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 15:57:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -235,9 +235,9 @@ void Server::handleClientRead(size_t clientIndex) {
 	if (!client.isResponseReady())
 	{
 		client.setState(STATE_PROCESSING); // Switch to processing state (allows longer timeout for CGI)
-    const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 		client.buildResponse(*config, _router, _sessions);
-    client.setState(STATE_IDLE); // Back to idle state (ready to write)
+		client.setState(STATE_IDLE); // Back to idle state (ready to write)
 	}
 
 	// Enable POLLOUT to send response when socket is ready for writing

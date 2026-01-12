@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:32:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 16:10:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,6 +167,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
 		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		_responseReady = true;
 		return;
 	}
 
@@ -184,6 +185,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
 		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		_responseReady = true;
 		return ;
 	}
 
@@ -241,6 +243,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		_response.getBody().size(),
 		responseTime
 	);
+	_responseReady = true;
 }
 
 bool Client::sendResponse() {
