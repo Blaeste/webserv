@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:27:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:40:50 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,6 +119,13 @@
 	 * @return true if the path is safe (no directory traversal, starts with allowed prefix), false otherwise.
 	 */
 	bool isPathSafe(const std::string &path);
+
+	/**
+	 * @brief Validates that a file path is safe and within allowed directories.
+	 * @param path The file path to validate.
+	 * @return true if the path is safe (no directory traversal, starts with allowed prefix), false otherwise.
+	 */
+	bool isPathSafeForUpload(const std::string &path) ;
 
 	/**
 	 * @brief Sets a file descriptor to non-blocking mode.
