@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:23:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:57:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -215,7 +215,7 @@ void Server::handleClientRead(size_t clientIndex) {
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client &client = _clients[i];
+	Client& client = _clients[i];
 
 	// Read data from socket
 	if (!client.readData()) {
@@ -231,15 +231,11 @@ void Server::handleClientRead(size_t clientIndex) {
 	if (!client.isRequestComplete())
 		return;
 
-	// Switch to processing state (allows longer timeout for CGI)
-	client.setState(STATE_PROCESSING);
-
 	// Build response
+	client.setState(STATE_PROCESSING); // Switch to processing state (allows longer timeout for CGI)
 	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 	client.buildResponse(*config, _router, _sessions);
-
-	// Back to idle state (ready to write)
-	client.setState(STATE_IDLE);
+	client.setState(STATE_IDLE); // Back to idle state (ready to read/write)
 
 	// Enable POLLOUT to send response when socket is ready for writing
 	_pollFds[clientIndex].events |= POLLOUT;
@@ -269,7 +265,7 @@ void Server::handleClientWrite(size_t clientIndex) {
 	_pollFds.erase(_pollFds.begin() + clientIndex);
 }
 
-const ServerConfig *Server::selectConfig(const HttpRequest &request,  int clientFd) const {
+const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const {
 	std::string host = request.getHeader("Host");
 	int localPort = getSocketPort(clientFd);
 
