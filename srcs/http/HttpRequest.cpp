@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 10:39:56 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 13:51:44 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,18 @@
 #include <sstream>
 
 // Default constructor
-HttpRequest::HttpRequest() : _isComplete(false)
-{
-}
+HttpRequest::HttpRequest()
+	: _isComplete(false)
+	, _errorCode(0)
+{}
 
 // Public method(s)
+
+int HttpRequest::getErrorCode() const
+{
+	return _errorCode;
+}
+
 std::map<std::string, std::string> HttpRequest::getCookies() const {
 	std::map<std::string, std::string> cookies;
 	std::string cookieHeader = getHeader("Cookie");
@@ -43,6 +50,14 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 
 bool HttpRequest::appendData(const std::string &data)
 {
+	// Security: prevent mem exhaustion attack
+	if (_rawData.length() + data.length() > MAX_REQUEST_SIZE)
+	{
+		_errorCode = 413; // Payload to large
+		_isComplete = true;
+		return true;
+	}
+
 	_rawData += data;
 
 	// if not complete try to parse
@@ -73,16 +88,69 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 	if (firstLineEnd == std::string::npos)
 		return false;
 
+	// Security: Check request line size
+	if (firstLineEnd > MAX_REQUEST_LINE_SIZE)
+	{
+		_errorCode = 414; // URI too long
+		return false;
+	}
+
 	std::string requestLine = headerBlock.substr(0, firstLineEnd);
 
 	// Split on " " : "GET /index.html HTTP/1.1"
 	std::vector<std::string> parts = splitTokens(requestLine, ' ');
 	if (parts.size() != 3)
+	{
+		_errorCode = 400; // Bad request
 		return false;
+	}
 
 	_method = parts[0];
 	_uri = parts[1];
 	_version = parts[2];
+
+	// Security: Validate method (length + only aphabetic char)
+	if (_method.length() > MAX_METHOD_LENGTH || _method.empty())
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	for (size_t i = 0; i < _method.length(); i++)
+	{
+		if (!std::isalpha(_method[i]))
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+	}
+
+	// Security: Validate URI (length + start zith "/")
+	if (_uri.length() > MAX_URI_LENGTH)
+	{
+		_errorCode = 414; // Bad request
+		return false;
+	}
+
+	if (_uri.empty() || _uri[0] != '/')
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	// Security: Check for null bytes in URI
+	if (_uri.find('\0') != std::string::npos)
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	// Security: Validate HTTP version
+	if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
+	{
+		_errorCode = 505; // HTTP version not suported
+		return false;
+	}
 
 	return true;
 }
