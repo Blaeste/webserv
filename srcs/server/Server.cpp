@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 17:25:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 18:40:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -181,20 +181,13 @@ void Server::handleClientTimeouts() {
 		if (it->second.hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
 			int fd = it->first;
 			std::cout << "Client timeout (fd " << fd << ")" << std::endl;
-
-			// Find and remove corresponding pollfd
+			++it;
 			for (size_t j = 0; j < _pollFds.size(); j++) {
 				if (_pollFds[j].fd == fd) {
-					safeClose(fd);
-					_pollFds.erase(_pollFds.begin() + j);
-					_socketTypes.erase(fd);
+					removeClient(fd, j);
 					break;
 				}
 			}
-
-			std::map<int, Client>::iterator toErase = it;
-			++it;
-			_clients.erase(toErase);
 		}
 		else
 			++it;
@@ -214,12 +207,7 @@ void Server::handleClientRead(size_t clientIndex) {
 
 	// Read data from socket
 	if (!client.readData()) {
-		// Error or disconnection
-		std::cout << "Client disconnected (fd " << clientFd << ")" << std::endl;
-		safeClose(clientFd);
-		_clients.erase(it);
-		_pollFds.erase(_pollFds.begin() + clientIndex);
-		_socketTypes.erase(clientFd);
+		removeClient(clientFd, clientIndex);
 		return;
 	}
 
@@ -256,10 +244,14 @@ void Server::handleClientWrite(size_t clientIndex) {
 		std::cerr << "Error sending response to fd " << clientFd << std::endl;
 
 	// Close connection and cleanup after sending
-	safeClose(clientFd);
-	_clients.erase(it);
-	_pollFds.erase(_pollFds.begin() + clientIndex);
-	_socketTypes.erase(clientFd);
+	removeClient(clientFd, clientIndex);
+}
+
+void Server::removeClient(int fd, size_t pollIndex) {
+	safeClose(fd);
+	_clients.erase(fd);
+	_socketTypes.erase(fd);
+	_pollFds.erase(_pollFds.begin() + pollIndex);
 }
 
 const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const {
