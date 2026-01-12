@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:29:04 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 17:27:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ class ServerConfig;
 class Router;
 struct SessionData;
 
-// Enum
+// Enum(s)
 enum ClientState {
 	STATE_IDLE,       // Reading request or writing response
 	STATE_PROCESSING  // Processing request (buildResponse, CGI execution)

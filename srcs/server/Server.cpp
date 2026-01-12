@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 16:31:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 17:25:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,14 +37,13 @@ Server::Server(const Config& config)
 
 // Destructor
 Server::~Server() {
-	// Close all client connections
-	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
-		safeClose(it->first);
-	for (size_t i = 0; i < _listenSockets.size(); i++)
-		safeClose(_listenSockets[i]);
-	if(_s_sigpipe[0] >= 0)
+	// Close all sockets (skip signal pipe at index 0)
+	for (size_t i = 1; i < _pollFds.size(); i++)
+		safeClose(_pollFds[i].fd);
+	// Close signal pipe explicitly
+	if (_s_sigpipe[0] >= 0)
 		safeClose(_s_sigpipe[0]);
-	if(_s_sigpipe[1] >= 0)
+	if (_s_sigpipe[1] >= 0)
 		safeClose(_s_sigpipe[1]);
 	std::cout << "\nServer was closed" << std::endl;
 }
@@ -71,13 +70,13 @@ void Server::run() {
 			if (_pollFds[i].revents & POLLIN) {
 
 				// Handle SIGINT or SIGTERM
-				if (_pollFds[i].fd == _s_sigpipe[0]) {
+				if (_socketTypes[_pollFds[i].fd] == SOCKET_SIGNAL) {
 					handleSignalPipeReadable();
 					break;
 				}
 
 				// Handle listen or client socket
-				if (isListenSocket(_pollFds[i].fd))
+				if (_socketTypes[_pollFds[i].fd] == SOCKET_LISTEN)
 					acceptNewClient(_pollFds[i].fd);
 				else
 					handleClientRead(i);
@@ -127,23 +126,16 @@ void Server::setupListenSockets() {
 			safeClose(listenFd);
 			throw std::runtime_error("listen() failed");
 		}
-		_listenSockets.push_back(listenFd);
 
 		// Add to poll to monitor incoming connections
-		struct pollfd pfd;
+		pollfd pfd;
 		pfd.fd = listenFd;
 		pfd.events = POLLIN; // Watch for incoming data
 		pfd.revents = 0;
 		_pollFds.push_back(pfd);
+		_socketTypes[listenFd] = SOCKET_LISTEN;
 		std::cout << "Server listening on port " << port << std::endl;
 	}
-}
-
-bool Server::isListenSocket(int fd) const { // Check if given fd is a listening socket
-	for (size_t i = 0; i < _listenSockets.size(); i++)
-		if (_listenSockets[i] == fd)
-			return true;
-	return false;
 }
 
 void Server::acceptNewClient(int listenSocket) {
@@ -174,11 +166,12 @@ void Server::acceptNewClient(int listenSocket) {
 	_clients.insert(std::make_pair(clientFd, newClient));
 
 	// Add the new client socket to poll() to monitor incoming data
-	struct pollfd pfd;
+	pollfd pfd;
 	pfd.fd = clientFd;
 	pfd.events = POLLIN; // Triggered when client sends data
 	pfd.revents = 0;
 	_pollFds.push_back(pfd);
+	_socketTypes[clientFd] = SOCKET_CLIENT;
 	Logger::logConnection(clientFd, std::string(clientIp));
 }
 
@@ -194,6 +187,7 @@ void Server::handleClientTimeouts() {
 				if (_pollFds[j].fd == fd) {
 					safeClose(fd);
 					_pollFds.erase(_pollFds.begin() + j);
+					_socketTypes.erase(fd);
 					break;
 				}
 			}
@@ -225,6 +219,7 @@ void Server::handleClientRead(size_t clientIndex) {
 		safeClose(clientFd);
 		_clients.erase(it);
 		_pollFds.erase(_pollFds.begin() + clientIndex);
+		_socketTypes.erase(clientFd);
 		return;
 	}
 
@@ -264,6 +259,7 @@ void Server::handleClientWrite(size_t clientIndex) {
 	safeClose(clientFd);
 	_clients.erase(it);
 	_pollFds.erase(_pollFds.begin() + clientIndex);
+	_socketTypes.erase(clientFd);
 }
 
 const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const {
@@ -316,11 +312,12 @@ void Server::handleSignalPipeReadable() {
 }
 
 void Server::addSignalPipeToPoll() {
-	struct pollfd p;
-	p.fd = _s_sigpipe[0];
-	p.events = POLLIN;
-	p.revents = 0;
-	_pollFds.push_back(p);
+	pollfd pfd;
+	pfd.fd = _s_sigpipe[0];
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+	_pollFds.push_back(pfd);
+	_socketTypes[_s_sigpipe[0]] = SOCKET_SIGNAL;
 }
 
 // Called by OS when SIGINT/SIGTERM received (async-signal-safe)

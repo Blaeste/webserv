@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:12:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 17:27:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,13 @@ struct SessionData {
 
 };
 
+// Enum(s)
+enum SocketType {
+	SOCKET_LISTEN,
+	SOCKET_CLIENT,
+	SOCKET_SIGNAL
+};
+
 // Class
 class Server {
 
@@ -49,9 +56,9 @@ class Server {
 				CLIENT_PROCESSING_TIMEOUT = 300 // 5 minutes - timeout for processing/CGI execution
 			};
 			std::vector<ServerConfig> _configs;
-		std::map<int, Client> _clients;  // fd → Client (O(log n) lookup)
 			std::vector<pollfd> _pollFds;
-			std::vector<int> _listenSockets;
+			std::map<int, Client> _clients;
+			std::map<int, SocketType> _socketTypes;
 			bool _running;
 			Router _router;
 			std::map<std::string, SessionData> _sessions;
@@ -76,7 +83,6 @@ class Server {
 
 			// Socket management
 			void setupListenSockets();
-			bool isListenSocket(int fd) const;
 			void acceptNewClient(int listenSocket);
 
 			// Client lifecycle
