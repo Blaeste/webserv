@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 10:49:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 12:40:25 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,14 +146,48 @@ void safeClose(int fd) {
 }
 
 bool isPathSafe(const std::string &path) {
+
 	// Refuse any path containing ".."
 	if (path.find("..") != std::string::npos)
 		return false;
+
 	// Check if path starts with allowed directories
-	const std::string allowedDirs[] = {"./www/", "www/", "./uploads/", "uploads/", "./cgi-bin/", "cgi-bin/"};
-	for (size_t i = 0; i < sizeof(allowedDirs) / sizeof(allowedDirs[0]); i++)
-		if (path.compare(0, allowedDirs[i].size(), allowedDirs[i]) == 0)
-			return true;
+	const std::string allowedPrefixes[] = {
+		"./www", "www",
+		"./uploads", "uploads",
+		"./cgi-bin", "cgi-bin"
+	};
+
+	for (size_t i = 0; i < sizeof(allowedPrefixes) / sizeof(allowedPrefixes[0]); i++) {
+		const std::string &prefix = allowedPrefixes[i];
+
+		if (path.compare(0, prefix.size(), prefix) == 0)
+			if (path.length() == prefix.length() || path[prefix.length()] == '/')
+				return true;
+	}
+
+	return false;
+}
+
+bool isPathSafeForUpload(const std::string &path) {
+
+	// Refuse any path containing ".."
+	if (path.find("..") != std::string::npos)
+		return false;
+
+	// Check if path starts with allowed directories
+	const std::string allowedPrefixes[] = {
+		"./uploads", "uploads",
+	};
+
+	for (size_t i = 0; i < sizeof(allowedPrefixes) / sizeof(allowedPrefixes[0]); i++) {
+		const std::string &prefix = allowedPrefixes[i];
+
+		if (path.compare(0, prefix.size(), prefix) == 0)
+			if (path.length() == prefix.length() || path[prefix.length()] == '/')
+				return true;
+	}
+
 	return false;
 }
 
