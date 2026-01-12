@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:38:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:05:58 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,34 @@
 #include <cstdlib>
 
 // Private method(s)
+
+std::string Config::removeComments(const std::string &content) {
+
+	std::string result;
+	std::vector<std::string> lines = splitTokens(content, '\n');
+
+	for (size_t i = 0; i < lines.size(); i++) {
+
+		std::string line = lines[i];
+
+		// find # pos
+		size_t commentPos = line.find('#');
+
+		if (commentPos != std::string::npos) {
+
+			// Keep only part befor #
+			line = line.substr(0, commentPos);
+		}
+
+		// Add line to result
+		result += line + "\n";
+	}
+
+	return result;
+}
+
 std::vector<std::string> Config::extractBlocks(const std::string &content, const std::string &keyword) {
+
 	std::vector<std::string> blocks;
 	size_t pos = 0;
 	size_t keywordLen = keyword.length();
@@ -89,7 +116,7 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 	return blocks;
 }
 
-void Config::parseServerBlock(const std::string &block, ServerConfig &server) {
+void Config::parseServerBlock(const std::string &block, ServerConfig &server, size_t serverIndex) {
 	// Extract all location blocks first
 	std::vector<std::string> locationBlocks = extractBlocks(block, "location");
 
@@ -102,8 +129,9 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server) {
 	}
 
 	// Parse directives (listen, server_name, etc.)
-	std::vector<std::string> lines = split(cleanBlock, '\n');
+	std::vector<std::string> lines = splitTokens(cleanBlock, '\n');
 	for (size_t i = 0; i < lines.size(); i++) {
+
 		// trim each line
 		std::string line = trim(lines[i]);
 		if (line.empty())
@@ -114,19 +142,21 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server) {
 			line = line.substr(0, line.length() - 1);
 
 		// Extract tokens from the line
-		std::vector<std::string> tokens = split(line, ' ');
+		std::vector<std::string> tokens = splitTokens(line, ' ');
+
+
 		if (tokens.empty())
 			continue;
 
 		// Parse directive
-		if (tokens[0] == "listen")
+		if (tokens[0] == "listen" && tokens.size() >= 2)
 			server.setPort(atoi(tokens[1].c_str()));
-		else if (tokens[0] == "server_name")
+		else if (tokens[0] == "server_name" && tokens.size() >= 2)
 			server.setServerName(tokens[1]);
-		else if (tokens[0] == "error_page")
+		else if (tokens[0] == "error_page" && tokens.size() >= 3)
 			server.addErrorPage(atoi(tokens[1].c_str()), tokens[2]);
-		else if (tokens[0] == "client_max_body_size")
-			server.setMaxBodySize(parseSize(tokens[1]));
+		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
+			server.setMaxBodySize(parseSize(tokens[1], "Server #" + sizetToString(serverIndex)));
 	}
 
 	// Parse each location block
@@ -144,7 +174,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 		return;
 
 	std::string header = block.substr(0, openBrace);
-	std::vector<std::string> headerTokens = split(trim(header), ' ');
+	std::vector<std::string> headerTokens = splitTokens(trim(header), ' ');
 	std::string path = "/";
 
 	if (headerTokens.size() >= 2)
@@ -158,7 +188,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 	std::string content = block.substr(openBrace + 1, closeBrace - openBrace - 1);
 
 	// Parse lines
-	std::vector<std::string> lines = split(content, '\n');
+	std::vector<std::string> lines = splitTokens(content, '\n');
 	for (size_t i = 0; i < lines.size(); i++) {
 		// trim each line
 		std::string line = trim(lines[i]);
@@ -170,49 +200,72 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 			line = line.substr(0, line.length() - 1);
 
 		// Extract tokens from the line
-		std::vector<std::string> tokens = split(line, ' ');
+		std::vector<std::string> tokens = splitTokens(line, ' ');
 		if (tokens.empty())
 			continue;
 
 		// Parse directive
-		if (tokens[0] == "root")
+		if (tokens[0] == "root" && tokens.size() >= 2)
 			location.setRoot(tokens[1]);
-		else if (tokens[0] == "upload_path")
+		else if (tokens[0] == "upload_path" && tokens.size() >= 2)
 			location.setUploadPath(tokens[1]);
-		else if (tokens[0] == "cgi_extension")
+		else if (tokens[0] == "cgi_extension" && tokens.size() >= 2)
 			location.setCgiExtension(tokens[1]);
-		else if (tokens[0] == "cgi_path")
+		else if (tokens[0] == "cgi_path" && tokens.size() >= 2)
 			location.setCgiPath(tokens[1]);
-		else if (tokens[0] == "autoindex")
+		else if (tokens[0] == "autoindex" && tokens.size() >= 2)
 			location.setAutoIndex(tokens[1] == "on" || tokens[1] == "true");
 		else if (tokens[0] == "return" && tokens.size() >= 2)
 			location.setRedirect(tokens[tokens.size() - 1]);
-		else if (tokens[0] == "index")
+		else if (tokens[0] == "index" && tokens.size() >= 2)
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addIndex(tokens[j]);
-		else if (tokens[0] == "allowed_methods")
+		else if (tokens[0] == "allowed_methods" && tokens.size() >= 2)
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addAllowedMethod(tokens[j]);
 	}
 }
 
-size_t Config::parseSize(const std::string &sizeStr) {
-	if (sizeStr.empty())
-		return 0;
+size_t Config::parseSize(const std::string &sizeStr, const std::string &context) {
 
-	// Extract all except the last letter "M" or "K"
+	if (sizeStr.empty())
+	{
+		std::cerr << "Warning [" << context << "]: Size '" << sizeStr << "' Empty size value\n";
+		return 0;
+	}
+
+	// Extract all except the last letter
 	size_t len = sizeStr.length();
 	char lastChar = sizeStr[len - 1];
 
 	// Check if last char is an unit
 	std::string numStr = sizeStr;
 	size_t multiplier = 1;
+
 	if (lastChar == 'M' || lastChar == 'm') {
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024 * 1024;
 	} else if (lastChar == 'K' || lastChar == 'k') {
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024;
+	} else if (lastChar == 'G' || lastChar =='g') {
+		numStr = sizeStr.substr(0, len - 1);
+		multiplier = 1024 * 1024 * 1024;
+	}
+
+	if (numStr.empty())
+	{
+		std::cerr << "Warning [" << context << "]: Size '" << sizeStr << "' has unit but no number\n";
+		return 0;
+	}
+
+	for (size_t i = 0; i < numStr.length(); i++) {
+
+		if (numStr[i] < '0' || numStr[i] > '9')
+		{
+			std::cerr << "Warning [" << context << "]: Size '" << sizeStr << "' contains invalid characters (only digits allowed)\n";
+			return 0;
+		}
 	}
 
 	size_t num = atoi(numStr.c_str());
@@ -220,50 +273,75 @@ size_t Config::parseSize(const std::string &sizeStr) {
 }
 
 bool Config::validate() const {
+
+	std::vector<std::string> errors;
+
 	// Check if there are at least one server
 	if (_servers.empty())
-		throw std::runtime_error("Config error: No server configured");
+		errors.push_back("No server configured");
 
 	// Check each server
 	for (size_t i = 0; i < _servers.size(); i++) {
-		const ServerConfig &server = _servers[i];
 
-		// Check Port range
+		const ServerConfig &server = _servers[i];
 		int port = server.getPort();
+		std::string serverName = server.getServerName();
+
+		// Msg prefix
+		std::string prefix = "Server " + sizetToString(i) + " (" + serverName + "): ";
+
+		// Check port range
 		if (port < 1 || port > 65535)
-			throw std::runtime_error("Config error: Invalid port number");
+			errors.push_back(prefix + "Invalid port " + intToString(port));
 
 		// Check for duplicate Port
 		for (size_t j = i + 1; j < _servers.size(); j++) {
 			if (_servers[j].getPort() ==  port) {
 				// Same port ok if different server name
 				if (_servers[j].getServerName() ==  server.getServerName())
-					throw std::runtime_error("Config error: Duplicate port with same server name");
+					errors.push_back(prefix + "Duplicate port " +  intToString(port) + " with same server name");
 			}
 		}
+
+		// Check size
+		size_t maxSize = server.getMaxBodySize();
+		if (maxSize == 0)
+			errors.push_back(prefix + "Invalid max body size (0 bytes not allowed)");
 
 		// Check locations
 		const std::vector<Location> &locations = server.getLocations();
 		for (size_t j = 0; j < locations.size(); j++) {
+
 			const Location &loc = locations[j];
+			std::string path = loc.getPath();
+			std::string locPrefix = prefix + "Location '" + path + "': ";
 
 			// Check Path starts with '/'
-			std::string path = loc.getPath();
 			if (path.empty() || path[0] != '/')
-				throw std::runtime_error("Config error: Invalid location path");
+				errors.push_back(locPrefix + "Invalid path (must start with /)");
 
 			// Check CGI extension has corresponding CGI path
 			if (!loc.getCgiExtension().empty() && loc.getCgiPath().empty())
-				throw std::runtime_error("Config error: CGI extension without CGI path");
+				errors.push_back(locPrefix + "CGI extension without CGI path");
 
 			// Check HTTP methods are valid
 			const std::vector<std::string> &methods = loc.getAllowedMethods();
 			for (size_t k = 0; k < methods.size(); k++) {
 				const std::string &method = methods[k];
 				if (method != "GET" && method != "POST" && method != "DELETE" && method != "PUT" && method != "HEAD" && method != "OPTIONS")
-					throw std::runtime_error("Config error: Invalid HTTP method");
+					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
 			}
 		}
+	}
+
+	if (!errors.empty()) {
+
+		std::string msg = "Config validation failed:\n";
+
+		for (size_t i = 0; i < errors.size(); i++)
+			msg += " - " + errors[i] + "\n";
+
+		throw std::runtime_error(msg);
 	}
 
 	return true;
@@ -272,13 +350,18 @@ bool Config::validate() const {
 // Public method(s)
 bool Config::parse(const std::string &filePath) {
 	try {
+
 		std::string content = readFile(filePath);
 		if (content.empty())
 			return false;
+
+		// Remove Comment
+		content = removeComments(content);
+
 		std::vector<std::string> serverBlocks = extractBlocks(content, "server");
 		for (size_t i = 0; i < serverBlocks.size(); i++) {
 			ServerConfig server;
-			parseServerBlock(serverBlocks[i], server);
+			parseServerBlock(serverBlocks[i], server, i);
 			_servers.push_back(server);
 		}
 		return validate();

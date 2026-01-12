@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:56:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 10:55:48 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,21 +39,22 @@ class CGI {
 	private:
 
 		// Attribute(s)
-		
-			std::map<std::string, std::string> _env;
+
+		std::map<std::string, std::string> _env;
 
 	public:
 
 		// Public method(s)
 
-			CGIResult execute(const RouteMatch& match, const HttpRequest& request);
+		CGIResult execute(const RouteMatch& match, const HttpRequest& request);
 
 	private:
 
 		// Private method(s)
-		
-			void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
-			std::string readFromPipe(int fd);
-			void parseHeaders(const std::string& output, CGIResult& result);
+
+		void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
+		std::string readFromPipe(int fd);
+		void parseHeaders(const std::string& output, CGIResult& result);
+
 
 };
