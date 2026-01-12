@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:16:23 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:41:35 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,7 +62,14 @@ bool HttpRequest::appendData(const std::string &data)
 
 	// if not complete try to parse
 	if (!_isComplete)
+	{
 		_isComplete = parse();
+
+		// If parsing failed with an error, mark as complete anyway
+		// so we can send the error response immediately
+		if (!_isComplete && _errorCode != 0)
+			_isComplete = true;
+	}
 
 	return _isComplete;
 }
@@ -193,7 +200,14 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 			for (size_t i = 0; i< key.length(); i ++)
 			{
 				unsigned char c = key[i];
-				if (c < 33 || c > 126 || c == ':' || c == ' ')
+				bool isValid =	(c >= 'a' && c <= 'z') ||  // lettres minuscules
+								(c >= 'A' && c <= 'Z') ||  // lettres majuscules
+								(c >= '0' && c <= '9') ||  // chiffres
+								c == '!' || c == '#' || c == '$' || c == '%' || c == '&' ||
+								c == '\'' || c == '*' || c == '+' || c == '-' || c == '.' ||
+								c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+
+				if (!isValid)
 				{
 					_errorCode = 400; // Bad request
 					return false;

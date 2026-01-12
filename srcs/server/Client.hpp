@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 13:43:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:29:04 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,6 +42,7 @@ class Client {
 			HttpResponse _response;
 			time_t _lastActivity;
 			bool _requestComplete;
+			bool _responseReady;
 			std::string _sessionId;
 			ClientState _state;
 
@@ -59,6 +60,7 @@ class Client {
 			void updateActivity();
 			const HttpRequest& getRequest() const;
 			bool isRequestComplete() const;
+			bool isResponseReady() const;
 			void setState(ClientState state);
 
 		// Public method(s)

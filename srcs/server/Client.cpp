@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:14:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:32:28 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,6 +27,7 @@ Client::Client(int socket, const std::string &clientIp)
 	, _clientIp(clientIp)
 	, _lastActivity(time(NULL))
 	, _requestComplete(false)
+	, _responseReady(false)
 	, _state(STATE_IDLE)
 {}
 
@@ -105,6 +106,10 @@ bool Client::isRequestComplete() const {
 	return _requestComplete;
 }
 
+bool Client::isResponseReady() const {
+	return _responseReady;
+}
+
 void Client::setState(ClientState state) {
 	_state = state;
 }
@@ -123,7 +128,10 @@ bool Client::readData() { // Read data from socket into buffer and parse request
 		_requestComplete = true;
 
 		if (_request.getErrorCode() != 0)
+		{
 			buildErrorResponse(_request.getErrorCode());
+			_responseReady = true;
+		}
 	}
 
 	updateActivity();
