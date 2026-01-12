@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 10:33:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 12:27:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,7 +61,7 @@ void Server::run() {
 		checkTimeouts();
 
 		// Cleanup expired sessions every 60 seconds
-		if (time(NULL) - lastCleanup > 60) {
+		if (time(NULL) - lastCleanup > SESSION_CLEANUP_INTERVAL) {
 			cleanupSessions();
 			lastCleanup = time(NULL);
 		}
@@ -104,8 +104,8 @@ void Server::stop() {
 // Private method(s)
 void Server::checkTimeouts() {
 	for (size_t i = 0; i < _clients.size();) {
-		// 30 seconds timeout for idle clients
-		if (_clients[i].hasTimedOut(30)) {
+		// Use different timeouts based on client state
+		if (_clients[i].hasTimedOut(CLIENT_READ_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
 			std::cout << "Client timeout (fd " << _clients[i].getSocket() << ")" << std::endl;
 
 			// Find and remove corresponding pollfd
@@ -270,9 +270,15 @@ void Server::handleClientRead(size_t clientIndex) {
 	if (!client.isRequestComplete())
 		return;
 
+	// Switch to processing state (allows longer timeout for CGI)
+	client.setState(STATE_PROCESSING);
+
 	// Build response
 	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 	client.buildResponse(*config, _router, _sessions);
+
+	// Back to idle state (ready to write)
+	client.setState(STATE_IDLE);
 
 	// Enable POLLOUT to send response when socket is ready for writing
 	_pollFds[clientIndex].events |= POLLOUT;
@@ -303,10 +309,9 @@ void Server::handleClientWrite(size_t clientIndex) {
 }
 
 void Server::cleanupSessions() {
-	time_t now = time(NULL);
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
 	while (it != _sessions.end()) {
-		if (now - it->second.lastActive > 1800) { // 30 minutes
+		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT) { //
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
 			_sessions.erase(toErase);
