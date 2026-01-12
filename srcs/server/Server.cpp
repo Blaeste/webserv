@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:27:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:33:16 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,8 +274,11 @@ void Server::handleClientRead(size_t clientIndex) {
 	client.setState(STATE_PROCESSING);
 
 	// Build response
-	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
-	client.buildResponse(*config, _router, _sessions);
+	if (!client.isResponseReady())
+	{
+		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+		client.buildResponse(*config, _router, _sessions);
+	}
 
 	// Back to idle state (ready to write)
 	client.setState(STATE_IDLE);
