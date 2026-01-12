@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:40:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 10:39:56 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 	std::string requestLine = headerBlock.substr(0, firstLineEnd);
 
 	// Split on " " : "GET /index.html HTTP/1.1"
-	std::vector<std::string> parts = split(requestLine, ' ');
+	std::vector<std::string> parts = splitTokens(requestLine, ' ');
 	if (parts.size() != 3)
 		return false;
 

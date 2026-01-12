@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:29 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:40:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 11:40:44 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,18 +89,36 @@ const Location *ServerConfig::matchLocation(const std::string &uri) const
 	const Location *bestMatch = NULL;
 	size_t bestLength = 0;
 
+	// Check all config locations
 	for (size_t i = 0; i < _locations.size(); i++)
 	{
 		const std::string &path = _locations[i].getPath();
 
-		// if URI match path
+		// if URI start with path of location
+		// URI = "/uploads/file.txt" => "/uploads"
 		if (uri.find(path) == 0)
 		{
-			// and length > bestLength better match
-			if (path.length() > bestLength)
+			size_t pathLen = path.length();
+
+			// CASE 1 exact match
+			if (uri.length() == pathLen)
 			{
-				bestMatch = &_locations[i];
-				bestLength = path.length();
+				// keep the longest match
+				if (pathLen > bestLength)
+				{
+					bestMatch = &_locations[i];
+					bestLength = pathLen;
+				}
+			}
+
+			// CASE 2 uri longer than path, check follow /
+			else if (uri[pathLen] == '/')
+			{
+				if (pathLen > bestLength)
+				{
+					bestMatch = &_locations[i];
+					bestLength = pathLen;
+				}
 			}
 		}
 	}

@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
 /*   Updated: 2026/01/12 12:29:16 by gdosch           ###   ########.fr       */
@@ -39,23 +39,6 @@ std::string trim(const std::string &str) {
 
 	// Extract the substring
 	return str.substr(start, end - start + 1);
-}
-
-std::vector<std::string> split(const std::string &str, char delimiter) {
-	std::vector<std::string> result;
-	std::string buffer;
-
-	for (size_t i = 0; i < str.length(); i++) {
-		// Search for delimiter
-		if (str[i] == delimiter) {
-			result.push_back(buffer);
-			buffer.clear();
-		}
-		else
-			buffer += str[i];
-	}
-	result.push_back(buffer);
-	return result;
 }
 
 bool fileExists(const std::string &path) {
@@ -180,4 +163,32 @@ void setNonBlocking(int fd) {
 		throw std::runtime_error("fcntl(F_GETFL) failed");
 	if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
+}
+
+std::string sizetToString(size_t n) {
+	std::stringstream ss;
+	ss << n;
+	return ss.str();
+}
+
+std::vector<std::string> splitTokens(const std::string &str, char delimiter) {
+
+	std::vector<std::string> result;
+	std::string buffer;
+
+	for (size_t i = 0; i < str.length(); i++) {
+
+		if (str[i] == delimiter) {
+
+			if (!buffer.empty())
+				result.push_back(buffer);
+			buffer.clear();
+		}
+		else
+			buffer += str[i];
+	}
+	if (!buffer.empty())
+		result.push_back(buffer);
+
+	return result;
 }
