@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 10:39:56 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:16:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,18 @@
 #include <sstream>
 
 // Default constructor
-HttpRequest::HttpRequest() : _isComplete(false)
-{
-}
+HttpRequest::HttpRequest()
+	: _isComplete(false)
+	, _errorCode(0)
+{}
 
 // Public method(s)
+
+int HttpRequest::getErrorCode() const
+{
+	return _errorCode;
+}
+
 std::map<std::string, std::string> HttpRequest::getCookies() const {
 	std::map<std::string, std::string> cookies;
 	std::string cookieHeader = getHeader("Cookie");
@@ -43,6 +50,14 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 
 bool HttpRequest::appendData(const std::string &data)
 {
+	// Security: prevent mem exhaustion attack
+	if (_rawData.length() + data.length() > MAX_REQUEST_SIZE)
+	{
+		_errorCode = 413; // Payload to large
+		_isComplete = true;
+		return true;
+	}
+
 	_rawData += data;
 
 	// if not complete try to parse
@@ -73,16 +88,69 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 	if (firstLineEnd == std::string::npos)
 		return false;
 
+	// Security: Check request line size
+	if (firstLineEnd > MAX_REQUEST_LINE_SIZE)
+	{
+		_errorCode = 414; // URI too long
+		return false;
+	}
+
 	std::string requestLine = headerBlock.substr(0, firstLineEnd);
 
 	// Split on " " : "GET /index.html HTTP/1.1"
 	std::vector<std::string> parts = splitTokens(requestLine, ' ');
 	if (parts.size() != 3)
+	{
+		_errorCode = 400; // Bad request
 		return false;
+	}
 
 	_method = parts[0];
 	_uri = parts[1];
 	_version = parts[2];
+
+	// Security: Validate method (length + only aphabetic char)
+	if (_method.length() > MAX_METHOD_LENGTH || _method.empty())
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	for (size_t i = 0; i < _method.length(); i++)
+	{
+		if (!std::isalpha(_method[i]))
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+	}
+
+	// Security: Validate URI (length + start zith "/")
+	if (_uri.length() > MAX_URI_LENGTH)
+	{
+		_errorCode = 414; // Bad request
+		return false;
+	}
+
+	if (_uri.empty() || _uri[0] != '/')
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	// Security: Check for null bytes in URI
+	if (_uri.find('\0') != std::string::npos)
+	{
+		_errorCode = 400; // Bad request
+		return false;
+	}
+
+	// Security: Validate HTTP version
+	if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
+	{
+		_errorCode = 505; // HTTP version not suported
+		return false;
+	}
 
 	return true;
 }
@@ -91,12 +159,20 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 {
 	// skip first line (request line)
 	size_t pos = headerBlock.find("\r\n") + 2;
+	size_t headerCount = 0;
 
 	while (pos < headerBlock.length())
 	{
 		size_t lineEnd = headerBlock.find("\r\n", pos);
 		if (lineEnd == std::string::npos)
 			break;
+
+		// Security: Check header line size
+		if (lineEnd - pos > MAX_HEADER_SIZE)
+		{
+			_errorCode = 431; // Request Header Fields Too Large
+			return false;
+		}
 
 		std::string line = headerBlock.substr(pos, lineEnd - pos);
 
@@ -106,6 +182,32 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 		{
 			std::string key = line.substr(0, colonPos);
 			std::string value = line.substr(colonPos + 2);
+
+			// Security: Validate header key format
+			if (key.empty())
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+
+			for (size_t i = 0; i< key.length(); i ++)
+			{
+				unsigned char c = key[i];
+				if (c < 33 || c > 126 || c == ':' || c == ' ')
+				{
+					_errorCode = 400; // Bad request
+					return false;
+				}
+			}
+
+			// Security: Limit number of headers
+			headerCount++;
+			if (headerCount > MAX_HEADER_COUNT)
+			{
+				_errorCode = 431; // Request Header Fields Too Large
+				return false;
+			}
+
 			_headers[normalizeHeaderKey(key)] = value;
 		}
 
@@ -120,6 +222,7 @@ bool HttpRequest::parseChunked()
 	std::string &data = _rawData;
 	std::string body;
 	size_t pos = 0;
+	size_t totalBodySize = 0;
 
 	while (true)
 	{
@@ -130,7 +233,31 @@ bool HttpRequest::parseChunked()
 
 		// Parse chunk size (hexa)
 		std::string sizeStr = data.substr(pos, lineEnd - pos);
+
+		// Security: Validate chunk size format (must be hex)
+		if (sizeStr.empty() || sizeStr.length() > 16)
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+
+		for (size_t i = 0; i < sizeStr.length(); i++)
+		{
+			if (!std::isxdigit(sizeStr[i]))
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+		}
+
 		size_t chunkSize = std::strtol(sizeStr.c_str(), NULL, 16);
+
+		// Security: Check individuak chunk size
+		if (chunkSize > MAX_CHUNK_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
 
 		pos = lineEnd + 2; // skip "\r\n"
 
@@ -139,6 +266,14 @@ bool HttpRequest::parseChunked()
 		{
 			_body = body;
 			return true;
+		}
+
+		// Security: Check total accumulated body size
+		totalBodySize += chunkSize;
+		if (totalBodySize > MAX_BODY_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
 		}
 
 		// Check if chunk is complet (full data)
@@ -255,7 +390,39 @@ bool HttpRequest::parse()
 	// Cas 2 Content Length
 	else if (!getHeader("content-length").empty())
 	{
-		size_t contentLength = atoi(getHeader("content-length").c_str());
+		std::string clStr = getHeader("content-length");
+
+		// Security: Validate Content-Length format (only digit)
+		if (clStr.empty())
+		{
+			_errorCode = 400; // Bad request
+			return false;
+		}
+
+		for (size_t i = 0; i < clStr.length(); i++)
+		{
+			if (!std::isdigit(clStr[i]))
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+		}
+
+		// Security: Check for overflow (max 20 digits)
+		if (clStr.length() > 20)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
+
+		size_t contentLength = atoi(clStr.c_str());
+
+		// Security: Check Content-Length against max body size
+		if (contentLength > MAX_BODY_SIZE)
+		{
+			_errorCode = 413; // Payload Too Large
+			return false;
+		}
 
 		if (_rawData.length() < bodyStart + contentLength)
 			return false; // incomplet body
