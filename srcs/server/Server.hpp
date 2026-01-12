@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:57:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:12:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,11 +17,11 @@
 #include "Router.hpp"
 #include "../config/Config.hpp"
 #include <ctime>
-#include <poll.h>
-#include <vector>
 #include <map>
-#include <string>
+#include <poll.h>
 #include <signal.h>
+#include <string>
+#include <vector>
 
 // Forward declaration(s)
 class HttpRequest;
@@ -45,7 +45,7 @@ class Server {
 			enum {
 				SESSION_TIMEOUT = 1800, // 30 minutes
 				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
-				CLIENT_READ_TIMEOUT = 30, // 30 seconds
+				CLIENT_IDLE_TIMEOUT = 30, // 30 seconds
 				CLIENT_PROCESSING_TIMEOUT = 300 // 5 minutes - timeout for processing/CGI execution
 			};
 			std::vector<ServerConfig> _configs;
@@ -56,6 +56,7 @@ class Server {
 			Router _router;
 			std::map<std::string, SessionData> _sessions;
 			static int _s_sigpipe[2];
+			time_t _lastSessionCleanup;
 
 	public:
 
@@ -71,25 +72,26 @@ class Server {
 
 	private:
 
-		// private method(s)
+		// Private method(s)
 
-			void checkTimeouts();
+			// Socket management
 			void setupListenSockets();
 			bool isListenSocket(int fd) const;
 			void acceptNewClient(int listenSocket);
-			void cleanupSessions();
 
-		// Client handling
-
-			const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
+			// Client lifecycle
+			void handleClientTimeouts();
 			void handleClientRead(size_t clientIndex);
 			void handleClientWrite(size_t clientIndex);
+			const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
 
-		// Signal handling
+			// Session management
+			void handleSessionTimeouts();
 
+			// Signal handling (self-pipe trick for async-signal-safety)
+			void handleSignalPipeReadable();
+			void addSignalPipeToPoll();
 			static void signalHandler(int sig);
 			void installSignals();
-			void addSignalPipeToPoll();
-			void handleSignalPipeReadable();
 
 };
