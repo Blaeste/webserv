@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 13:51:44 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:00:24 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -159,12 +159,20 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 {
 	// skip first line (request line)
 	size_t pos = headerBlock.find("\r\n") + 2;
+	size_t headerCount = 0;
 
 	while (pos < headerBlock.length())
 	{
 		size_t lineEnd = headerBlock.find("\r\n", pos);
 		if (lineEnd == std::string::npos)
 			break;
+
+		// Security: Check header line size
+		if (lineEnd - pos > MAX_HEADER_SIZE)
+		{
+			_errorCode = 431; // Request Header Fields Too Large
+			return false;
+		}
 
 		std::string line = headerBlock.substr(pos, lineEnd - pos);
 
@@ -174,6 +182,32 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 		{
 			std::string key = line.substr(0, colonPos);
 			std::string value = line.substr(colonPos + 2);
+
+			// Security: Validate header key format
+			if (key.empty())
+			{
+				_errorCode = 400; // Bad request
+				return false;
+			}
+
+			for (size_t i = 0; i< key.length(); i ++)
+			{
+				unsigned char c = key[i];
+				if (c < 33 || c > 126 || c == ':' || c == ' ')
+				{
+					_errorCode = 400; // Bad request
+					return false;
+				}
+			}
+
+			// Security: Limit number of headers
+			headerCount++;
+			if (headerCount > MAX_HEADER_COUNT)
+			{
+				_errorCode = 431; // Request Header Fields Too Large
+				return false;
+			}
+
 			_headers[normalizeHeaderKey(key)] = value;
 		}
 
