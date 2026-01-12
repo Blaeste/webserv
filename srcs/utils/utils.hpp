@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:40:50 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/12 14:19:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -148,3 +148,10 @@
 	 * @return Vector of non-empty tokens
 	 */
 	std::vector<std::string> splitTokens(const std::string &str, char delimiter);
+
+	/**
+	 * @brief Gets the local port number of a socket.
+	 * @param fd The socket file descriptor.
+	 * @return The port number in host byte order, or -1 if getsockname() fails.
+	 */
+	int getSocketPort(int fd);

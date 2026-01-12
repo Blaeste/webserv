@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:57:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/12 14:14:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -81,14 +81,14 @@ const std::string &Client::getClientIp() const {
 	return _clientIp;
 }
 
-bool Client::hasTimedOut(time_t readTimeout, time_t processingTimeout) const {
+bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const {
 	time_t timeout;
 
 	// Use longer timeout during processing to allow CGI scripts to complete
 	if (_state == STATE_PROCESSING)
 		timeout = processingTimeout;
 	else
-		timeout = readTimeout;
+		timeout = idleTimeout;
 
 	return time(NULL) - _lastActivity > timeout;
 }
