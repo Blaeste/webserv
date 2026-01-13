@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:33:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/13 10:18:52 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,7 @@
 #include <unistd.h> // read(), close()
 #include <sys/socket.h>  // for getsockname()
 #include <netinet/in.h>  // for sockaddr_in, ntohs()
+#include <limits.h>
 
 // Function(s)
 std::string trim(const std::string &str) {
@@ -236,4 +237,41 @@ int getSocketPort(int fd) {
 	if (getsockname(fd, (sockaddr*)&addr, &len) == 0)
 		return ntohs(addr.sin_port);
 	return -1;
+}
+
+
+int parseIntSafe(const std::string &str, const std::string &context) { // Like atoi but better
+
+	// Like atoi but better
+
+	// Check string empty
+	if (str.empty())
+		throw std::runtime_error("parseIntSafe [" + context + "]: empty string");
+
+	// Check if all cha is digit
+	size_t start = 0;
+
+	if (str[0] == '+' || str[0] == '-')
+		start = 1;
+
+	if (start >= str.length())
+		throw std::runtime_error("parseIntSafe [" + context + "]: only sign character");
+
+	for (size_t i = start; i < str.length(); i++)
+		if (str[i] < '0' || str[i] > '9')
+			throw std::runtime_error("parseIntSafe [" + context + "]: invalid character in: " + str);
+
+	// Use strtol for convert with overflow detection
+	char *endptr;
+	errno = 0;
+	long val = strtol(str.c_str(), &endptr, 10);
+
+	// Check errors
+	if (errno == ERANGE || val > INT_MAX || val < INT_MIN)
+		throw std::runtime_error("parseIntSafe [" + context + "]: value out of range: " + str);
+
+	if (endptr == str.c_str() || *endptr != '\0')
+		throw std::runtime_error("parseIntSafe [" + context + "]: conversion failed for: " + str);
+
+	return static_cast<int>(val);
 }

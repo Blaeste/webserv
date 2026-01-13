@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:41:35 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 12:50:48 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,9 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>
+#include <cctype>
 #include <sstream>
+#include <cerrno>
 
 // Default constructor
 HttpRequest::HttpRequest()
@@ -29,6 +31,12 @@ int HttpRequest::getErrorCode() const
 	return _errorCode;
 }
 
+bool HttpRequest::setError(int code)
+{
+	_errorCode = code;
+	return false;
+}
+
 std::map<std::string, std::string> HttpRequest::getCookies() const {
 	std::map<std::string, std::string> cookies;
 	std::string cookieHeader = getHeader("Cookie");
@@ -40,6 +48,7 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 	while (std::getline(stream, pair, ';')) {
 		size_t eqPos = pair.find('=');
 		if (eqPos != std::string::npos) {
+
 			std::string key = trim(pair.substr(0, eqPos));
 			std::string value = trim(pair.substr(eqPos + 1));
 			cookies[key] = value;
@@ -53,7 +62,7 @@ bool HttpRequest::appendData(const std::string &data)
 	// Security: prevent mem exhaustion attack
 	if (_rawData.length() + data.length() > MAX_REQUEST_SIZE)
 	{
-		_errorCode = 413; // Payload to large
+		_errorCode = 413; // Payload too large
 		_isComplete = true;
 		return true;
 	}
@@ -97,20 +106,14 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 
 	// Security: Check request line size
 	if (firstLineEnd > MAX_REQUEST_LINE_SIZE)
-	{
-		_errorCode = 414; // URI too long
-		return false;
-	}
+		return setError(414); // URI too long
 
 	std::string requestLine = headerBlock.substr(0, firstLineEnd);
 
 	// Split on " " : "GET /index.html HTTP/1.1"
 	std::vector<std::string> parts = splitTokens(requestLine, ' ');
 	if (parts.size() != 3)
-	{
-		_errorCode = 400; // Bad request
-		return false;
-	}
+		return setError(400); // Bad request
 
 	_method = parts[0];
 	_uri = parts[1];
@@ -118,46 +121,29 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 
 	// Security: Validate method (length + only aphabetic char)
 	if (_method.length() > MAX_METHOD_LENGTH || _method.empty())
-	{
-		_errorCode = 400; // Bad request
-		return false;
-	}
+		return setError(400); // Bad request
 
 	for (size_t i = 0; i < _method.length(); i++)
 	{
-		if (!std::isalpha(_method[i]))
-		{
-			_errorCode = 400; // Bad request
-			return false;
-		}
+		unsigned char c = static_cast<unsigned char>(_method[i]);
+		if (!std::isalpha(c))
+			return setError(400); // Bad request
 	}
 
-	// Security: Validate URI (length + start zith "/")
+	// Security: Validate URI (length + start with "/")
 	if (_uri.length() > MAX_URI_LENGTH)
-	{
-		_errorCode = 414; // Bad request
-		return false;
-	}
+		return setError(414); // URI too long
 
 	if (_uri.empty() || _uri[0] != '/')
-	{
-		_errorCode = 400; // Bad request
-		return false;
-	}
+		return setError(400); // Bad request
 
 	// Security: Check for null bytes in URI
 	if (_uri.find('\0') != std::string::npos)
-	{
-		_errorCode = 400; // Bad request
-		return false;
-	}
+		return setError(400); // Bad request
 
 	// Security: Validate HTTP version
 	if (_version != "HTTP/1.1" && _version != "HTTP/1.0")
-	{
-		_errorCode = 505; // HTTP version not suported
-		return false;
-	}
+		return setError(505); // HTTP version not supported
 
 	return true;
 }
@@ -176,10 +162,7 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 
 		// Security: Check header line size
 		if (lineEnd - pos > MAX_HEADER_SIZE)
-		{
-			_errorCode = 431; // Request Header Fields Too Large
-			return false;
-		}
+			return setError(431); // Request Header Fields Too Large
 
 		std::string line = headerBlock.substr(pos, lineEnd - pos);
 
@@ -192,14 +175,11 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 
 			// Security: Validate header key format
 			if (key.empty())
-			{
-				_errorCode = 400; // Bad request
-				return false;
-			}
+				return setError(400); // Bad request
 
-			for (size_t i = 0; i< key.length(); i ++)
+			for (size_t i = 0; i < key.length(); i++)
 			{
-				unsigned char c = key[i];
+				unsigned char c = static_cast<unsigned char>(key[i]);
 				bool isValid =	(c >= 'a' && c <= 'z') ||  // lettres minuscules
 								(c >= 'A' && c <= 'Z') ||  // lettres majuscules
 								(c >= '0' && c <= '9') ||  // chiffres
@@ -208,19 +188,13 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 								c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
 
 				if (!isValid)
-				{
-					_errorCode = 400; // Bad request
-					return false;
-				}
+					return setError(400); // Bad request
 			}
 
 			// Security: Limit number of headers
 			headerCount++;
 			if (headerCount > MAX_HEADER_COUNT)
-			{
-				_errorCode = 431; // Request Header Fields Too Large
-				return false;
-			}
+				return setError(431); // Request Header Fields Too Large
 
 			_headers[normalizeHeaderKey(key)] = value;
 		}
@@ -248,36 +222,44 @@ bool HttpRequest::parseChunked()
 		// Parse chunk size (hexa)
 		std::string sizeStr = data.substr(pos, lineEnd - pos);
 
+		// Support chunk extensions: "HEX;ext=..."
+		size_t semi = sizeStr.find(';');
+		if (semi != std::string::npos)
+			sizeStr = sizeStr.substr(0, semi);
+
 		// Security: Validate chunk size format (must be hex)
 		if (sizeStr.empty() || sizeStr.length() > 16)
-		{
-			_errorCode = 400; // Bad request
-			return false;
-		}
+			return setError(400); // Bad request
 
 		for (size_t i = 0; i < sizeStr.length(); i++)
 		{
-			if (!std::isxdigit(sizeStr[i]))
-			{
-				_errorCode = 400; // Bad request
-				return false;
-			}
+			unsigned char x = static_cast<unsigned char>(sizeStr[i]);
+			if (!std::isxdigit(x))
+				return setError(400); // Bad request
 		}
 
-		size_t chunkSize = std::strtol(sizeStr.c_str(), NULL, 16);
+		errno = 0;
+		unsigned long v = std::strtoul(sizeStr.c_str(), NULL, 16);
 
-		// Security: Check individuak chunk size
+		if (errno != 0)
+			return setError(400); // Bad request
+
+		size_t chunkSize = static_cast<size_t>(v);
+
+		// Security: Check individual chunk size
 		if (chunkSize > MAX_CHUNK_SIZE)
-		{
-			_errorCode = 413; // Payload Too Large
-			return false;
-		}
+			return setError(413); // Payload Too Large
 
 		pos = lineEnd + 2; // skip "\r\n"
 
 		// Last chunk (size = 0)
 		if (chunkSize == 0)
 		{
+			// After last chunk check for trailer
+			size_t trailersEnd = data.find("\r\n\r\n", pos);
+			if (trailersEnd == std::string::npos)
+				return false; // incomplete trailer
+
 			_body = body;
 			return true;
 		}
@@ -285,14 +267,15 @@ bool HttpRequest::parseChunked()
 		// Security: Check total accumulated body size
 		totalBodySize += chunkSize;
 		if (totalBodySize > MAX_BODY_SIZE)
-		{
-			_errorCode = 413; // Payload Too Large
-			return false;
-		}
+			return setError(413); // Payload Too Large
 
-		// Check if chunk is complet (full data)
+		// Check if chunk is complete (full data)
 		if (pos + chunkSize + 2 > data.length())
 			return false; // Incomplete chunk data
+
+		// Security: chunked data must be followed by "\r\n"
+		if (data.compare(pos + chunkSize, 2, "\r\n") != 0)
+			return setError(400); // Bad request
 
 		// Extract chunk data
 		//body += data.substr(pos, chunkSize);
@@ -318,8 +301,11 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 		// add delimiter length
 		pos = boundaryPos + delimiter.length();
 
+		if (pos >= _body.length())
+			return setError(400); // Bad request
+
 		// Skip \r\n after boundary
-		if (_body[pos] == '\r' && _body[pos + 1] == '\n')
+		if (pos + 1 < _body.length() && _body.compare(pos, 2, "\r\n") == 0)
 			pos += 2;
 
 		// Check if end delimiter
@@ -340,8 +326,11 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 		if (nextBoundary == std::string::npos)
 			return false;
 
-		// Extract content (remove trailling \r\n)
-		std::string content = _body.substr(pos, nextBoundary - pos - 2);
+		// Extract content (remove trailing \r\n)
+		if (nextBoundary < pos + 2)
+			return setError(400); // Bad request
+
+		std::string content = _body.substr(pos, (nextBoundary - pos) - 2);
 
 		// Parse part headers to extract filename and content type
 		UploadedFile file;
@@ -390,56 +379,56 @@ bool HttpRequest::parse()
 	if (!parseHeaders(headersBlock))
 		return false;
 
+	// Security: check if Host is in the header mandatory in HTTP/1.1
+	if (_version == "HTTP/1.1" && getHeader("host").empty())
+		return setError(400); // Bad request
+
 	// Check if body type (chunked or Content-Length)
 	size_t bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
 
+	// Security: Check Transfer-Encoding and Content-Length
+	std::string te = getHeader("transfer-encoding");
+	std::string clStr = getHeader("content-length");
+
+	// If both TE and CL (anti request smuggling)
+	// Ignore Content-Length completely to prevent desync attacks
+	if (!te.empty() && !clStr.empty())
+		clStr.clear();
+
 	// Case 1 Chunked "Transfer-Encoding"
-	if (getHeader("transfer-encoding") == "chunked")
+	if (te == "chunked")
 	{
-		// Remove headers from _rawdata befor parsing chunk
+		// Remove headers from _rawdata before parsing chunk
 		_rawData.erase(0, bodyStart);
 		return parseChunked();
 	}
 
-	// Cas 2 Content Length
-	else if (!getHeader("content-length").empty())
+	if (!te.empty())
+		return setError(501); // Not implemented
+
+	// Case 2 Content Length
+	if (!clStr.empty())
 	{
-		std::string clStr = getHeader("content-length");
-
-		// Security: Validate Content-Length format (only digit)
-		if (clStr.empty())
-		{
-			_errorCode = 400; // Bad request
-			return false;
-		}
-
+		// Security: Validate Content-length format only digit
 		for (size_t i = 0; i < clStr.length(); i++)
 		{
-			if (!std::isdigit(clStr[i]))
-			{
-				_errorCode = 400; // Bad request
-				return false;
-			}
+			unsigned char d = static_cast<unsigned char>(clStr[i]);
+			if (!std::isdigit(d))
+				return setError(400); // Bad request
 		}
 
 		// Security: Check for overflow (max 20 digits)
 		if (clStr.length() > 20)
-		{
-			_errorCode = 413; // Payload Too Large
-			return false;
-		}
+			return setError(413); // Payload Too Large
 
-		size_t contentLength = atoi(clStr.c_str());
+		size_t contentLength = parseIntSafe(clStr.c_str(), "Content-Length header");
 
 		// Security: Check Content-Length against max body size
 		if (contentLength > MAX_BODY_SIZE)
-		{
-			_errorCode = 413; // Payload Too Large
-			return false;
-		}
+			return setError(413); // Payload Too Large
 
-		if (_rawData.length() < bodyStart + contentLength)
-			return false; // incomplet body
+		if (bodyStart > _rawData.length() || contentLength > _rawData.length() - bodyStart)
+			return false; // incomplete body
 
 		// Extract body with exact content length
 		_body = _rawData.substr(bodyStart, contentLength);
