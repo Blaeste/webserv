@@ -25,7 +25,8 @@ def main():
 		print("Content-Type: text/html")
 		print()
 		print("<html><body><h1>Error: No data received</h1>")
-		print("<a href='/contact.html'>Go back</a></body></html>")
+		print("<div class='home-links'><a href='/contact.html' class='home-button'><span>Try again</span></a></div>")
+		print("</body></html>")
 		return
 
 	# Read and parse POST data
@@ -61,12 +62,16 @@ def main():
 		print("<script src='/js/header.js' defer></script>")
 		print("</head><body>")
 		print("<div class='container'>")
+		print("<div class='whiteBox'>")
 		print("<h1>❌ Validation Error</h1>")
-		print("<ul style='color:red;'>")
+		print("<ul style='color:red; text-align:center; margin-bottom:8px;'>")
 		for error in errors:
 			print(f"<li>{error}</li>")
 		print("</ul>")
-		print("<a href='/contact.html'>← Go back</a>")
+		print("<div class='home-links'>")
+		print("<a href='/contact.html' class='home-button'><span>← Go back</span></a>")
+		print("</div>")
+		print("</div>")
 		print("</div></body></html>")
 	else:
 		# Success
@@ -77,14 +82,19 @@ def main():
 		print("<script src='/js/header.js' defer></script>")
 		print("</head><body>")
 		print("<div class='container'>")
+		print("<div class='whiteBox'>")
 		print("<h1>✓ Message Sent!</h1>")
 		print("<div style='background:#e6ffe6; padding:20px; border-radius:5px; margin:20px 0;'>")
 		print(f"<p><strong>From:</strong> {name} ({email})</p>")
 		print(f"<p><strong>Message:</strong></p>")
 		print(f"<p style='background:white; padding:15px; border-left:3px solid #0066cc;'>{message}</p>")
 		print("</div>")
-		print("<p><em>Note: This is a demo, message not actually sent.</em></p>")
-		print("<a href='/'>← Back to home</a>")
+		
+		print("<p style='font-style: italic; text-align: center; margin: 10px;'>Note: This is a demo, message not actually sent.</p>")
+		print("<div class='home-links'>")
+		print("<a href='/' class='home-button'><span>← Back to home</span></a>")
+		print("</div>")
+		print("</div>")
 		print("</div></body></html>")
 
 if __name__ == "__main__":
