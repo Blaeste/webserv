@@ -166,7 +166,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		// log + return
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
 		_responseReady = true;
 		return;
 	}
@@ -184,7 +184,8 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		// log and return
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime);
+		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(),
+							 _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
 		_responseReady = true;
 		return ;
 	}
@@ -241,7 +242,9 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		_clientIp,
 		_response.getStatus(),
 		_response.getBody().size(),
-		responseTime
+		responseTime,
+		config.getServerName(),
+		config.getPort()
 	);
 	_responseReady = true;
 }

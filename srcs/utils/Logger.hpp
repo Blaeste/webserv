@@ -34,7 +34,8 @@ class Logger {
 	public:
 		static void logRequest(const std::string &method, const std::string &uri,
 								const std::string &clientIP, int statusCode,
-								size_t responseSize, double responseTime);
+								size_t responseSize, double responseTime,
+								 std::string serverName, int port);
 
 		static void logConnection(int fd, const std::string &clientIP);
 
