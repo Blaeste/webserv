@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 12:40:26 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:45:36 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,11 @@
 #include <string>
 #include <vector>
 #include <map>
+
+// existe que sur linux / mac
+#ifndef O_NOFOLLOW
+# define O_NOFOLLOW 0
+#endif
 
 // Structure(s)
 struct UploadedFile

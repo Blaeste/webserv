@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:41:20 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:43:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 #include <fcntl.h>	// open()
 #include <iostream>
 #include <unistd.h>	// write(), close()
+#include <cerrno>
 
 // Default constructor
 HttpResponse::HttpResponse() :
@@ -91,8 +92,8 @@ std::string HttpResponse::build() const
 	for (it = _headers.begin(); it != _headers.end(); ++it)
 		response += it->first + ": " + it->second + "\r\n";
 
-	// Content length auto if body exist
-	if (!_body.empty())
+	// Content-Length (always send except for 204 No Content and 304 Not Modified)
+	if (_statusCode != 204 && _statusCode != 304)
 		response += "Content-Length: " + intToString(_body.size()) + "\r\n";
 
 	// Separate headers from body
@@ -146,7 +147,7 @@ void HttpResponse::serveFile(const std::string &path)
 	// Security check
 	if (!isPathSafe(path))
 	{
-		serveError(403, "Access forbidden");
+		serveError(403, "");
 		return;
 	}
 
@@ -182,6 +183,24 @@ void HttpResponse::serveFile(const std::string &path)
 	}
 }
 
+// Security: Escape HTML special characters to prevent XSS injection
+// Converts &, <, >, " to their HTML entities
+static std::string htmlEscape(const std::string &s)
+{
+	std::string out;
+
+	for (size_t i = 0; i < s.size(); i++) {
+
+		char c = s[i];
+		if (c == '&') out += "&amp;";
+		else if (c == '<') out += "&lt;";
+		else if (c == '>') out += "&gt;";
+		else if (c == '"') out += "&quot;";
+		else out += c;
+	}
+	return out;
+}
+
 void HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
 {
 	// Check if path is a directory
@@ -212,7 +231,9 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 			href += "/";
 		href += entries[i];
 
-		body += "<li><a href=\"" + href + "\">" + entries[i] + "</a></li>\n";
+		std::string escapedName = htmlEscape(entries[i]);
+		std::string escapedHref = htmlEscape(href);
+		body += "<li><a href=\"" + escapedHref + "\">" + escapedName + "</a></li>\n";
 	}
 
 	body +=
@@ -229,7 +250,7 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 
 void HttpResponse::serveDelete(const std::string &path)
 {
-	// Check if file exist adn not directory
+	// Check if file exists and not a directory
 	if (isDirectory(path) || !isPathSafeForUpload(path)) {
 		serveError(403, "");
 		return;
@@ -244,6 +265,8 @@ void HttpResponse::serveDelete(const std::string &path)
 	}
 }
 
+// Security: Sanitize filename to prevent path traversal and injection attacks
+// Replaces dangerous characters: "..", "/", "\", null bytes, control chars
 static std::string sanitizeFilename(const std::string &filename)
 {
 	std::string safe = filename;
@@ -251,7 +274,7 @@ static std::string sanitizeFilename(const std::string &filename)
 	// Block ".." (directory traversal)
 	size_t pos = 0;
 	while ((pos = safe.find("..", pos)) != std::string::npos)
-		safe.erase(pos, 2);
+		safe.replace(pos, 2, "__");
 
 
 	for (size_t i = 0; i < safe.size(); i++)
@@ -271,12 +294,35 @@ static std::string sanitizeFilename(const std::string &filename)
 	return safe;
 }
 
+// Security: Write all data handling partial writes and EINTR interruptions
+// Returns true if all data written successfully, false on error
+static bool writeAll(int fd, const char *buf, size_t len)
+{
+	size_t off = 0;
+
+	while(off < len)
+	{
+		ssize_t w = write(fd, buf + off, len - off);
+
+		if (w < 0)
+		{
+			if (errno == EINTR)
+				continue; // Retry if interrupt
+			return false; // True error
+		}
+		if (w == 0)
+			return false; // EOF impossible in write
+		off += (size_t)w;
+	}
+	return true;
+}
+
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir) {
 
     // Security check: only allow uploads in /uploads directory
 	if (!isPathSafeForUpload(uploadDir)) {
-		serveError(403, "Access forbidden");
-        return;
+		serveError(403, "");
+		return;
 	}
 
 	const std::vector<UploadedFile> &files = request.getUploadedFiles();
@@ -292,23 +338,25 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 		std::string safeName = sanitizeFilename(files[i].filename);
 		std::string filePath = uploadDir + '/' + safeName;
 
-		// Open file fpr writing
-		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		// Open file for writing
+		// Security: O_NOFOLLOW prevents symlink attacks (don't follow symbolic links)
+		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0644);
+
 		if (fd < 0) {
 			std::cerr << "[handleUpload] open failed: " << filePath << std::endl;
 			serveError(500, ""); // Failed to save
 			return;
 		}
 
-		// Write content (use .data() and .size() for binary data)
-		ssize_t written = write(fd, files[i].content.data(), files[i].content.size());
-		safeClose(fd);
+		// Write content (handle partial write)
+		if (!writeAll(fd, files[i].content.data(), files[i].content.size())) {
 
-		if (written < 0 || (size_t)written != files[i].content.size()) {
+			safeClose(fd);
 			std::cerr << "[handleUpload] write failed: " << filePath << std::endl;
 			serveError(500, "");
 			return;
 		}
+		safeClose(fd);
 	}
 
 	// Success 201 Created
