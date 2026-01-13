@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 10:04:55 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:03:46 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,3 +164,10 @@
 	 * @throws std::runtime_error if parsing fails or value is out of range.
 	 */
 	int parseIntSafe(const std::string &str, const std::string &context);
+
+	/**
+	 * @brief Converts a string to lowercase.
+	 * @param str The input string.
+	 * @return A new string with all characters converted to lowercase.
+	 */
+	std::string toLowercase(const std::string &str);

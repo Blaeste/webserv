@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 10:18:52 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:03:20 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -274,4 +274,16 @@ int parseIntSafe(const std::string &str, const std::string &context) { // Like a
 		throw std::runtime_error("parseIntSafe [" + context + "]: conversion failed for: " + str);
 
 	return static_cast<int>(val);
+}
+
+
+std::string toLowercase(const std::string &str)
+{
+	std::string result = str;
+	for (size_t i = 0; i < result.length(); i++)
+	{
+		if (result[i] >= 'A' && result[i] <= 'Z')
+			result[i] += 32;
+	}
+	return result;
 }

@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 12:50:48 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:09:54 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,11 +167,14 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 		std::string line = headerBlock.substr(pos, lineEnd - pos);
 
 		// Split on ": "
-		size_t colonPos = line.find(": ");
+		size_t colonPos = line.find(':');
 		if (colonPos != std::string::npos)
 		{
 			std::string key = line.substr(0, colonPos);
-			std::string value = line.substr(colonPos + 2);
+			std::string value = line.substr(colonPos + 1);
+
+			// remove " " if necessary
+			value = trim(value);
 
 			// Security: Validate header key format
 			if (key.empty())
@@ -387,16 +390,16 @@ bool HttpRequest::parse()
 	size_t bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
 
 	// Security: Check Transfer-Encoding and Content-Length
-	std::string te = getHeader("transfer-encoding");
+	std::string te = toLowercase(trim(getHeader("transfer-encoding")));
 	std::string clStr = getHeader("content-length");
 
 	// If both TE and CL (anti request smuggling)
 	// Ignore Content-Length completely to prevent desync attacks
-	if (!te.empty() && !clStr.empty())
+	if (!te.empty())
 		clStr.clear();
 
 	// Case 1 Chunked "Transfer-Encoding"
-	if (te == "chunked")
+	if (te.find("chunked") != std::string::npos)
 	{
 		// Remove headers from _rawdata before parsing chunk
 		_rawData.erase(0, bodyStart);
@@ -447,7 +450,8 @@ bool HttpRequest::parse()
 			if (boundaryPos != std::string::npos)
 			{
 				std::string boundary = contentType.substr(boundaryPos + 9);
-				parseMultipart(boundary);
+				if (!parseMultipart(boundary))
+					return false;
 			}
 		}
 	}
