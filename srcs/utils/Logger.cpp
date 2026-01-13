@@ -54,7 +54,8 @@ std::string Logger::getStatusColor(int statusCode)
 
 void Logger::logRequest(const std::string &method, const std::string &uri,
 								const std::string &clientIP, int statusCode,
-								size_t responseSize, double responseTime)
+								size_t responseSize, double responseTime,
+								 std::string serverName, int port)
 {
 	std::string statusColor = getStatusColor(statusCode);
 	std::string methodColor = (method == "GET") ? BLUE : (method == "POST") ? MAGENTA : CYAN;
@@ -73,7 +74,9 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 	}
 
 	// log
-	std::cout	<< "[" << getCurrentTime() << "] "
+	std::cout
+				<< serverName << ":" << port << " "
+				<< "[" << getCurrentTime() << "] "
 				<< methodColor << BOLD << method << RESET << " "
 				<< uri << " "
 				<< GRAY << "→" << RESET << " "

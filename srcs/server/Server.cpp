@@ -97,8 +97,14 @@ void Server::stop() {
 
 void Server::setupListenSockets() {
 	// Create one listening socket per configuration (one per port)
+	std::vector<int> port;
 	for (size_t i = 0; i < _configs.size(); i++) {
-		int port = _configs[i].getPort();
+		if(std::find(port.begin(), port.end(), _configs[i].getPort()) != port.end())
+		{
+			std::cout << "Server "<<_configs[i].getServerName()<<" listening on port " << _configs[i].getPort() << std::endl;
+			continue; // Skip duplicate ports
+		}
+		port.push_back(_configs[i].getPort());
 		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // IPv4, TCP
 		if (listenFd < 0)
 			throw std::runtime_error("socket() failed");
@@ -115,7 +121,7 @@ void Server::setupListenSockets() {
 		std::memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;		   // IPv4
 		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
-		addr.sin_port = htons(port);	   // Convert port to network byte order
+		addr.sin_port = htons(port[i]);	   // Convert port to network byte order
 		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
 			safeClose(listenFd);
 			throw std::runtime_error("bind() failed");
@@ -134,7 +140,7 @@ void Server::setupListenSockets() {
 		pfd.revents = 0;
 		_pollFds.push_back(pfd);
 		_socketTypes[listenFd] = SOCKET_LISTEN;
-		std::cout << "Server listening on port " << port << std::endl;
+		std::cout << "Server "<<_configs[i].getServerName()<<" listening on port " << port[i] << std::endl;
 	}
 }
 

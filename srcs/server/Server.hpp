@@ -22,6 +22,7 @@
 #include <signal.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 // Forward declaration(s)
 class HttpRequest;
