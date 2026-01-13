@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 14:19:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/13 10:04:55 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -155,3 +155,12 @@
 	 * @return The port number in host byte order, or -1 if getsockname() fails.
 	 */
 	int getSocketPort(int fd);
+
+	/**
+	 * @brief Safely parses a string to an integer with error handling.
+	 * @param str The string to parse.
+	 * @param context Context for error messages (e.g., "port", "error_code").
+	 * @return The parsed integer value.
+	 * @throws std::runtime_error if parsing fails or value is out of range.
+	 */
+	int parseIntSafe(const std::string &str, const std::string &context);

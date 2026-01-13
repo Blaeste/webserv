@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 13:31:41 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 12:40:26 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,7 +70,7 @@ class HttpRequest
 			 */
 			bool appendData(const std::string &data);
 
-		/**
+			/**
 			 * @brief Checks if the HTTP request is complete.
 			 * @return true if the request is complete, false otherwise.
 			 */
@@ -132,4 +132,6 @@ class HttpRequest
 			 */
 			bool parseMultipart(const std::string &boundary);
 
+
+			bool setError(int code);
 };

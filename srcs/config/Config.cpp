@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:39:56 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 10:18:35 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -150,11 +150,11 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 
 		// Parse directive
 		if (tokens[0] == "listen" && tokens.size() >= 2)
-			server.setPort(atoi(tokens[1].c_str()));
+			server.setPort(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)));
 		else if (tokens[0] == "server_name" && tokens.size() >= 2)
 			server.setServerName(tokens[1]);
 		else if (tokens[0] == "error_page" && tokens.size() >= 3)
-			server.addErrorPage(atoi(tokens[1].c_str()), tokens[2]);
+			server.addErrorPage(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)), tokens[2]);
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			server.setMaxBodySize(parseSize(tokens[1], "Server #" + sizetToString(serverIndex)));
 	}
@@ -268,7 +268,7 @@ size_t Config::parseSize(const std::string &sizeStr, const std::string &context)
 		}
 	}
 
-	size_t num = atoi(numStr.c_str());
+	size_t num = parseIntSafe(numStr.c_str(), context);
 	return num * multiplier;
 }
 

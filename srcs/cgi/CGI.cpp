@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:30:26 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/13 10:20:33 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 			std::string statusLine = line.substr(8); // Skip "Status: "
 			// Extract status code (first 3 digits)
 			if (statusLine.length() >= 3) {
-				result.statusCode = atoi(statusLine.substr(0, 3).c_str());
+				result.statusCode = parseIntSafe(statusLine.substr(0, 3).c_str(), "CGI status code");
 			}
 		}
 
