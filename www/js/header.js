@@ -7,11 +7,11 @@ function loadHeader() {
 			<nav>
 				<a href="/">Home</a>
 				<a href="/files.html">Files</a>
-				<a href="/about.html">About</a>
 				<a href="/qrcode.html">QR Code</a>
 				<a href="/errors.html">Errors</a>
 				<a href="/http-test.html">HTTP</a>
-				<a href="/contact.html">Contact</a>
+				<a href="/contact.html">Contact</a>				
+				<a href="/about.html">About</a>
 			</nav>
 			<div class="header-info">
 				<div id="svisit-counter" class="visit-counter"><span id ="visit-count">-</span> pages visited</div>

@@ -1,6 +1,6 @@
 function loadFooter() {
 	const text = [
-		"This project has been created as part of the 42 curriculum by eschwart gdosch and lmarck (not really yet)"
+		"This project has been created as part of the 42 curriculum by ESchwart GDosh and LMarck(not really yet)"
 	];
 	const externalLink = [
 		{ label: "42 Mulhouse", href: "https://www.42mulhouse.fr/" }
