@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:43:23 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/13 13:51:36 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -169,9 +169,15 @@ void HttpResponse::serveFile(const std::string &path)
 		// Read file content
 		std::string content = readFile(path);
 
-		// Get MIME type using MimeTypes class
-		std::string ext = getFileExtension(path);
-		std::string contentType = MimeTypes::get(ext);
+		// Get MIME type (default to application/octet-stream if no extension)
+		std::string contentType = "application/octet-stream";
+
+		try {
+			std::string ext = getFileExtension(path);
+			contentType = MimeTypes::get(ext);  // Assign, not declare!
+		} catch (const std::exception&) {
+			// No extension or hidden file → use default MIME type
+		}
 
 		// Build response
 		setStatus(200);
