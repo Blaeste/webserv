@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:09:54 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 13:10:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@ HttpRequest::HttpRequest()
 {}
 
 // Public method(s)
-
 int HttpRequest::getErrorCode() const
 {
 	return _errorCode;
@@ -76,7 +75,7 @@ bool HttpRequest::appendData(const std::string &data)
 
 		// If parsing failed with an error, mark as complete anyway
 		// so we can send the error response immediately
-		if (!_isComplete && _errorCode != 0)
+		if (!_isComplete && _errorCode)
 			_isComplete = true;
 	}
 
@@ -244,7 +243,7 @@ bool HttpRequest::parseChunked()
 		errno = 0;
 		unsigned long v = std::strtoul(sizeStr.c_str(), NULL, 16);
 
-		if (errno != 0)
+		if (errno)
 			return setError(400); // Bad request
 
 		size_t chunkSize = static_cast<size_t>(v);
@@ -256,7 +255,7 @@ bool HttpRequest::parseChunked()
 		pos = lineEnd + 2; // skip "\r\n"
 
 		// Last chunk (size = 0)
-		if (chunkSize == 0)
+		if (!chunkSize)
 		{
 			// After last chunk check for trailer
 			size_t trailersEnd = data.find("\r\n\r\n", pos);
@@ -277,7 +276,7 @@ bool HttpRequest::parseChunked()
 			return false; // Incomplete chunk data
 
 		// Security: chunked data must be followed by "\r\n"
-		if (data.compare(pos + chunkSize, 2, "\r\n") != 0)
+		if (data.compare(pos + chunkSize, 2, "\r\n"))
 			return setError(400); // Bad request
 
 		// Extract chunk data
@@ -308,7 +307,7 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 			return setError(400); // Bad request
 
 		// Skip \r\n after boundary
-		if (pos + 1 < _body.length() && _body.compare(pos, 2, "\r\n") == 0)
+		if (pos + 1 < _body.length() && !_body.compare(pos, 2, "\r\n"))
 			pos += 2;
 
 		// Check if end delimiter
@@ -458,4 +457,3 @@ bool HttpRequest::parse()
 
 	return true;
 }
-

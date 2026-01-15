@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 10:20:33 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 13:08:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,14 @@
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>
+#include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <iostream>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <vector>
 
 // Private method(s)
 std::string CGI::readFromPipe(int fd) {
@@ -92,42 +95,6 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 		}
 		_env[envKey] = it->second;
 	}
-}
-
-void CGI::parseHeaders(const std::string& output, CGIResult& result) {
-	size_t headersEnd = output.find("\r\n\r\n");
-	if (headersEnd == std::string::npos) {
-		// No headers separator, treat all as body
-		result.output = output;
-		return;
-	}
-	std::string headersBlock = output.substr(0, headersEnd);
-	std::string body = output.substr(headersEnd + 4);
-
-	// Parse headers line by line
-	size_t pos = 0;
-	while (pos < headersBlock.length()) {
-		size_t lineEnd = headersBlock.find("\r\n", pos);
-		if (lineEnd == std::string::npos)
-			lineEnd = headersBlock.length();
-		std::string line = headersBlock.substr(pos, lineEnd - pos);
-
-		// Check for Status header
-		if (line.find("Status: ") == 0) {
-			std::string statusLine = line.substr(8); // Skip "Status: "
-			// Extract status code (first 3 digits)
-			if (statusLine.length() >= 3) {
-				result.statusCode = parseIntSafe(statusLine.substr(0, 3).c_str(), "CGI status code");
-			}
-		}
-
-		// Check for Content-Type header
-		else if (line.find("Content-Type: ") == 0)
-			result.contentType = line.substr(14); // skip "Content-Type: "
-
-		pos = lineEnd + 2;
-	}
-	result.output = body;
 }
 
 // Public method(s)
@@ -215,4 +182,127 @@ CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
 	// Parse CGI headers (Status, etc.)
 	parseHeaders(result.output, result);
 	return result;
+}
+
+void CGI::parseHeaders(const std::string& output, CGIResult& result) {
+	size_t headersEnd = output.find("\r\n\r\n");
+	if (headersEnd == std::string::npos) {
+		// No headers separator, treat all as body
+		result.output = output;
+		return;
+	}
+	std::string headersBlock = output.substr(0, headersEnd);
+	std::string body = output.substr(headersEnd + 4);
+
+	// Parse headers line by line
+	size_t pos = 0;
+	while (pos < headersBlock.length()) {
+		size_t lineEnd = headersBlock.find("\r\n", pos);
+		if (lineEnd == std::string::npos)
+			lineEnd = headersBlock.length();
+		std::string line = headersBlock.substr(pos, lineEnd - pos);
+
+		// Check for Status header
+		if (!line.find("Status: ")) {
+			std::string statusLine = line.substr(8); // Skip "Status: "
+			// Extract status code (first 3 digits)
+			if (statusLine.length() >= 3)
+				result.statusCode = parseIntSafe(statusLine.substr(0, 3).c_str(), "CGI status code");
+		}
+
+		// Check for Content-Type header
+		else if (!line.find("Content-Type: "))
+			result.contentType = line.substr(14); // skip "Content-Type: "
+
+		pos = lineEnd + 2;
+	}
+	result.output = body;
+}
+
+CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request) {
+
+	setupEnvironment(match, request);
+	
+	CGIProcess* cgi = new CGIProcess();
+	
+	// Create pipes for CGI communication
+	int pipeOut[2];  // CGI stdout
+	int pipeIn[2];   // CGI stdin
+	
+	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1) {
+		std::cerr << "CGI: Failed to create pipes" << std::endl;
+		delete cgi;
+		return NULL;
+	}
+	
+	cgi->startTime = time(NULL);
+	pid_t pid = fork();
+	
+	if (pid == -1) {
+		std::cerr << "CGI: Failed to create pipes" << std::endl;
+		close(pipeOut[0]); close(pipeOut[1]);
+		close(pipeIn[0]); close(pipeIn[1]);
+		delete cgi;
+		return NULL;
+	}
+	
+	if (!pid) {
+		// Child process - execute CGI script
+		close(pipeOut[0]);  // Close read end
+		close(pipeIn[1]);   // Close write end
+		
+		// Redirect stdin/stdout
+		dup2(pipeIn[0], STDIN_FILENO);
+		dup2(pipeOut[1], STDOUT_FILENO);
+		
+		close(pipeIn[0]);
+		close(pipeOut[1]);
+		
+		// Prepare environment variables
+		std::vector<char*> envp;
+		for (std::map<std::string, std::string>::const_iterator it = _env.begin(); 
+			 it != _env.end(); ++it) {
+			std::string envStr = it->first + "=" + it->second;
+			envp.push_back(strdup(envStr.c_str()));
+		}
+		envp.push_back(NULL);
+		
+		// Execute CGI
+		std::string interpreter = match.location->getCgiPath();
+		std::string scriptPath = match.filePath;
+		char* argv[] = {
+			const_cast<char*>(interpreter.c_str()),
+			const_cast<char*>(scriptPath.c_str()),
+			NULL
+		};
+		
+		execve(interpreter.c_str(), argv, &envp[0]);
+		
+		// If execve fails
+		std::cerr << "CGI: execve failed" << std::endl;
+		exit(1);
+	}
+	
+	// Parent process
+	close(pipeOut[1]);  // Close write end
+	close(pipeIn[0]);   // Close read end
+	
+	cgi->pid = pid;
+	cgi->pipeOut = pipeOut[0];
+	cgi->pipeIn = pipeIn[1];
+	
+	// Set pipes to non-blocking mode
+	fcntl(cgi->pipeOut, F_SETFL, O_NONBLOCK);
+	fcntl(cgi->pipeIn, F_SETFL, O_NONBLOCK);
+	
+	// If POST request, mark that we need to write body
+	if (request.getMethod() == "POST" && !request.getBody().empty())
+		cgi->inputWritten = false;
+	else {
+		cgi->inputWritten = true;
+		close(cgi->pipeIn);
+		cgi->pipeIn = -1;
+	}
+	
+	return cgi;
 }

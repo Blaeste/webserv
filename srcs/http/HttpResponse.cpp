@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:51:36 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 13:14:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,8 +144,8 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 
 void HttpResponse::serveFile(const std::string &path)
 {
-	// Security check
-	if (!isPathSafe(path))
+	// Check if it's a directory + security check
+	if (isDirectory(path) || !isPathSafe(path))
 	{
 		serveError(403, "");
 		return;
@@ -155,13 +155,6 @@ void HttpResponse::serveFile(const std::string &path)
 	if (!fileExists(path))
 	{
 		serveError(404, "");
-		return;
-	}
-
-	// Check if it's a directory
-	if (isDirectory(path))
-	{
-		serveError(403, "");
 		return;
 	}
 
@@ -263,9 +256,9 @@ void HttpResponse::serveDelete(const std::string &path)
 	}
 
 	// Try to delete the file
-	if (std::remove(path.c_str()) == 0) {
+	if (!std::remove(path.c_str()))
 		setStatus(204); // Success: 204 No Content
-	} else {
+	else {
 		std::cerr << "[HttpResponse] serveDelete: remove failed for " << path << std::endl;
 		serveError(500, "");
 	}
@@ -316,7 +309,7 @@ static bool writeAll(int fd, const char *buf, size_t len)
 				continue; // Retry if interrupt
 			return false; // True error
 		}
-		if (w == 0)
+		if (!w)
 			return false; // EOF impossible in write
 		off += (size_t)w;
 	}
@@ -325,7 +318,7 @@ static bool writeAll(int fd, const char *buf, size_t len)
 
 void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir) {
 
-    // Security check: only allow uploads in /uploads directory
+	// Security check: only allow uploads in /uploads directory
 	if (!isPathSafeForUpload(uploadDir)) {
 		serveError(403, "");
 		return;
@@ -356,7 +349,6 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 
 		// Write content (handle partial write)
 		if (!writeAll(fd, files[i].content.data(), files[i].content.size())) {
-
 			safeClose(fd);
 			std::cerr << "[handleUpload] write failed: " << filePath << std::endl;
 			serveError(500, "");
