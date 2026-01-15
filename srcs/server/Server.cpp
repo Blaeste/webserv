@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:21:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:55:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,16 @@ Server::Server(const Config& config)
 }
 
 Server::~Server() {
-	// Close all sockets (skip signal pipe at index 0)
+	// Kill all active CGI processes and clean up
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		CGIProcess* cgi = it->second.getCGIProcess();
+		if (cgi) {
+			kill(cgi->pid, SIGKILL);
+			waitpid(cgi->pid, NULL, 0);
+			delete cgi;
+		}
+	}
+	// Close all active Client and CGI sockets (skip signal pipe at index 0)
 	for (size_t i = 1; i < _pollFds.size(); i++)
 		safeClose(_pollFds[i].fd);
 	// Close signal pipe explicitly
