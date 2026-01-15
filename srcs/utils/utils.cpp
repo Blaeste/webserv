@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:03:20 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 13:43:08 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include <sys/socket.h>  // for getsockname()
 #include <netinet/in.h>  // for sockaddr_in, ntohs()
 #include <limits.h>
+#include <cstdio> //snprintf
 
 // Function(s)
 std::string trim(const std::string &str) {
@@ -135,11 +136,28 @@ std::string normalizeHeaderKey(const std::string& key) {
 }
 
 std::string generateSessionId() {
+
 	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	const size_t idLength = 32;
+	const size_t charsetSize = sizeof(charset)- 1;
+
+	// Open urandom
+	int fd = open("/dev/urandom", O_RDONLY);
+	if (fd < 0)
+		throw std::runtime_error("Failed to open /dev/urandom (generateSesssionId)");
+
+	// Read urandom
+	unsigned char randomBytes[idLength];
+	if (read(fd, randomBytes, idLength) != (ssize_t)idLength) {
+		close(fd);
+		throw std::runtime_error("Failed to read from /dev/urandom (generateSesssionId)");
+	}
+	close(fd);
+
+	// Genrate session id base on urandom read
 	std::string id;
 	for (size_t i = 0; i < idLength; i++)
-		id += charset[std::rand() % (sizeof(charset) - 1)];
+		id += charset[randomBytes[i] % charsetSize];
 	return id;
 }
 
@@ -150,47 +168,136 @@ void safeClose(int fd) {
 
 bool isPathSafe(const std::string &path) {
 
+	// Url decode (protect against hex %2e%2e)
+	std::string decoded = urlDecode(path);
+
 	// Refuse any path containing ".."
-	if (path.find("..") != std::string::npos)
+	if (decoded.find("..") != std::string::npos)
 		return false;
 
-	// Check if path starts with allowed directories
-	const std::string allowedPrefixes[] = {
-		"./www", "www",
-		"./uploads", "uploads",
-		"./cgi-bin", "cgi-bin"
-	};
+	// Get canonical path with realpath
+	char resolvedPath[PATH_MAX];
 
-	for (size_t i = 0; i < sizeof(allowedPrefixes) / sizeof(allowedPrefixes[0]); i++) {
-		const std::string &prefix = allowedPrefixes[i];
+	// Try realpath if fail normalize it
+	if (realpath(decoded.c_str(), resolvedPath) == NULL) {
+		// File doest exist try resolve parent directory
+		std::string parentPath = decoded;
+		std::string fileName;
+		size_t lastSlash = parentPath.find_last_of('/');
 
-		if (path.compare(0, prefix.size(), prefix) == 0)
-			if (path.length() == prefix.length() || path[prefix.length()] == '/')
-				return true;
+		if (lastSlash == std::string::npos) {
+			// No slash - relative path in current dir
+			char cwd[PATH_MAX];
+			if (getcwd(cwd, sizeof(cwd)) == NULL)
+				return false;
+
+			fileName = decoded;
+			snprintf(resolvedPath, PATH_MAX, "%s/%s", cwd, fileName.c_str());
+		} else {
+			// Has slash
+			parentPath = parentPath.substr(0, lastSlash);
+
+			char parentResolved[PATH_MAX];
+			if (realpath(parentPath.c_str(), parentResolved) == NULL)
+				return false; // Parent doesn't exist
+
+			fileName = decoded.substr(lastSlash + 1); // skip '/'
+			snprintf(resolvedPath, PATH_MAX, "%s/%s", parentResolved, fileName.c_str());
+		}
 	}
 
+	// Static computed only once path gen with cwd
+	static std::vector<std::string> allowedDirs;
+	if (allowedDirs.empty()) {
+
+		char cwd[PATH_MAX];
+		if (getcwd(cwd, sizeof(cwd)) != NULL) {
+
+			std::string baseDir(cwd);
+			allowedDirs.push_back(baseDir + "/www");
+			allowedDirs.push_back(baseDir + "/uploads");
+			allowedDirs.push_back(baseDir + "/cgi-bin");
+		}
+	}
+
+	std::string canonical(resolvedPath);
+	for (size_t i = 0; i < allowedDirs.size(); i++) {
+		size_t prefixLen = allowedDirs[i].size();
+
+		// Check for start match
+		if (canonical.compare(0, prefixLen, allowedDirs[i]) == 0) {
+			// Check for
+			// - end string (path = autorised path)
+			// - one '/' (subdirectory valid)
+			if (canonical.length() == prefixLen || canonical[prefixLen] == '/')
+				return true;
+		}
+	}
 	return false;
 }
 
 bool isPathSafeForUpload(const std::string &path) {
 
+	// Url decode (protect against hex %2e%2e)
+	std::string decoded = urlDecode(path);
+
 	// Refuse any path containing ".."
-	if (path.find("..") != std::string::npos)
+	if (decoded.find("..") != std::string::npos)
 		return false;
 
-	// Check if path starts with allowed directories
-	const std::string allowedPrefixes[] = {
-		"./uploads", "uploads",
-	};
+	// Get canonical path with realpath
+	char resolvedPath[PATH_MAX];
+	std::string checkPath = decoded;
 
-	for (size_t i = 0; i < sizeof(allowedPrefixes) / sizeof(allowedPrefixes[0]); i++) {
-		const std::string &prefix = allowedPrefixes[i];
+	// Try realpath on the path itself
+	if (realpath(decoded.c_str(), resolvedPath) ==  NULL) {
+		// Path doesn't exist - try parent directory(file upload case)
+		std::string parentPath = decoded;
+		size_t lastSlash = parentPath.find_last_of('/');
 
-		if (path.compare(0, prefix.size(), prefix) == 0)
-			if (path.length() == prefix.length() || path[prefix.length()] == '/')
-				return true;
+		if (lastSlash != std::string::npos) {
+			parentPath = parentPath.substr(0, lastSlash);
+			std::string fileName = decoded.substr(lastSlash + 1);
+
+			char parentResolved[PATH_MAX];
+			if (realpath(parentPath.c_str(), parentResolved) == NULL)
+				return false;
+
+			snprintf(resolvedPath, PATH_MAX, "%s/%s", parentResolved, fileName.c_str());
+		} else {
+			// No slash - current directory
+			char cwd[PATH_MAX];
+			if (getcwd(cwd, sizeof(cwd)) == NULL)
+				return false;
+			snprintf(resolvedPath, PATH_MAX, "%s/%s", cwd, decoded.c_str());
+		}
 	}
 
+	// Static computed only once path gen with cwd
+	static std::vector<std::string> allowedDirs;
+	if (allowedDirs.empty()) {
+
+		char cwd[PATH_MAX];
+		if (getcwd(cwd, sizeof(cwd)) != NULL) {
+
+			std::string baseDir(cwd);
+			allowedDirs.push_back(baseDir + "/uploads");
+		}
+	}
+
+	std::string canonical(resolvedPath);
+	for (size_t i = 0; i < allowedDirs.size(); i++) {
+		size_t prefixLen = allowedDirs[i].size();
+
+		// Check for start match
+		if (canonical.compare(0, prefixLen, allowedDirs[i]) == 0) {
+			// Check for
+			// - end string (path = autorised path)
+			// - one '/' (subdirectory valid)
+			if (canonical.length() == prefixLen || canonical[prefixLen] == '/')
+				return true;
+		}
+	}
 	return false;
 }
 
@@ -215,15 +322,27 @@ std::vector<std::string> splitTokens(const std::string &str, char delimiter) {
 
 	for (size_t i = 0; i < str.length(); i++) {
 
-		if (str[i] == delimiter) {
+		bool isDelimiter = false;
 
-			if (!buffer.empty())
-				result.push_back(buffer);
-			buffer.clear();
+		// If delimiter is ' '  accept /t /n /r
+		if (delimiter == ' ') {
+			if (str[i] == ' ' || str[i] == '\t' || str[i] == '\n' || str[i] == '\r')
+				isDelimiter = true;
+		} else {
+			if (str[i] == delimiter)
+				isDelimiter = true;
 		}
-		else
+
+		if (isDelimiter) {
+			if (!buffer.empty()) {
+				result.push_back(buffer);
+				buffer.clear();
+			}
+		} else {
 			buffer += str[i];
+		}
 	}
+
 	if (!buffer.empty())
 		result.push_back(buffer);
 
@@ -286,4 +405,44 @@ std::string toLowercase(const std::string &str)
 			result[i] += 32;
 	}
 	return result;
+}
+
+bool isValidHttpMethod(const std::string &method) {
+	static std::set<std::string> validMethods;
+
+	if (validMethods.empty()) {
+		validMethods.insert("GET");
+		validMethods.insert("POST");
+		validMethods.insert("DELETE");
+		validMethods.insert("PUT");
+		validMethods.insert("HEAD");
+		validMethods.insert("OPTIONS");
+	}
+	return validMethods.find(method) != validMethods.end();
+}
+
+std::string urlDecode(const std::string &url) {
+	std::string decoded;
+
+	for (size_t i = 0; i < url.length(); i++) {
+		if (url[i] == '%' && i + 2 < url.length()) {
+			// Decode %XX
+			char hex[3] = {url[i+1], url[i+2], '\0'};
+			char *endptr;
+			long value = strtol(hex, &endptr, 16);
+
+			// Valid hex
+			if (*endptr == '\0') {
+				decoded += static_cast<char>(value);
+				i += 2; // skip 2 next char
+			} else {
+				decoded += url[i]; // if invalid keep at it is
+			}
+		} else if (url[i] == '+') {
+			decoded += ' '; // + = space in URL encoding
+		} else {
+			decoded += url[i];
+		}
+	}
+	return decoded;
 }

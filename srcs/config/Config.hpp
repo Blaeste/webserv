@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 12:05:32 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 14:01:57 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,13 @@
 #include "ServerConfig.hpp"
 #include <string>
 #include <vector>
+
+// Structure
+struct BlockInfo {
+    std::string content;
+    size_t startPos;
+    size_t endPos;
+};
 
 // Class
 class Config
@@ -64,7 +71,7 @@ class Config
 		 * @param keyword The keyword to identify blocks (e.g., "server", "location").
 		 * @return A vector of strings, each representing a configuration block.
 		 */
-		std::vector<std::string> extractBlocks(const std::string &content, const std::string &keyword);
+		std::vector<BlockInfo> extractBlocks(const std::string &content, const std::string &keyword);
 
 		/**
 		 * @brief Parses a server configuration block and populates the ServerConfig object.

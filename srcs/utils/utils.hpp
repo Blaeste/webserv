@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:03:46 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 11:21:22 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 // Include(s)
 #include <string>
 #include <vector>
+#include <set>
 
 // Function prototype(s)
 
@@ -171,3 +172,10 @@
 	 * @return A new string with all characters converted to lowercase.
 	 */
 	std::string toLowercase(const std::string &str);
+
+	/**
+	 * @brief Checks if the given HTTP method is valid.
+	 * @param method The HTTP method to validate (e.g., "GET", "POST
+	 * @return true if the method is valid, false otherwise.
+	 */
+	bool isValidHttpMethod(const std::string &method);
