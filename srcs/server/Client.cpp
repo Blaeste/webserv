@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 16:10:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:38:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ Client::Client(int socket, const std::string &clientIp)
 	, _requestComplete(false)
 	, _responseReady(false)
 	, _state(STATE_IDLE)
+	, _cgiProcess(NULL)
 {}
 
 // Private method(s)
@@ -50,9 +51,8 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 			bool isHtmlPage = (uri == "/" ||
 							uri.find(".html") != std::string::npos ||
 							(uri.find('.') == std::string::npos && uri != "/counter-api"));
-			if (isHtmlPage && !isInternalRequest) {
+			if (isHtmlPage && !isInternalRequest)
 					sessions[sessionId].visitCount++;
-			}
 		} else {
 			// Invalid/expired session → create new
 			sessionId = generateSessionId();
@@ -114,6 +114,14 @@ void Client::setState(ClientState state) {
 	_state = state;
 }
 
+CGIProcess* Client::getCGIProcess() const {
+	return _cgiProcess;
+}
+
+void Client::setCGIProcess(CGIProcess* cgi) {
+	_cgiProcess = cgi;
+}
+
 // Public method(s)
 bool Client::readData() { // Read data from socket into buffer and parse request
 	char buffer[4096];
@@ -123,17 +131,13 @@ bool Client::readData() { // Read data from socket into buffer and parse request
 	// Append only the new data to the request
 	std::string newData(buffer, bytesRead);
 	_request.appendData(newData);
-	if (_request.isComplete())
-	{
+	if (_request.isComplete()) {
 		_requestComplete = true;
-
-		if (_request.getErrorCode() != 0)
-		{
+		if (_request.getErrorCode()) {
 			buildErrorResponse(_request.getErrorCode());
 			_responseReady = true;
 		}
 	}
-
 	updateActivity();
 	return true;
 }
@@ -149,9 +153,8 @@ void Client::buildErrorResponse(int statusCode) {
 			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
 			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 		}
-	} else {
+	} else
 		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
-	}
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
@@ -204,18 +207,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	else if (match.statusCode == 405 || match.statusCode == 404 || match.statusCode == 501)
 		_response.serveError(match.statusCode, "");
 
-	// Execute CGI script
-	else if (match.isCGI) {
-		CGI cgi;
-		CGIResult result = cgi.execute(match, _request);
-		if (result.statusCode == 200) {
-			_response.setStatus(200);
-			_response.setHeader("Content-Type", result.contentType);
-			_response.setBody(result.output);
-		} else
-			_response.serveError(result.statusCode, "");
-	}
-
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
 		_response.serveDelete(match.filePath);
@@ -249,6 +240,17 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	_responseReady = true;
 }
 
+void Client::buildResponseFromCGI(const CGIResult& result) {
+	if (result.statusCode == 200) {
+		_response.setStatus(200);
+		_response.setHeader("Content-Type", result.contentType);
+		_response.setBody(result.output);
+	} else
+		_response.serveError(result.statusCode, "");
+	_responseReady = true;
+}
+
+
 bool Client::sendResponse() {
 	std::string rawResponse = _response.build();
 
@@ -261,11 +263,10 @@ bool Client::sendResponse() {
 			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << std::endl;
 			return false;
 		}
-		if (sent == 0)
-			break;  // Connection closed by peer
+		if (!sent)
+			break; // Connection closed by peer
 		totalSent += sent;
 		remaining -= sent;
 	}
-	return (remaining == 0);  // true if everything was sent
+	return (!remaining); // true if everything was sent
 }
-

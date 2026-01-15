@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 17:27:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 12:51:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,8 @@
 class ServerConfig;
 class Router;
 struct SessionData;
+struct CGIProcess;
+struct CGIResult;
 
 // Enum(s)
 enum ClientState {
@@ -45,6 +47,7 @@ class Client {
 			bool _responseReady;
 			std::string _sessionId;
 			ClientState _state;
+			CGIProcess* _cgiProcess;  // NULL if no CGI active
 
 	public:
 
@@ -62,11 +65,14 @@ class Client {
 			bool isRequestComplete() const;
 			bool isResponseReady() const;
 			void setState(ClientState state);
+			CGIProcess* getCGIProcess() const;
+			void setCGIProcess(CGIProcess* cgi);
 
 		// Public method(s)
 
 			bool readData();
 			void buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions);
+			void buildResponseFromCGI(const CGIResult& result);
 			void buildErrorResponse(int statusCode);
 			bool sendResponse();
 

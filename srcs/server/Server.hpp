@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 18:23:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:00:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,8 @@ struct SessionData {
 enum SocketType {
 	SOCKET_LISTEN,
 	SOCKET_CLIENT,
-	SOCKET_SIGNAL
+	SOCKET_SIGNAL,
+	SOCKET_CGI
 };
 
 // Class
@@ -92,6 +93,10 @@ class Server {
 			void handleClientWrite(size_t clientIndex);
 			void removeClient(int fd, size_t pollIndex);
 			const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
+
+			// CGI handling
+			void handleCGITimeouts();
+			void handleCGIPipe(size_t pipeIndex);
 
 			// Session management
 			void handleSessionTimeouts();

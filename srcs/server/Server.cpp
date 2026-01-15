@@ -6,26 +6,29 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 18:40:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:55:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s)
 #include "Server.hpp"
+#include "../cgi/CGI.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
+#include <arpa/inet.h> // IP client
+#include <cerrno>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
 #include <unistd.h>
-#include <cerrno>
-#include <arpa/inet.h> // IP client
+#include <sys/wait.h>
 
 // Self-pipe for signal handling in poll()
 int Server::_s_sigpipe[2] = {-1, -1};
 
+// Special member function(s)
 Server::Server(const Config& config)
 	: _configs(config.getServers())
 	, _running(false)
@@ -35,9 +38,17 @@ Server::Server(const Config& config)
 	setupListenSockets();
 }
 
-// Destructor
 Server::~Server() {
-	// Close all sockets (skip signal pipe at index 0)
+	// Kill all active CGI processes and clean up
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		CGIProcess* cgi = it->second.getCGIProcess();
+		if (cgi) {
+			kill(cgi->pid, SIGKILL);
+			waitpid(cgi->pid, NULL, 0);
+			delete cgi;
+		}
+	}
+	// Close all active Client and CGI sockets (skip signal pipe at index 0)
 	for (size_t i = 1; i < _pollFds.size(); i++)
 		safeClose(_pollFds[i].fd);
 	// Close signal pipe explicitly
@@ -56,6 +67,7 @@ void Server::run() {
 	while (_running) {
 		// Check for idle client timeouts
 		handleClientTimeouts();
+		handleCGITimeouts();
 		handleSessionTimeouts();
 
 		// Poll for events on all sockets (1 second timeout)
@@ -65,26 +77,36 @@ void Server::run() {
 
 		// Process events on each socket
 		for (size_t i = 0; i < _pollFds.size(); i++) {
+			int revents = _pollFds[i].revents;
+			if (!revents)
+				continue;
+			int fd = _pollFds[i].fd;
+			SocketType type = _socketTypes[fd];
 
 			// Handle POLLIN (incoming data to read)
-			if (_pollFds[i].revents & POLLIN) {
-
+			if (revents & POLLIN) {
+				
 				// Handle SIGINT or SIGTERM
-				if (_socketTypes[_pollFds[i].fd] == SOCKET_SIGNAL) {
+				if (type == SOCKET_SIGNAL) {
 					handleSignalPipeReadable();
 					break;
 				}
-
-				// Handle listen or client socket
-				if (_socketTypes[_pollFds[i].fd] == SOCKET_LISTEN)
-					acceptNewClient(_pollFds[i].fd);
-				else
+				
+				// Handle listen socket
+				if (type == SOCKET_LISTEN)
+					acceptNewClient(fd);
+				
+				// Handle client socket
+				else if (type == SOCKET_CLIENT)
 					handleClientRead(i);
 			}
 
 			// Handle POLLOUT (socket ready to write)
-			if (_pollFds[i].revents & POLLOUT)
+			if (revents & POLLOUT && type == SOCKET_CLIENT)
 				handleClientWrite(i);
+
+			if (type == SOCKET_CGI)
+				handleCGIPipe(i);
 		}
 	}
 }
@@ -94,7 +116,6 @@ void Server::stop() {
 }
 
 // Private method(s)
-
 void Server::setupListenSockets() {
 	// Create one listening socket per configuration (one per port)
 	std::vector<int> port;
@@ -201,37 +222,86 @@ void Server::handleClientTimeouts() {
 }
 
 void Server::handleClientRead(size_t clientIndex) {
+	
 	int clientFd = _pollFds[clientIndex].fd;
-
+	
 	// Find the client with this fd
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end()) {
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client &client = it->second;
-
+	Client& client = it->second;
+	
 	// Read data from socket
 	if (!client.readData()) {
 		removeClient(clientFd, clientIndex);
 		return;
 	}
-
+	
 	// Check if request is complete
 	if (!client.isRequestComplete())
-		return;	
-
+		return;
+	
 	// Build response
-	if (!client.isResponseReady())
-	{
-		client.setState(STATE_PROCESSING); // Switch to processing state (allows longer timeout for CGI)
-		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
-		client.buildResponse(*config, _router, _sessions);
-		client.setState(STATE_IDLE); // Back to idle state (ready to write)
-	}
-
-	// Enable POLLOUT to send response when socket is ready for writing
-	_pollFds[clientIndex].events |= POLLOUT;
+	if (!client.isResponseReady()) {
+		client.setState(STATE_PROCESSING);
+		client.updateActivity();
+		
+		const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
+		if (!config) {
+			client.buildErrorResponse(500);
+			client.setState(STATE_IDLE);
+			_pollFds[clientIndex].events |= POLLOUT;
+			return;
+		}
+		
+		// Check if this is a CGI request
+		HttpRequest& request = const_cast<HttpRequest&>(client.getRequest());
+		RouteMatch match = _router.matchRoute(*config, request);
+		
+		if (match.statusCode == 200 && match.isCGI) {
+			// Start CGI asynchronously
+			CGI cgi;
+			CGIProcess* cgiProc = cgi.startAsync(match, request);
+			
+			if (!cgiProc) {
+				client.buildErrorResponse(500);
+				client.setState(STATE_IDLE);
+				_pollFds[clientIndex].events |= POLLOUT;
+				return;
+			}
+			
+			client.setCGIProcess(cgiProc);
+			
+			// Disable POLLIN on client socket while CGI is running
+			_pollFds[clientIndex].events = 0;
+			// Add CGI pipe to poll
+			pollfd pfd;
+			pfd.fd = cgiProc->pipeOut;
+			pfd.events = POLLIN;
+			pfd.revents = 0;
+			_pollFds.push_back(pfd);
+			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
+			
+			// If POST with body, also monitor pipeIn for writing
+			if (cgiProc->pipeIn != -1) {
+				pollfd pfdIn;
+				pfdIn.fd = cgiProc->pipeIn;
+				pfdIn.events = POLLOUT;
+				pfdIn.revents = 0;
+				_pollFds.push_back(pfdIn);
+				_socketTypes[cgiProc->pipeIn] = SOCKET_CGI;
+			}
+			
+		} else {
+			// Regular non-CGI request
+			client.buildResponse(*config, _router, _sessions);
+			client.setState(STATE_IDLE);
+			_pollFds[clientIndex].events |= POLLOUT;
+		}
+	} else
+		_pollFds[clientIndex].events |= POLLOUT; // Response already ready, enable POLLOUT
 }
 
 void Server::handleClientWrite(size_t clientIndex) {
@@ -283,12 +353,156 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 	return defaultForPort;
 }
 
+void Server::handleCGITimeouts() {
+	const int CGI_TIMEOUT = 5; // 5 seconds timeout for CGI
+	time_t now = time(NULL);
+	
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		Client& client = it->second;
+		CGIProcess* cgi = client.getCGIProcess();
+		if (!cgi)
+			continue;
+
+		// Check if CGI has timed out
+		if (now - cgi->startTime > CGI_TIMEOUT) {
+			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
+			
+			// Kill the CGI process
+			kill(cgi->pid, SIGKILL);
+			waitpid(cgi->pid, NULL, 0);
+			
+			// Close pipes
+			if (cgi->pipeOut != -1)
+				close(cgi->pipeOut);
+			if (cgi->pipeIn != -1)
+				close(cgi->pipeIn);
+
+			// Remove pipes from poll
+			for (size_t i = 0; i < _pollFds.size(); ) {
+				if (_pollFds[i].fd == cgi->pipeOut || _pollFds[i].fd == cgi->pipeIn) {
+					_socketTypes.erase(_pollFds[i].fd);
+					_pollFds.erase(_pollFds.begin() + i);
+				} else
+					i++;
+			}
+
+			// Build 504 Gateway Timeout response
+			client.buildErrorResponse(504);
+			
+			// Clean up CGI
+			delete cgi;
+			client.setCGIProcess(NULL);
+			client.setState(STATE_IDLE);
+			
+			// Enable POLLOUT to send the error response
+			for (size_t i = 0; i < _pollFds.size(); ++i)
+				if (_pollFds[i].fd == it->first) {
+					_pollFds[i].events = POLLOUT;
+					break;
+				}
+		}
+	}
+}
+
+void Server::handleCGIPipe(size_t pipeIndex) {
+	int pipeFd = _pollFds[pipeIndex].fd;
+
+	// Find the client that owns this CGI
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
+		Client& client = it->second;
+		CGIProcess* cgi = client.getCGIProcess();
+		if (!cgi)
+			continue;
+
+		// Handle pipeOut (reading CGI output or detecting closure)
+		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR))) {
+			char buffer[4096];
+			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
+
+			if (bytes > 0) {
+				cgi->output.append(buffer, bytes);
+			} else {
+				// EOF or error - CGI finished
+				// EOF - CGI finished
+				close(cgi->pipeOut);
+				if (cgi->pipeIn != -1)
+					close(cgi->pipeIn);
+
+				// Wait for process to avoid zombie
+				int status;
+				waitpid(cgi->pid, &status, 0);
+
+				// Parse CGI output and build response
+				CGIResult result;
+				result.output = cgi->output;
+				CGI cgiParser;
+				cgiParser.parseHeaders(cgi->output, result);
+
+				// Build response from CGI result
+				client.buildResponseFromCGI(result);
+
+				// Clean up CGI pipes from poll
+				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				_socketTypes.erase(pipeFd);
+
+				// Remove pipeIn from poll if it exists
+				if (cgi->pipeIn != -1) {
+					for (size_t i = 0; i < _pollFds.size(); ++i) {
+						if (_pollFds[i].fd == cgi->pipeIn) {
+							_pollFds.erase(_pollFds.begin() + i);
+							_socketTypes.erase(cgi->pipeIn);
+							break;
+						}
+					}
+				}
+
+				delete cgi;
+				client.setCGIProcess(NULL);
+				client.setState(STATE_IDLE);
+
+				// Enable POLLOUT to send the response
+				for (size_t i = 0; i < _pollFds.size(); ++i) {
+					if (_pollFds[i].fd == it->first) {
+						_pollFds[i].events |= POLLOUT;
+						break;
+					}
+				}
+
+				return;
+			}
+		}
+
+		// Handle pipeIn (writing POST body to CGI)
+		if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT)) {
+			if (!cgi->inputWritten) {
+				const std::string& body = client.getRequest().getBody();
+				ssize_t written = write(pipeFd, body.c_str(), body.size());
+
+				if (written > 0) {
+					cgi->inputWritten = true;
+					close(cgi->pipeIn);
+
+					// Remove pipeIn from poll
+					for (size_t i = 0; i < _pollFds.size(); ++i)
+						if (_pollFds[i].fd == cgi->pipeIn) {
+							_pollFds.erase(_pollFds.begin() + i);
+							_socketTypes.erase(cgi->pipeIn);
+							break;
+						}
+					cgi->pipeIn = -1;
+				}
+			}
+		}
+		return;
+	}
+}
+
 void Server::handleSessionTimeouts() {
 	// Check cleanup interval
 	if (time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
 		return;
 	_lastSessionCleanup = time(NULL);
-	
+
 	// Remove expired sessions
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
 	while (it != _sessions.end()) {
