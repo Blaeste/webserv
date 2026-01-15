@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:16:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:38:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -206,18 +206,6 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 	// Handle errors (405 Method Not Allowed, 404 Not Found, 501 Not Implemented)
 	else if (match.statusCode == 405 || match.statusCode == 404 || match.statusCode == 501)
 		_response.serveError(match.statusCode, "");
-
-	// Execute CGI script
-	else if (match.isCGI) {
-		CGI cgi;
-		CGIResult result = cgi.execute(match, _request);
-		if (result.statusCode == 200) {
-			_response.setStatus(200);
-			_response.setHeader("Content-Type", result.contentType);
-			_response.setBody(result.output);
-		} else
-			_response.serveError(result.statusCode, "");
-	}
 
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:03:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:39:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -57,21 +57,20 @@ class CGI {
 
 		// Attribute(s)
 
-		std::map<std::string, std::string> _env;
+			std::map<std::string, std::string> _env;
 
 	public:
 
 		// Public method(s)
 
-		CGIResult execute(const RouteMatch& match, const HttpRequest& request);
-		void parseHeaders(const std::string& output, CGIResult& result);
-		CGIProcess* startAsync(const RouteMatch& match, const HttpRequest& request);
+			void parseHeaders(const std::string& output, CGIResult& result);
+			CGIProcess* startAsync(const RouteMatch& match, const HttpRequest& request);
 
 	private:
 
 		// Private method(s)
 
-		void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
-		std::string readFromPipe(int fd);
+			void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
+			std::string readFromPipe(int fd);
 
 };

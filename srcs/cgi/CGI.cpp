@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:08:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/15 13:43:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,92 +98,6 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 }
 
 // Public method(s)
-CGIResult CGI::execute(const RouteMatch& match, const HttpRequest& request) {
-	CGIResult result;
-	result.statusCode = 200;
-	result.output = "";
-	setupEnvironment(match, request);
-
-	// Create pipes for stdin/stdout
-	int pipeIn[2];
-	int pipeOut[2];
-	if (pipe(pipeIn) < 0 || pipe(pipeOut) < 0) {
-		std::cerr << "[CGI] execute: pipe creation failed" << std::endl;
-		result.statusCode = 500;
-		return result;
-	}
-	pid_t pid = fork();
-	if (pid < 0) {
-		std::cerr << "[CGI] execute: fork failed" << std::endl;
-		result.statusCode = 500;
-		return result;
-	}
-	if (!pid) {
-		// Child process: CGI execution
-		dup2(pipeOut[1], 1); // Redirect stdout to pipe
-		dup2(pipeIn[0], 0); // Redirect stdin from pipe
-		safeClose(pipeOut[0]);
-		safeClose(pipeIn[1]);
-
-		// Prepare argv
-		char* argv[3];
-		argv[0] = (char *)match.location->getCgiPath().c_str();
-		argv[1] = (char *)match.filePath.c_str();
-		argv[2] = NULL;
-
-		// Prepare environment
-		std::vector<std::string> envStrings;
-		for (std::map<std::string, std::string>::iterator it = _env.begin(); it != _env.end(); ++it)
-			envStrings.push_back(it->first + "=" + it->second);
-		std::vector<char *> envp;
-		for (size_t i = 0; i < envStrings.size(); i++)
-			envp.push_back((char *)envStrings[i].c_str());
-		envp.push_back(NULL);
-
-		execve(argv[0], argv, &envp[0]);
-		std::cerr << "[CGI] execve failed for: " << argv[0] << std::endl;
-		_exit(1);
-	}
-
-	// Parent: send POST body, read output with timeout
-	safeClose(pipeOut[1]);
-	safeClose(pipeIn[0]);
-
-	// Send POST body to CGI stdin if present
-	if (request.getMethod() == "POST") {
-		const std::string& body = request.getBody();
-		ssize_t written = write(pipeIn[1], body.c_str(), body.length());
-		if (written < 0 || (size_t)written != body.length())
-			std::cerr << "[CGI] execute: write to pipe failed" << std::endl;
-	}
-	safeClose(pipeIn[1]);
-
-	// Wait for child with timeout (5 seconds)
-	time_t startTime = time(NULL);
-	int timeout = 5;
-	int status;
-	while (true) {
-		pid_t wpid = waitpid(pid, &status, WNOHANG);
-		if (wpid == pid)
-			break; // Child finished
-		if (time(NULL) - startTime > timeout) {
-			// kill child and return 504 Gateway Timeout
-			kill(pid, SIGKILL);
-			waitpid(pid, NULL, 0);
-			safeClose(pipeOut[0]);
-			result.statusCode = 504;
-			return result;
-		}
-		usleep(100000); // Sleep 100ms
-	}
-	result.output = readFromPipe(pipeOut[0]);
-	safeClose(pipeOut[0]);
-
-	// Parse CGI headers (Status, etc.)
-	parseHeaders(result.output, result);
-	return result;
-}
-
 void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos) {
@@ -257,7 +171,19 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		
 		close(pipeIn[0]);
 		close(pipeOut[1]);
-		
+
+		// Change to script directory for relative path access
+		std::string scriptPath = match.filePath;
+		std::string scriptName = scriptPath; // Will hold just the filename after chdir
+		size_t lastSlash = scriptPath.find_last_of('/');
+		if (lastSlash != std::string::npos) {
+			std::string scriptDir = scriptPath.substr(0, lastSlash);
+			scriptName = scriptPath.substr(lastSlash + 1); // Extract filename only
+			if (chdir(scriptDir.c_str()) != 0) {
+				std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
+			}
+		}
+
 		// Prepare environment variables
 		std::vector<char*> envp;
 		for (std::map<std::string, std::string>::const_iterator it = _env.begin(); 
@@ -266,35 +192,35 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 			envp.push_back(strdup(envStr.c_str()));
 		}
 		envp.push_back(NULL);
-		
+
 		// Execute CGI
 		std::string interpreter = match.location->getCgiPath();
-		std::string scriptPath = match.filePath;
+		// Use scriptName (basename) after chdir
 		char* argv[] = {
 			const_cast<char*>(interpreter.c_str()),
-			const_cast<char*>(scriptPath.c_str()),
+			const_cast<char*>(scriptName.c_str()),
 			NULL
 		};
-		
+
 		execve(interpreter.c_str(), argv, &envp[0]);
-		
+
 		// If execve fails
 		std::cerr << "CGI: execve failed" << std::endl;
 		exit(1);
 	}
-	
+
 	// Parent process
 	close(pipeOut[1]);  // Close write end
 	close(pipeIn[0]);   // Close read end
-	
+
 	cgi->pid = pid;
 	cgi->pipeOut = pipeOut[0];
 	cgi->pipeIn = pipeIn[1];
-	
+
 	// Set pipes to non-blocking mode
 	fcntl(cgi->pipeOut, F_SETFL, O_NONBLOCK);
 	fcntl(cgi->pipeIn, F_SETFL, O_NONBLOCK);
-	
+
 	// If POST request, mark that we need to write body
 	if (request.getMethod() == "POST" && !request.getBody().empty())
 		cgi->inputWritten = false;
@@ -303,6 +229,6 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		close(cgi->pipeIn);
 		cgi->pipeIn = -1;
 	}
-	
+
 	return cgi;
 }
