@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 10:18:35 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/15 13:57:03 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@
 std::string Config::removeComments(const std::string &content) {
 
 	std::string result;
+	result.reserve(content.size());
 	std::vector<std::string> lines = splitTokens(content, '\n');
 
 	for (size_t i = 0; i < lines.size(); i++) {
@@ -44,11 +45,13 @@ std::string Config::removeComments(const std::string &content) {
 	return result;
 }
 
-std::vector<std::string> Config::extractBlocks(const std::string &content, const std::string &keyword) {
+std::vector<BlockInfo> Config::extractBlocks(const std::string &content, const std::string &keyword) {
 
-	std::vector<std::string> blocks;
+	std::vector<BlockInfo> blocks;
+	blocks.reserve(8); // classical prealloc
 	size_t pos = 0;
 	size_t keywordLen = keyword.length();
+
 	while (pos < content.length()) {
 		// Search for keyword
 		size_t keywordPos = content.find(keyword, pos);
@@ -79,6 +82,7 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 				continue;
 			}
 		}
+		// If keywordPos == 0, start of file, valid
 
 		// Count braces to find closing
 		int braceCount = 0; // int here because braceCount can be neg
@@ -100,7 +104,7 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 			i++;
 		}
 		if (closeBrace == std::string::npos)
-			break; // Error: no closing brace
+			throw std::runtime_error("Config: syntax error unclosed '{' for " + keyword + " block");
 
 		// Extract content without keyword or "{}"
 		// For location: keep "location /path" for extract the path
@@ -108,7 +112,13 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 		size_t start = (keyword == "location") ? keywordPos : openBracePos + 1;
 		size_t length = (keyword == "location") ? (closeBrace - keywordPos + 1 ) : (closeBrace - openBracePos - 1);
 		std::string block = content.substr(start, length);
-		blocks.push_back(block);
+
+		// Fill structure
+		BlockInfo info;
+		info.content = block;
+		info.startPos = start;
+		info.endPos = closeBrace + 1;
+		blocks.push_back(info);
 
 		// Continue for next block
 		pos = closeBrace + 1;
@@ -117,16 +127,26 @@ std::vector<std::string> Config::extractBlocks(const std::string &content, const
 }
 
 void Config::parseServerBlock(const std::string &block, ServerConfig &server, size_t serverIndex) {
-	// Extract all location blocks first
-	std::vector<std::string> locationBlocks = extractBlocks(block, "location");
 
-	// Remove location blocks form content to parse simple directives
-	std::string cleanBlock = block;
+	// Extract all location blocks first
+	std::vector<BlockInfo> locationBlocks = extractBlocks(block, "location");
+
+	// Build cleanBlock by skipping location blocks
+	std::string cleanBlock;
+	cleanBlock.reserve(block.size());
+	size_t lastPos = 0;
+
 	for (size_t i = 0; i < locationBlocks.size(); i++) {
-		size_t pos = cleanBlock.find(locationBlocks[i]);
-		if (pos != std::string::npos)
-			cleanBlock.erase(pos,locationBlocks[i].length());
+
+		// Copy until start of the block
+		cleanBlock.append(block, lastPos, locationBlocks[i].startPos - lastPos);
+		// Jump to next block
+		lastPos = locationBlocks[i].endPos;
 	}
+
+	// Append remaining content after last location
+	if (lastPos < block.size())
+		cleanBlock.append(block, lastPos, block.size() - lastPos);
 
 	// Parse directives (listen, server_name, etc.)
 	std::vector<std::string> lines = splitTokens(cleanBlock, '\n');
@@ -143,7 +163,6 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 
 		// Extract tokens from the line
 		std::vector<std::string> tokens = splitTokens(line, ' ');
-
 
 		if (tokens.empty())
 			continue;
@@ -162,7 +181,7 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 	// Parse each location block
 	for (size_t i = 0; i < locationBlocks.size(); i++) {
 		Location loc;
-		parseLocationBlock(locationBlocks[i], loc);
+		parseLocationBlock(locationBlocks[i].content, loc);
 		server.addLocation(loc);
 	}
 }
@@ -269,6 +288,11 @@ size_t Config::parseSize(const std::string &sizeStr, const std::string &context)
 	}
 
 	size_t num = parseIntSafe(numStr.c_str(), context);
+
+	// Check overflow befor multiplication
+	if (multiplier > 1 && num > ((size_t)-1) / multiplier)
+		throw std::runtime_error("parseSize [" + context + "]: Size '" + sizeStr + "' causes overflow");
+
 	return num * multiplier;
 }
 
@@ -328,7 +352,7 @@ bool Config::validate() const {
 			const std::vector<std::string> &methods = loc.getAllowedMethods();
 			for (size_t k = 0; k < methods.size(); k++) {
 				const std::string &method = methods[k];
-				if (method != "GET" && method != "POST" && method != "DELETE" && method != "PUT" && method != "HEAD" && method != "OPTIONS")
+				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
 			}
 		}
@@ -358,10 +382,10 @@ bool Config::parse(const std::string &filePath) {
 		// Remove Comment
 		content = removeComments(content);
 
-		std::vector<std::string> serverBlocks = extractBlocks(content, "server");
+		std::vector<BlockInfo> serverBlocks = extractBlocks(content, "server");
 		for (size_t i = 0; i < serverBlocks.size(); i++) {
 			ServerConfig server;
-			parseServerBlock(serverBlocks[i], server, i);
+			parseServerBlock(serverBlocks[i].content, server, i);
 			_servers.push_back(server);
 		}
 		return validate();
