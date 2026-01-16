@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 11:21:22 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/16 10:14:18 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,3 +179,10 @@
 	 * @return true if the method is valid, false otherwise.
 	 */
 	bool isValidHttpMethod(const std::string &method);
+
+	/**
+	 * @brief Converts a string to uppercase.
+	 * @param str The input string.
+	 * @return A new string with all characters converted to uppercase.
+	 */
+	std::string toUpperString(const std::string &str);
