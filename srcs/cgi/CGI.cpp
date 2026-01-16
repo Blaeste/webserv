@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:44:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 10:14:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
+#include <climits>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -43,7 +44,13 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 	// Basic CGI variables
 	_env["REQUEST_METHOD"] = request.getMethod();
-	_env["SCRIPT_FILENAME"] = match.filePath;
+	
+	// Convert script path to absolute path for PHP-CGI
+	char absolutePath[PATH_MAX];
+	if (realpath(match.filePath.c_str(), absolutePath))
+		_env["SCRIPT_FILENAME"] = std::string(absolutePath);
+	else
+		_env["SCRIPT_FILENAME"] = match.filePath; // Fallback to relative path
 
 	// Query string (part after '?')
 	if (pos != std::string::npos)

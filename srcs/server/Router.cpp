@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/09 19:57:46 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/16 10:08:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,10 +27,16 @@ const Location *Router::findMatchingLocation(const ServerConfig &config, const s
 		const std::string &path = locations[i].getPath();
 
 		// Check if URI starts with location path
+		// Must be exact match or followed by '/' to avoid false matches
+		// e.g., /cgi-bin/php should not match /cgi-bin/py
 		if (uri.find(path) == 0 && path.length() > longestMatch)
 		{
-			longestMatch = path.length();
-			bestMatch = &locations[i];
+			// Ensure it's a valid path prefix (either exact match or followed by '/')
+			if (uri.length() == path.length() || uri[path.length()] == '/' || path[path.length() - 1] == '/')
+			{
+				longestMatch = path.length();
+				bestMatch = &locations[i];
+			}
 		}
 	}
 	return bestMatch;
@@ -115,8 +121,15 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 
 			// Check if request should be handled by CGI
 			std::string cgiExt = match.location->getCgiExtension();
-			if (!cgiExt.empty() && cgiExt == getFileExtension(match.filePath))
-				match.isCGI = true;
+			if (!cgiExt.empty())
+			{
+				try {
+					if (cgiExt == getFileExtension(match.filePath))
+						match.isCGI = true;
+				} catch (const std::exception &e) {
+					// If getFileExtension fails, not a CGI request
+				}
+			}
 
 			// Check if file exists (skip for POST and CGI)
 			if (match.statusCode == 200 && !match.isCGI && request.getMethod() != "POST" && (!fileExists(match.filePath) || (isDirectory(match.filePath) && !match.location->getAutoIndex())))
