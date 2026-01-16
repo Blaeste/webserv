@@ -3,15 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/06 13:39:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 10:25:31 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s)
 #include "Location.hpp"
+#include "../utils/utils.hpp"
+#include <algorithm>
 
 // Default constructor
 Location::Location() :
@@ -23,6 +25,8 @@ Location::Location() :
 	_cgiExtension(""),
 	_cgiPath("")
 {
+	_allowedMethods.reserve(3); // GET POST DELETE
+	_index.reserve(4); // generaly no more
 }
 
 // Setter(s)
@@ -38,11 +42,24 @@ void Location::setRoot(const std::string &root)
 
 void Location::addAllowedMethod(const std::string &method)
 {
-	_allowedMethods.push_back(method);
+	std::string m = toUpperString(method);
+
+	// Checking
+	if (m != "GET" && m != "POST" && m != "DELETE")
+		return;
+
+	// Anti double
+	if (isMethodAllowed(m))
+		return;
+
+	_allowedMethods.push_back(m);
 }
 
 void Location::addIndex(const std::string &index)
 {
+	if (std::find(_index.begin(), _index.end(), index) != _index.end())
+		return;
+
 	_index.push_back(index);
 }
 
@@ -70,7 +87,6 @@ void Location::setCgiPath(const std::string &path)
 {
 	_cgiPath = path;
 }
-
 
 // Getter(s)
 const std::string &Location::getPath() const
@@ -120,8 +136,6 @@ const std::string &Location::getCgiPath() const
 
 // Public Method(s)
 bool Location::isMethodAllowed(const std::string &method) const {
-	for (size_t i = 0; i < _allowedMethods.size(); i++)
-		if (_allowedMethods[i] == method)
-			return true;
-	return false;
+	return std::find(_allowedMethods.begin(), _allowedMethods.end(), method)
+		!= _allowedMethods.end();
 }

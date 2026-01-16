@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:43:08 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/16 10:14:23 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -445,4 +445,12 @@ std::string urlDecode(const std::string &url) {
 		}
 	}
 	return decoded;
+}
+
+std::string toUpperString(const std::string &str)
+{
+    std::string result = str;
+    for (size_t i = 0; i < result.size(); i++)
+        result[i] = std::toupper(static_cast<unsigned char>(result[i]));
+    return result;
 }
