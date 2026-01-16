@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:38:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 11:36:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,23 +59,18 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 			sessions[sessionId].lastActive = time(NULL);
 			sessions[sessionId].visitCount = 1;
 			sessions[sessionId].username = "";
-			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-		}
-	} else {
-		// New session
-		sessionId = generateSessionId();
-		sessions[sessionId].lastActive = time(NULL);
-		sessions[sessionId].visitCount = 1;
-		sessions[sessionId].username = "";
-		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+		// _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly"); // Disabled for tester
 	}
-
-	_sessionId = sessionId;
+} else {
+	// New session
+	sessionId = generateSessionId();
+	sessions[sessionId].lastActive = time(NULL);
+	sessions[sessionId].visitCount = 1;
+	sessions[sessionId].username = "";
+	// _response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly"); // Disabled for tester
 }
 
-// Accessor(s)
-int Client::getSocket() const {
-	return _socket;
+_sessionId = sessionId;
 }
 
 const std::string &Client::getClientIp() const {
@@ -126,14 +121,17 @@ void Client::setCGIProcess(CGIProcess* cgi) {
 bool Client::readData() { // Read data from socket into buffer and parse request
 	char buffer[4096];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
+	std::cerr << "[DEBUG] readData: bytesRead=" << bytesRead << std::endl;
 	if (bytesRead <= 0)
 		return false;
 	// Append only the new data to the request
 	std::string newData(buffer, bytesRead);
 	_request.appendData(newData);
+	std::cerr << "[DEBUG] Request complete: " << _request.isComplete() << ", ErrorCode: " << _request.getErrorCode() << std::endl;
 	if (_request.isComplete()) {
 		_requestComplete = true;
 		if (_request.getErrorCode()) {
+			std::cerr << "[DEBUG] Request has error code " << _request.getErrorCode() << ", building error response" << std::endl;
 			buildErrorResponse(_request.getErrorCode());
 			_responseReady = true;
 		}
@@ -158,6 +156,8 @@ void Client::buildErrorResponse(int statusCode) {
 }
 
 void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
+
+	std::cerr << "[DEBUG] buildResponse called for " << _request.getMethod() << " " << _request.getUri() << std::endl;
 
 	// Timer
 	struct timeval start, end;

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 12:51:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 11:40:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,10 +76,6 @@ class Client {
 			void buildErrorResponse(int statusCode);
 			bool sendResponse();
 
-	private:
-
-		// Private method(s)
-
-			void handleSession(std::map<std::string, SessionData>& sessions);
+		void handleSession(std::map<std::string, SessionData>& sessions);
 
 };

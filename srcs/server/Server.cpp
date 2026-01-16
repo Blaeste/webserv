@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:55:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 11:35:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -234,17 +234,22 @@ void Server::handleClientRead(size_t clientIndex) {
 	Client& client = it->second;
 	
 	// Read data from socket
+	std::cerr << "[DEBUG] handleClientRead: calling readData()" << std::endl;
 	if (!client.readData()) {
+		std::cerr << "[DEBUG] readData() failed, removing client" << std::endl;
 		removeClient(clientFd, clientIndex);
 		return;
 	}
 	
 	// Check if request is complete
+	std::cerr << "[DEBUG] Request complete: " << client.isRequestComplete() << std::endl;
 	if (!client.isRequestComplete())
 		return;
 	
 	// Build response
+	std::cerr << "[DEBUG] Response ready: " << client.isResponseReady() << std::endl;
 	if (!client.isResponseReady()) {
+		std::cerr << "[DEBUG] Building response for " << client.getRequest().getMethod() << " " << client.getRequest().getUri() << std::endl;
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
 		
@@ -319,7 +324,7 @@ void Server::handleClientWrite(size_t clientIndex) {
 	if (!client.sendResponse())
 		std::cerr << "Error sending response to fd " << clientFd << std::endl;
 
-	// Close connection and cleanup after sending
+	// Close connection and cleanup
 	removeClient(clientFd, clientIndex);
 }
 

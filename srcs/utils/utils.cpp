@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/16 10:17:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 12:10:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -217,6 +217,7 @@ bool isPathSafe(const std::string &path) {
 			allowedDirs.push_back(baseDir + "/www");
 			allowedDirs.push_back(baseDir + "/uploads");
 			allowedDirs.push_back(baseDir + "/cgi-bin");
+			allowedDirs.push_back(baseDir + "/YoupiBanane");
 		}
 	}
 

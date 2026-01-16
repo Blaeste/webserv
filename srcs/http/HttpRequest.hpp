@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:00:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 11:38:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,8 +47,9 @@ class HttpRequest
 			std::string _body; // Body
 			std::string _rawData; // Raw request data
 			bool _isComplete; // Is the request complete
-			int	_errorCode; // HTTP error code
-			std::vector<UploadedFile> _uploadedFiles; // Uploaded files (for multipart/form-data)
+			bool _headersParsed; // True if headers have been parsed (for chunked body accumulation)
+			std::vector<UploadedFile> _uploadedFiles; // Uploaded files
+			int _errorCode; // Error code (0 if no error)
 
 			// Security limits
 			static const size_t MAX_REQUEST_SIZE = 100 * 1024 * 1024; // 100Mb

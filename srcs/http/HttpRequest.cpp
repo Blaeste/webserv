@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:10:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/16 11:29:28 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,12 @@
 #include <cctype>
 #include <sstream>
 #include <cerrno>
+#include <iostream>
 
 // Default constructor
 HttpRequest::HttpRequest()
 	: _isComplete(false)
+	, _headersParsed(false)
 	, _errorCode(0)
 {}
 
@@ -58,6 +60,9 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 
 bool HttpRequest::appendData(const std::string &data)
 {
+	std::cerr << "[DEBUG] appendData: adding " << data.length() << " bytes, current _rawData length: " << _rawData.length() << std::endl;
+	std::cerr << "[DEBUG] New data: [" << data << "]" << std::endl;
+	
 	// Security: prevent mem exhaustion attack
 	if (_rawData.length() + data.length() > MAX_REQUEST_SIZE)
 	{
@@ -209,6 +214,7 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 
 bool HttpRequest::parseChunked()
 {
+	std::cerr << "[DEBUG] parseChunked called, _rawData length: " << _rawData.length() << std::endl;
 	std::string &data = _rawData;
 	std::string body;
 	size_t pos = 0;
@@ -218,11 +224,16 @@ bool HttpRequest::parseChunked()
 	{
 		// Find chunk size line
 		size_t lineEnd = data.find("\r\n", pos);
+		std::cerr << "[DEBUG] Looking for chunk size line at pos " << pos << ", lineEnd: " << lineEnd << std::endl;
 		if (lineEnd == std::string::npos)
+		{
+			std::cerr << "[DEBUG] Chunk size line not found, incomplete" << std::endl;
 			return false; // Incomplete chunk
+		}
 
 		// Parse chunk size (hexa)
 		std::string sizeStr = data.substr(pos, lineEnd - pos);
+		std::cerr << "[DEBUG] Chunk size string: [" << sizeStr << "]" << std::endl;
 
 		// Support chunk extensions: "HEX;ext=..."
 		size_t semi = sizeStr.find(';');
@@ -252,19 +263,25 @@ bool HttpRequest::parseChunked()
 		if (chunkSize > MAX_CHUNK_SIZE)
 			return setError(413); // Payload Too Large
 
-		pos = lineEnd + 2; // skip "\r\n"
-
 		// Last chunk (size = 0)
 		if (!chunkSize)
 		{
-			// After last chunk check for trailer
-			size_t trailersEnd = data.find("\r\n\r\n", pos);
+			std::cerr << "[DEBUG] Last chunk (size 0), looking for trailers at lineEnd " << lineEnd << std::endl;
+			// After last chunk check for trailer (search from lineEnd to include the \r\n after chunk size)
+			size_t trailersEnd = data.find("\r\n\r\n", lineEnd);
+			std::cerr << "[DEBUG] trailersEnd: " << trailersEnd << ", data.length(): " << data.length() << std::endl;
 			if (trailersEnd == std::string::npos)
+			{
+				std::cerr << "[DEBUG] Trailers incomplete" << std::endl;
 				return false; // incomplete trailer
+			}
 
+			std::cerr << "[DEBUG] Chunked parsing successful, body size: " << body.length() << std::endl;
 			_body = body;
 			return true;
 		}
+
+		pos = lineEnd + 2; // skip "\r\n"
 
 		// Security: Check total accumulated body size
 		totalBodySize += chunkSize;
@@ -367,10 +384,19 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 
 bool HttpRequest::parse()
 {
+	// If headers already parsed, we're accumulating chunked body
+	if (_headersParsed)
+	{
+		std::cerr << "[DEBUG] Headers already parsed, trying parseChunked with _rawData length: " << _rawData.length() << std::endl;
+		return parseChunked();
+	}
+
 	// Search for end of headers
 	size_t headersEnd = _rawData.find("\r\n\r\n");
 	if (headersEnd == std::string::npos)
 		return false;
+
+	std::cerr << "[DEBUG] Found headers end at " << headersEnd << std::endl;
 
 	// Extract headers
 	std::string headersBlock = _rawData.substr(0, headersEnd + 2);  // Include first \r\n
@@ -380,6 +406,8 @@ bool HttpRequest::parse()
 		return false;
 	if (!parseHeaders(headersBlock))
 		return false;
+
+	_headersParsed = true;  // Mark headers as parsed
 
 	// Security: check if Host is in the header mandatory in HTTP/1.1
 	if (_version == "HTTP/1.1" && getHeader("host").empty())
