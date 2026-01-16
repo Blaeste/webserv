@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:43:08 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/16 10:17:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,7 +179,7 @@ bool isPathSafe(const std::string &path) {
 	char resolvedPath[PATH_MAX];
 
 	// Try realpath if fail normalize it
-	if (realpath(decoded.c_str(), resolvedPath) == NULL) {
+	if (!realpath(decoded.c_str(), resolvedPath)) {
 		// File doest exist try resolve parent directory
 		std::string parentPath = decoded;
 		std::string fileName;
@@ -188,7 +188,7 @@ bool isPathSafe(const std::string &path) {
 		if (lastSlash == std::string::npos) {
 			// No slash - relative path in current dir
 			char cwd[PATH_MAX];
-			if (getcwd(cwd, sizeof(cwd)) == NULL)
+			if (!getcwd(cwd, sizeof(cwd)))
 				return false;
 
 			fileName = decoded;
@@ -198,7 +198,7 @@ bool isPathSafe(const std::string &path) {
 			parentPath = parentPath.substr(0, lastSlash);
 
 			char parentResolved[PATH_MAX];
-			if (realpath(parentPath.c_str(), parentResolved) == NULL)
+			if (!realpath(parentPath.c_str(), parentResolved))
 				return false; // Parent doesn't exist
 
 			fileName = decoded.substr(lastSlash + 1); // skip '/'
@@ -211,7 +211,7 @@ bool isPathSafe(const std::string &path) {
 	if (allowedDirs.empty()) {
 
 		char cwd[PATH_MAX];
-		if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		if (getcwd(cwd, sizeof(cwd))) {
 
 			std::string baseDir(cwd);
 			allowedDirs.push_back(baseDir + "/www");
@@ -260,14 +260,14 @@ bool isPathSafeForUpload(const std::string &path) {
 			std::string fileName = decoded.substr(lastSlash + 1);
 
 			char parentResolved[PATH_MAX];
-			if (realpath(parentPath.c_str(), parentResolved) == NULL)
+			if (!realpath(parentPath.c_str(), parentResolved))
 				return false;
 
 			snprintf(resolvedPath, PATH_MAX, "%s/%s", parentResolved, fileName.c_str());
 		} else {
 			// No slash - current directory
 			char cwd[PATH_MAX];
-			if (getcwd(cwd, sizeof(cwd)) == NULL)
+			if (!getcwd(cwd, sizeof(cwd)))
 				return false;
 			snprintf(resolvedPath, PATH_MAX, "%s/%s", cwd, decoded.c_str());
 		}
@@ -278,7 +278,7 @@ bool isPathSafeForUpload(const std::string &path) {
 	if (allowedDirs.empty()) {
 
 		char cwd[PATH_MAX];
-		if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		if (getcwd(cwd, sizeof(cwd))) {
 
 			std::string baseDir(cwd);
 			allowedDirs.push_back(baseDir + "/uploads");
