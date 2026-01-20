@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 12:39:15 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 13:01:35 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -98,3 +98,23 @@ test: re
 	gnome-terminal -- bash -c './webserv config/default.conf; exec bash' &
 	sleep 1
 	python3 webServeTester.py
+
+eval:
+	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
+	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
+	@chmod +x tester cgi_tester
+	@mkdir -p YoupiBanane/nop
+	@mkdir -p YoupiBanane/Yeah
+	@touch YoupiBanane/youpi.bad_extension
+	@touch YoupiBanane/youpi.bla
+	@touch YoupiBanane/nop/youpi.bad_extension
+	@touch YoupiBanane/nop/other.pouic
+	@touch YoupiBanane/Yeah/not_happy.bad_extension
+	@-pkill webserv 2>/dev/null || true
+	@gnome-terminal -- bash -c './webserv config/default.conf; exec bash' &
+	@sleep 1
+	./tester http://localhost:8080
+
+clear_eval:
+	@rm -rf YoupiBanane
+	@rm -f tester cgi_tester
