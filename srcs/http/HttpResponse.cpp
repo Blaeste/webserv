@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/13 13:52:46 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/20 09:57:47 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -303,14 +303,8 @@ static bool writeAll(int fd, const char *buf, size_t len)
 	{
 		ssize_t w = write(fd, buf + off, len - off);
 
-		if (w < 0)
-		{
-			if (errno == EINTR)
-				continue; // Retry if interrupt
-			return false; // True error
-		}
-		if (!w)
-			return false; // EOF impossible in write
+		if (w <= 0)
+			return false;
 		off += (size_t)w;
 	}
 	return true;
