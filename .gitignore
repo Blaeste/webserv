@@ -1,9 +1,6 @@
 # Build directories
 obj/
 
-# Uploaded files (keep directory, ignore contents)
-uploads/*
-
 #binarie
 webserv
 
