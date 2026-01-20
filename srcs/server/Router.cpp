@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/20 10:29:42 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/20 10:53:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,20 +54,20 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 	match.isRedirect = false;
 	match.isCGI = false;
 
-	// Security: block path traversal in URI (both raw and encoded)
-	if (uri.find("..") != std::string::npos ||
-		uri.find("%2e%2e") != std::string::npos ||
-		uri.find("%2E%2E") != std::string::npos)
-	{
-		match.statusCode = 403;
-		return match;
-	}
-
 	// Extract path without query string
 	std::string pathPart = uri;
 	size_t queryPos = uri.find('?');
 	if (queryPos != std::string::npos)
 		pathPart = uri.substr(0, queryPos);
+
+	// Security: block path traversal in URI (both raw and encoded)
+	if (pathPart.find("..") != std::string::npos ||
+		pathPart.find("%2e%2e") != std::string::npos ||
+		pathPart.find("%2E%2E") != std::string::npos)
+	{
+		match.statusCode = 403;
+		return match;
+	}
 
 	// Find matching location block
 	match.location = findMatchingLocation(config, pathPart);

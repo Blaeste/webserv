@@ -6,13 +6,14 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/16 14:26:12 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 10:55:34 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 import requests
 import sys
 import os
+import socket
 
 BASE_URL = "http://localhost:8080"
 TIMEOUT = 5
