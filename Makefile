@@ -6,7 +6,7 @@
 #    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 22:13:37 by lmarck           ###   ########.fr        #
+#    Updated: 2026/01/20 22:18:44 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -127,7 +127,7 @@ eval: re
 		echo "        root ./www;" >> config/eval.conf; \
 		echo "        index index.html index.htm;" >> config/eval.conf; \
 		echo "        allowed_methods GET;" >> config/eval.conf; \
-		echo "        autoindex off;" >> config/eval.conf; \
+		echo "        autoindex on;" >> config/eval.conf; \
 		echo "    }" >> config/eval.conf; \
 		echo "" >> config/eval.conf; \
 		echo "    # /post_body - POST requests with maxBody of 100 bytes" >> config/eval.conf; \
@@ -138,11 +138,11 @@ eval: re
 		echo "    }" >> config/eval.conf; \
 		echo "" >> config/eval.conf; \
 		echo "    # /directory/ - GET requests, root = YoupiBanane, index = youpi.bad_extension" >> config/eval.conf; \
-		echo "    location /directory/ {" >> config/eval.conf; \
+		echo "    location /directory {" >> config/eval.conf; \
 		echo "        root ./YoupiBanane;" >> config/eval.conf; \
 		echo "        index youpi.bad_extension;" >> config/eval.conf; \
 		echo "        allowed_methods GET;" >> config/eval.conf; \
-		echo "        autoindex off;" >> config/eval.conf; \
+		echo "        autoindex on;" >> config/eval.conf; \
 		echo "    }" >> config/eval.conf; \
 		echo "" >> config/eval.conf; \
 		echo "    # Fichiers .bla - POST requests via CGI (partout où ils se trouvent)" >> config/eval.conf; \
