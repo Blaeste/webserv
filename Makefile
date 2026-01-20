@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 13:47:08 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 13:52:19 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -157,7 +157,7 @@ eval: re
 	@touch YoupiBanane/nop/other.pouic
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@-pkill webserv 2>/dev/null || true
-	@gnome-terminal -- bash -c './webserv config/eval.conf; exec bash' &
+	@./webserv config/eval.conf &
 	@sleep 1
 	./tester http://localhost:8080
 
