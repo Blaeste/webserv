@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 09:57:47 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/20 10:15:20 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -86,7 +86,12 @@ std::string HttpResponse::build() const
 	// Status line: "HTTP/1.1 200 OK\r\n"
 	response = "HTTP/1.1 " + intToString(_statusCode) + " " + _statusMessage + "\r\n";
 
-	// Headers
+	// Standard Headers
+	response += "Server: webserv/1.0\r\n";
+	response += "Date: " + getHttpDate() + "\r\n";
+	response += "Connection: close\r\n";
+
+	// Custom Headers
 	std::map<std::string, std::string>::const_iterator it;
 
 	for (it = _headers.begin(); it != _headers.end(); ++it)

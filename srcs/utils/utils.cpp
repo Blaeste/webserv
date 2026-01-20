@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.cpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/16 10:14:23 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/20 10:20:31 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -453,4 +453,12 @@ std::string toUpperString(const std::string &str)
     for (size_t i = 0; i < result.size(); i++)
         result[i] = std::toupper(static_cast<unsigned char>(result[i]));
     return result;
+}
+
+std::string getHttpDate() {
+	time_t now = time(NULL);
+	struct tm *gmt = gmtime(&now);
+	char buffer[100];
+	strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	return std::string(buffer);
 }

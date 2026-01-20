@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/16 10:08:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/20 10:29:42 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,8 +63,14 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 		return match;
 	}
 
+	// Extract path without query string
+	std::string pathPart = uri;
+	size_t queryPos = uri.find('?');
+	if (queryPos != std::string::npos)
+		pathPart = uri.substr(0, queryPos);
+
 	// Find matching location block
-	match.location = findMatchingLocation(config, uri);
+	match.location = findMatchingLocation(config, pathPart);
 	if (!match.location)
 		match.statusCode = 404;
 	else
@@ -89,7 +95,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 		if (match.statusCode == 200)
 		{
 			// Try index files for root or directory paths
-			if (uri == "/" || uri.empty())
+			if (pathPart == "/" || pathPart.empty())
 			{
 				const std::vector<std::string> &indexes = match.location->getIndex();
 				for (size_t i = 0; i < indexes.size(); i++)
@@ -97,20 +103,17 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 					std::string indexPath = match.location->getRoot() + "/" + indexes[i];
 					if (fileExists(indexPath))
 					{
-						uri = "/" + indexes[i];
+						pathPart = "/" + indexes[i];
 						break;
 					}
 				}
 			}
 
-			// Remove query string from path
-			std::string pathPart = uri;
-			size_t queryPos = uri.find('?');
-			if (queryPos != std::string::npos)
-				pathPart = uri.substr(0, queryPos);
+			// Decode percent-encoded char
+			std::string decodedPath = urlDecode(pathPart);
 
 			// Build full file path
-			match.filePath = match.location->getRoot() + pathPart;
+			match.filePath = match.location->getRoot() + decodedPath;
 
 			// Security check
 			if (!isPathSafe(match.filePath))

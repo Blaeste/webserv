@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/09 12:57:20 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 10:08:55 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -92,3 +92,6 @@ fclean: clean
 
 # Rebuild everything from scratch
 re: fclean all
+
+test:
+	python3 tester/webServeTester.py
