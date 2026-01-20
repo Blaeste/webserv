@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:00:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/20 13:04:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -126,12 +126,13 @@ class HttpRequest
 
 			/**
 			 * @brief Parses the body of a chunked transfer encoded request.
+			 * @param offset The offset in _rawData where the chunked body starts (after headers).
 			 * @return true if parsing was successful, false otherwise.
 			 */
-			bool parseChunked();
+			bool parseChunked(size_t offset);
 
 			/**
-			 * @brief Parses multipart/form-data body.
+			* @brief Parses multipart/form-data body.
 			 * @param boundary The boundary string used to separate parts.
 			 * @return true if parsing was successful, false otherwise.
 			 */
