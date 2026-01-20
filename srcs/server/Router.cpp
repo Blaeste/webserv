@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/20 10:53:34 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/20 19:33:58 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -112,8 +112,15 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			// Decode percent-encoded char
 			std::string decodedPath = urlDecode(pathPart);
 
-			// Build full file path
-			match.filePath = match.location->getRoot() + decodedPath;
+			// Build full file path (strip location prefix before joining with root)
+			std::string locationPath = match.location->getPath();
+			std::string relativePath = decodedPath;
+			if (relativePath.find(locationPath) == 0)
+				relativePath = decodedPath.substr(locationPath.length());
+			if (relativePath.empty() || relativePath[0] != '/')
+				relativePath = "/" + relativePath;
+			match.filePath = match.location->getRoot() + relativePath;
+			std::cout<<"\n PATH:"<<match.filePath<<std::endl;
 
 			// Security check
 			if (!isPathSafe(match.filePath))

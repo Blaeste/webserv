@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:55:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/20 21:32:46 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,17 +85,17 @@ void Server::run() {
 
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN) {
-				
+
 				// Handle SIGINT or SIGTERM
 				if (type == SOCKET_SIGNAL) {
 					handleSignalPipeReadable();
 					break;
 				}
-				
+
 				// Handle listen socket
 				if (type == SOCKET_LISTEN)
 					acceptNewClient(fd);
-				
+
 				// Handle client socket
 				else if (type == SOCKET_CLIENT)
 					handleClientRead(i);
@@ -222,9 +222,9 @@ void Server::handleClientTimeouts() {
 }
 
 void Server::handleClientRead(size_t clientIndex) {
-	
+
 	int clientFd = _pollFds[clientIndex].fd;
-	
+
 	// Find the client with this fd
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end()) {
@@ -232,22 +232,22 @@ void Server::handleClientRead(size_t clientIndex) {
 		return;
 	}
 	Client& client = it->second;
-	
+
 	// Read data from socket
 	if (!client.readData()) {
 		removeClient(clientFd, clientIndex);
 		return;
 	}
-	
+
 	// Check if request is complete
 	if (!client.isRequestComplete())
 		return;
-	
+
 	// Build response
 	if (!client.isResponseReady()) {
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
-		
+
 		const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
 		if (!config) {
 			client.buildErrorResponse(500);
@@ -255,25 +255,25 @@ void Server::handleClientRead(size_t clientIndex) {
 			_pollFds[clientIndex].events |= POLLOUT;
 			return;
 		}
-		
+
 		// Check if this is a CGI request
 		HttpRequest& request = const_cast<HttpRequest&>(client.getRequest());
 		RouteMatch match = _router.matchRoute(*config, request);
-		
+
 		if (match.statusCode == 200 && match.isCGI) {
 			// Start CGI asynchronously
 			CGI cgi;
 			CGIProcess* cgiProc = cgi.startAsync(match, request);
-			
+
 			if (!cgiProc) {
 				client.buildErrorResponse(500);
 				client.setState(STATE_IDLE);
 				_pollFds[clientIndex].events |= POLLOUT;
 				return;
 			}
-			
+
 			client.setCGIProcess(cgiProc);
-			
+
 			// Disable POLLIN on client socket while CGI is running
 			_pollFds[clientIndex].events = 0;
 			// Add CGI pipe to poll
@@ -283,7 +283,7 @@ void Server::handleClientRead(size_t clientIndex) {
 			pfd.revents = 0;
 			_pollFds.push_back(pfd);
 			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
-			
+
 			// If POST with body, also monitor pipeIn for writing
 			if (cgiProc->pipeIn != -1) {
 				pollfd pfdIn;
@@ -293,7 +293,7 @@ void Server::handleClientRead(size_t clientIndex) {
 				_pollFds.push_back(pfdIn);
 				_socketTypes[cgiProc->pipeIn] = SOCKET_CGI;
 			}
-			
+
 		} else {
 			// Regular non-CGI request
 			client.buildResponse(*config, _router, _sessions);
@@ -356,7 +356,7 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 void Server::handleCGITimeouts() {
 	const int CGI_TIMEOUT = 5; // 5 seconds timeout for CGI
 	time_t now = time(NULL);
-	
+
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
 		Client& client = it->second;
 		CGIProcess* cgi = client.getCGIProcess();
@@ -366,11 +366,11 @@ void Server::handleCGITimeouts() {
 		// Check if CGI has timed out
 		if (now - cgi->startTime > CGI_TIMEOUT) {
 			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
-			
+
 			// Kill the CGI process
 			kill(cgi->pid, SIGKILL);
 			waitpid(cgi->pid, NULL, 0);
-			
+
 			// Close pipes
 			if (cgi->pipeOut != -1)
 				close(cgi->pipeOut);
@@ -388,12 +388,12 @@ void Server::handleCGITimeouts() {
 
 			// Build 504 Gateway Timeout response
 			client.buildErrorResponse(504);
-			
+
 			// Clean up CGI
 			delete cgi;
 			client.setCGIProcess(NULL);
 			client.setState(STATE_IDLE);
-			
+
 			// Enable POLLOUT to send the error response
 			for (size_t i = 0; i < _pollFds.size(); ++i)
 				if (_pollFds[i].fd == it->first) {
