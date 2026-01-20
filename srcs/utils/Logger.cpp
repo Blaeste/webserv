@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:22:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/20 13:31:16 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,12 +33,13 @@ std::string Logger::formatSize(size_t bytes)
 {
 	std::stringstream ss;
 
-	if (bytes < 1024)
-		ss << bytes << "B";
-	else if (bytes < 1024 * 1024)
-		ss << (bytes / 1024) << "KB";
-	else
-		ss << (bytes / (1024 * 1024)) << "MB";
+	if (bytes < 1024) {
+		ss << std::setw(4) << std::right << bytes << "B";
+	} else if (bytes < 1024 * 1024) {
+		ss << std::setw(4) << std::right << (bytes / 1024) << "K";
+	} else {
+		ss << std::setw(4) << std::right << (bytes / (1024 * 1024)) << "M";
+	}
 
 	return ss.str();
 }
@@ -69,22 +70,35 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		long timeDiff = (now.tv_sec - _lastRequestTime.tv_sec) * 1000 +
 						(now.tv_usec - _lastRequestTime.tv_usec) / 1000;
 		if (timeDiff > 100) {
-			std::cout << GRAY << std::string(80, '-') << RESET << std::endl;
+			std::cout << GRAY << std::string(91, '-') << RESET << std::endl;
 		}
 	}
 
+	// Truncate URI if too long
+	std::string displayUri = uri;
+	if (displayUri.length() > 20) {
+		displayUri = displayUri.substr(0, 18) + "..";
+	}
+
 	// log
+	std::stringstream timeStr;
+	if (responseTime < 1.0)
+		timeStr << std::fixed << std::setprecision(0) << std::setw(4) << (responseTime * 1000) << "µs";
+	else
+		timeStr << std::fixed << std::setprecision(1) << std::setw(5) << responseTime << "ms";
+
 	std::cout
 				<< serverName << ":" << port << " "
 				<< "[" << getCurrentTime() << "] "
-				<< methodColor << BOLD << method << RESET << " "
-				<< uri << " "
+				<< methodColor << BOLD << std::setw(7) << std::left << method << RESET << " "
+				<< std::setw(20) << std::left << displayUri << " "
 				<< GRAY << "→" << RESET << " "
 				<< statusColor << BOLD << statusCode << RESET << " "
 				<< GRAY << "|" << RESET << " "
 				<< formatSize(responseSize) << " "
 				<< GRAY << "|" << RESET << " "
-				<< std::fixed << std::setprecision(1) << responseTime << "ms "
+				<< timeStr.str() << " "
+				<< GRAY << "|" << RESET << " "
 				<< GRAY << "(" << clientIP << ")" << RESET
 				<< std::endl;
 
