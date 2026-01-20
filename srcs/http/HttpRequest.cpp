@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:10:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/20 13:15:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include "../utils/utils.hpp"
 #include <cstdlib>
 #include <cctype>
+#include <iostream>
 #include <sstream>
 #include <cerrno>
 
@@ -207,11 +208,11 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 	return true;
 }
 
-bool HttpRequest::parseChunked()
+bool HttpRequest::parseChunked(size_t offset)
 {
 	std::string &data = _rawData;
 	std::string body;
-	size_t pos = 0;
+	size_t pos = offset;  // Start from offset instead of 0
 	size_t totalBodySize = 0;
 
 	while (true)
@@ -257,10 +258,15 @@ bool HttpRequest::parseChunked()
 		// Last chunk (size = 0)
 		if (!chunkSize)
 		{
-			// After last chunk check for trailer
-			size_t trailersEnd = data.find("\r\n\r\n", pos);
-			if (trailersEnd == std::string::npos)
-				return false; // incomplete trailer
+			// After "0\r\n", we need at least "\r\n" to complete the chunked encoding
+			// Format: "0\r\n\r\n" (with no trailers) or "0\r\n[trailers]\r\n"
+			// Check if we have the final "\r\n"
+			if (pos + 2 > data.length())
+				return false; // incomplete
+			
+			// Verify final CRLF (we're ignoring trailers for simplicity)
+			if (data.compare(pos, 2, "\r\n") != 0)
+				return setError(400); // Bad request
 
 			_body = body;
 			return true;
@@ -400,9 +406,14 @@ bool HttpRequest::parse()
 	// Case 1 Chunked "Transfer-Encoding"
 	if (te.find("chunked") != std::string::npos)
 	{
-		// Remove headers from _rawdata before parsing chunk
-		_rawData.erase(0, bodyStart);
-		return parseChunked();
+		// Don't erase headers yet - parseChunked will work with offset
+		bool result = parseChunked(bodyStart);
+		if (result)
+		{
+			// Only erase headers after successful parsing
+			_rawData.erase(0, bodyStart);
+		}
+		return result;
 	}
 
 	if (!te.empty())
