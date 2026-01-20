@@ -73,3 +73,6 @@ vgcore.*
 # Core dumps
 core
 core.*
+
+# log tester
+test_results.json

@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 10:55:34 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 12:43:39 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -14,35 +14,45 @@ import requests
 import sys
 import os
 import socket
+import json
+from datetime import datetime
 
 BASE_URL = "http://localhost:8080"
 TIMEOUT = 5
 PASSED = 0
 FAILED = 0
+LOG_FILE = "test_results.json"
 
 GREEN = '\033[92m'
 RED = '\033[91m'
 YELLOW = '\033[93m'
+BLUE = '\033[94m'
 RESET = '\033[0m'
 
+# Dictionnaire pour stocker les resultats des tests
+test_results = {}
+
 def test(name, condition, details=""):
-	global PASSED, FAILED
+	global PASSED, FAILED, test_results
 	if condition:
 		print(f"{GREEN}✓{RESET} {name}")
 		PASSED += 1
+		test_results[name] = {"status": "passed", "details": details}
 	else:
 		print(f"{RED}✗{RESET} {name}")
 		if details:
 			print(f"{YELLOW}→{RESET} {details}")
 		FAILED += 1
+		test_results[name] = {"status": "failed", "details": details}
 
 def test_error(name, error_msg=""):
 	"""Test who cause timeout or exception"""
-	global FAILED
+	global FAILED, test_results
 	print(f"{YELLOW}⚠{RESET} {name} (error/timeout)")
 	if error_msg:
 		print(f"{YELLOW}→{RESET} {error_msg}")
 	FAILED += 1
+	test_results[name] = {"status": "error", "details": error_msg}
 
 def safe_get(url, **kwargs):
     """GET avec timeout par défaut"""
@@ -742,8 +752,109 @@ def test_upload_special_extensions():
 def summary():
 	print(f"\n{PASSED} passed, {FAILED} failed")
 
+def save_results():
+	"""Sauvegarde les resultats dans un fichier JSON"""
+	data = {
+		"timestamp": datetime.now().isoformat(),
+		"passed": PASSED,
+		"failed": FAILED,
+		"tests": test_results
+	}
+	with open(LOG_FILE, 'w') as f:
+		json.dump(data, f, indent=2)
+	print(f"\n{BLUE}ℹ{RESET} Results saved to {LOG_FILE}")
+
+def load_previous_results():
+	"""Charge les resultats precedents s'ils existent"""
+	if os.path.exists(LOG_FILE):
+		try:
+			with open(LOG_FILE, 'r') as f:
+				return json.load(f)
+		except:
+			return None
+	return None
+
+def compare_results(previous):
+	"""Compare les resultats actuels avec les precedents"""
+	if not previous:
+		print(f"\n{BLUE}ℹ{RESET} No previous results to compare")
+		return
+
+	prev_tests = previous.get("tests", {})
+
+	# Nouveaux fails
+	new_fails = []
+	# Nouveaux succes
+	new_passes = []
+	# Inchanges
+	unchanged_pass = 0
+	unchanged_fail = 0
+
+	for test_name, result in test_results.items():
+		if test_name not in prev_tests:
+			continue
+
+		prev_status = prev_tests[test_name]["status"]
+		curr_status = result["status"]
+
+		if prev_status == "passed" and curr_status in ["failed", "error"]:
+			new_fails.append((test_name, result["details"]))
+		elif prev_status in ["failed", "error"] and curr_status == "passed":
+			new_passes.append((test_name, result["details"]))
+		elif prev_status == "passed" and curr_status == "passed":
+			unchanged_pass += 1
+		elif prev_status in ["failed", "error"] and curr_status in ["failed", "error"]:
+			unchanged_fail += 1
+
+	# Affichage du rapport de comparaison
+	print(f"\n{'='*60}")
+	print(f"COMPARISON WITH PREVIOUS RUN")
+	print(f"Previous run: {previous.get('timestamp', 'unknown')}")
+	print(f"{'='*60}")
+
+	print(f"\n{BLUE}Summary:{RESET}")
+	print(f"  Unchanged passed: {unchanged_pass}")
+	print(f"  Unchanged failed: {unchanged_fail}")
+	print(f"  {GREEN}New passes: {len(new_passes)}{RESET}")
+	print(f"  {RED}New failures: {len(new_fails)}{RESET}")
+
+	if new_passes:
+		print(f"\n{GREEN}✓ Tests now passing (previously failed):{RESET}")
+		for test_name, details in new_passes:
+			print(f"  • {test_name}")
+			if details:
+				print(f"    → {details}")
+
+	if new_fails:
+		print(f"\n{RED}✗ Tests now failing (previously passed):{RESET}")
+		for test_name, details in new_fails:
+			print(f"  • {test_name}")
+			if details:
+				print(f"    → {details}")
+
+	if not new_passes and not new_fails:
+		print(f"\n{GREEN}✓ No changes in test results{RESET}")
+
+def check_server_running():
+	"""Verifie que webserv est bien lance"""
+	print("Checking if webserv is running...")
+	try:
+		r = requests.get(BASE_URL, timeout=2)
+		print(f"{GREEN}✓{RESET} webserv is running and responding\n")
+		return True
+	except requests.exceptions.RequestException:
+		print(f"{RED}✗{RESET} webserv is not responding")
+		print(f"{YELLOW}→{RESET} Make sure webserv is running on {BASE_URL}")
+		return False
+
 if __name__ == "__main__":
 	try:
+		if not check_server_running():
+			sys.exit(1)
+
+		# Charger les resultats precedents
+		previous_results = load_previous_results()
+
 		print("Starting webserv tests...\n")
 
 		print("=== GET Tests ===")
@@ -885,6 +996,10 @@ if __name__ == "__main__":
 		run_test(test_upload_special_extensions)
 
 		summary()
+		compare_results(previous_results)
+		save_results()
 	except KeyboardInterrupt:
 		print("\n\nTests interrupted by user")
 		summary()
+		compare_results(previous_results)
+		save_results()

@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 12:10:50 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 12:39:15 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -93,5 +93,8 @@ fclean: clean
 # Rebuild everything from scratch
 re: fclean all
 
-test:
+test: re
+	-pkill webserv || true
+	gnome-terminal -- bash -c './webserv config/default.conf; exec bash' &
+	sleep 1
 	python3 webServeTester.py
