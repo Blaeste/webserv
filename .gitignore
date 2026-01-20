@@ -76,3 +76,8 @@ core.*
 
 # log tester
 test_results.json
+
+# test 42
+YoupiBanane/*
+tester
+cgi_tester

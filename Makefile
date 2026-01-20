@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 13:01:35 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/20 13:04:44 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -99,7 +99,7 @@ test: re
 	sleep 1
 	python3 webServeTester.py
 
-eval:
+eval: re
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
 	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
 	@chmod +x tester cgi_tester
