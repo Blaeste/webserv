@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 22:06:56 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/21 14:36:35 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,16 +15,15 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
-#include <cstdio>	// remove()
-#include <fcntl.h>	// open()
+#include <cstdio>  // remove()
+#include <fcntl.h> // open()
 #include <iostream>
-#include <unistd.h>	// write(), close()
+#include <unistd.h> // write(), close()
 #include <cerrno>
 
 // Default constructor
-HttpResponse::HttpResponse() :
-	_statusCode(200),
-	_statusMessage("OK")
+HttpResponse::HttpResponse() : _statusCode(200),
+							   _statusMessage("OK")
 {
 }
 
@@ -59,22 +58,36 @@ const std::string &HttpResponse::getBody() const
 // Private Method(s)
 std::string HttpResponse::getStatusMessage(int code) const
 {
-	switch(code)
+	switch (code)
 	{
-		case 200: return "OK";
-		case 201: return "Created";
-		case 204: return "No Content";
-		case 301: return "Moved Permanently";
-		case 302: return "Found";
-		case 400: return "Bad Request";
-		case 403: return "Forbidden";
-		case 404: return "Not Found";
-		case 405: return "Method Not Allowed";
-		case 413: return "Payload Too Large";
-		case 500: return "Internal Server Error";
-		case 501: return "Not Implemented";
-		case 504: return "Gateway Timeout";
-		default: return "Unknown";
+	case 200:
+		return "OK";
+	case 201:
+		return "Created";
+	case 204:
+		return "No Content";
+	case 301:
+		return "Moved Permanently";
+	case 302:
+		return "Found";
+	case 400:
+		return "Bad Request";
+	case 403:
+		return "Forbidden";
+	case 404:
+		return "Not Found";
+	case 405:
+		return "Method Not Allowed";
+	case 413:
+		return "Payload Too Large";
+	case 500:
+		return "Internal Server Error";
+	case 501:
+		return "Not Implemented";
+	case 504:
+		return "Gateway Timeout";
+	default:
+		return "Unknown";
 	}
 }
 
@@ -114,8 +127,10 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 {
 	setStatus(code);
 
-	try {
-		if (!errorPagePath.empty() && fileExists(errorPagePath)) {
+	try
+	{
+		if (!errorPagePath.empty() && fileExists(errorPagePath))
+		{
 			std::string content = readFile(errorPagePath);
 			setHeader("Content-Type", "text/html");
 			setBody(content);
@@ -123,34 +138,39 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath)
 		}
 
 		std::string defaultErrorPage = "www/error_pages/" + intToString(code) + ".html";
-		if (fileExists(defaultErrorPage)) {
+		if (fileExists(defaultErrorPage))
+		{
 			std::string content = readFile(defaultErrorPage);
 			setHeader("Content-Type", "text/html");
 			setBody(content);
 			return;
 		}
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception &e)
+	{
 		std::cerr << "[HttpResponse] readFile error: " << e.what() << std::endl;
 	}
 
 	// Default error page
 	std::string body =
 		"<html>\n"
-		"<head><title>Error " + intToString(code) + "</title></head>\n"
-		"<body>\n"
-		"<h1>Error " + intToString(code) + " - " + getStatusMessage(code) + "</h1>"
-		"<p>The requested resource could not be found.</p>"
-		"</body>\n"
-		"</html>";
+		"<head><title>Error " +
+		intToString(code) + "</title></head>\n"
+							"<body>\n"
+							"<h1>Error " +
+		intToString(code) + " - " + getStatusMessage(code) + "</h1>"
+															 "<p>The requested resource could not be found.</p>"
+															 "</body>\n"
+															 "</html>";
 
 	setHeader("Content-Type", "text/html");
 	setBody(body);
 }
 
-void HttpResponse::serveFile(const std::string &path)
+void HttpResponse::serveFile(const std::string &path, const std::string &root)
 {
 	// Check if it's a directory + security check
-	if (isDirectory(path) || !isPathSafe(path))
+	if (isDirectory(path) || !isPathSafe(path, root))
 	{
 		serveError(403, "");
 		return;
@@ -163,17 +183,21 @@ void HttpResponse::serveFile(const std::string &path)
 		return;
 	}
 
-	try {
+	try
+	{
 		// Read file content
 		std::string content = readFile(path);
 
 		// Get MIME type (default to application/octet-stream if no extension)
 		std::string contentType = "application/octet-stream";
 
-		try {
+		try
+		{
 			std::string ext = getFileExtension(path);
-			contentType = MimeTypes::get(ext);  // Assign, not declare!
-		} catch (const std::exception&) {
+			contentType = MimeTypes::get(ext); // Assign, not declare!
+		}
+		catch (const std::exception &)
+		{
 			// No extension or hidden file → use default MIME type
 		}
 
@@ -181,7 +205,9 @@ void HttpResponse::serveFile(const std::string &path)
 		setStatus(200);
 		setHeader("Content-Type", contentType);
 		setBody(content);
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception &e)
+	{
 		std::cerr << "[HttpResponse] serveFile error: " << e.what() << std::endl;
 		serveError(500, "");
 	}
@@ -193,14 +219,20 @@ static std::string htmlEscape(const std::string &s)
 {
 	std::string out;
 
-	for (size_t i = 0; i < s.size(); i++) {
+	for (size_t i = 0; i < s.size(); i++)
+	{
 
 		char c = s[i];
-		if (c == '&') out += "&amp;";
-		else if (c == '<') out += "&lt;";
-		else if (c == '>') out += "&gt;";
-		else if (c == '"') out += "&quot;";
-		else out += c;
+		if (c == '&')
+			out += "&amp;";
+		else if (c == '<')
+			out += "&lt;";
+		else if (c == '>')
+			out += "&gt;";
+		else if (c == '"')
+			out += "&quot;";
+		else
+			out += c;
 	}
 	return out;
 }
@@ -220,11 +252,13 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 	// Generate HTML page with correct URI for links
 	std::string body =
 		"<html>\n"
-		"<head><title>Index of " + uri + "</title></head>\n"
-		"<body>\n"
-		"<h1>Index of " + uri + "</h1>\n"
-		"<hr>\n"
-		"<ul>";
+		"<head><title>Index of " +
+		uri + "</title></head>\n"
+			  "<body>\n"
+			  "<h1>Index of " +
+		uri + "</h1>\n"
+			  "<hr>\n"
+			  "<ul>";
 
 	// Add each entry as a clickable link
 	for (size_t i = 0; i < entries.size(); ++i)
@@ -252,10 +286,11 @@ void HttpResponse::serveDirectoryListing(const std::string &path, const std::str
 	setBody(body);
 }
 
-void HttpResponse::serveDelete(const std::string &path)
+void HttpResponse::serveDelete(const std::string &path, const std::string &uploadRoot)
 {
 	// Check if file exists and not a directory
-	if (isDirectory(path) || !isPathSafeForUpload(path)) {
+	if (isDirectory(path) || !isPathSafe(path, uploadRoot))
+	{
 		serveError(403, "");
 		return;
 	}
@@ -263,7 +298,8 @@ void HttpResponse::serveDelete(const std::string &path)
 	// Try to delete the file
 	if (!std::remove(path.c_str()))
 		setStatus(204); // Success: 204 No Content
-	else {
+	else
+	{
 		std::cerr << "[HttpResponse] serveDelete: remove failed for " << path << std::endl;
 		serveError(500, "");
 	}
@@ -279,7 +315,6 @@ static std::string sanitizeFilename(const std::string &filename)
 	size_t pos = 0;
 	while ((pos = safe.find("..", pos)) != std::string::npos)
 		safe.replace(pos, 2, "__");
-
 
 	for (size_t i = 0; i < safe.size(); i++)
 	{
@@ -304,7 +339,7 @@ static bool writeAll(int fd, const char *buf, size_t len)
 {
 	size_t off = 0;
 
-	while(off < len)
+	while (off < len)
 	{
 		ssize_t w = write(fd, buf + off, len - off);
 
@@ -315,39 +350,50 @@ static bool writeAll(int fd, const char *buf, size_t len)
 	return true;
 }
 
-void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir) {
+void HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
+{
 
-	// Security check: only allow uploads in /uploads directory
-	if (!isPathSafeForUpload(uploadDir)) {
+	// Security check: only allow uploads inside the configured upload directory
+	if (!isPathSafe(uploadDir, uploadDir))
+	{
 		serveError(403, "");
 		return;
 	}
 
 	const std::vector<UploadedFile> &files = request.getUploadedFiles();
 
-	if (files.empty()) {
+	if (files.empty())
+	{
 		serveError(400, ""); // Bad request - no files
 		return;
 	}
 
 	// Save each file
-	for (size_t i = 0; i < files.size(); ++i) {
+	for (size_t i = 0; i < files.size(); ++i)
+	{
 
 		std::string safeName = sanitizeFilename(files[i].filename);
 		std::string filePath = uploadDir + '/' + safeName;
+		if (!isPathSafe(filePath, uploadDir))
+		{
+			serveError(403, "");
+			return;
+		}
 
 		// Open file for writing
 		// Security: O_NOFOLLOW prevents symlink attacks (don't follow symbolic links)
 		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0644);
 
-		if (fd < 0) {
+		if (fd < 0)
+		{
 			std::cerr << "[handleUpload] open failed: " << filePath << std::endl;
 			serveError(500, ""); // Failed to save
 			return;
 		}
 
 		// Write content (handle partial write)
-		if (!writeAll(fd, files[i].content.data(), files[i].content.size())) {
+		if (!writeAll(fd, files[i].content.data(), files[i].content.size()))
+		{
 			safeClose(fd);
 			std::cerr << "[handleUpload] write failed: " << filePath << std::endl;
 			serveError(500, "");

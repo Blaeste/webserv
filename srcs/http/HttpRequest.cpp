@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 13:15:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/22 19:03:11 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,9 +21,9 @@
 
 // Default constructor
 HttpRequest::HttpRequest()
-	: _isComplete(false)
-	, _errorCode(0)
-{}
+	: _isComplete(false), _errorCode(0), _headersParsed(false), _bodyStart(0), _isChunked(false), _contentLength(0), _chunkParsePos(0), _chunkTotalSize(0), _chunkDone(false)
+{
+}
 
 // Public method(s)
 int HttpRequest::getErrorCode() const
@@ -37,7 +37,8 @@ bool HttpRequest::setError(int code)
 	return false;
 }
 
-std::map<std::string, std::string> HttpRequest::getCookies() const {
+std::map<std::string, std::string> HttpRequest::getCookies() const
+{
 	std::map<std::string, std::string> cookies;
 	std::string cookieHeader = getHeader("Cookie");
 	if (cookieHeader.empty())
@@ -45,9 +46,11 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 
 	std::istringstream stream(cookieHeader);
 	std::string pair;
-	while (std::getline(stream, pair, ';')) {
+	while (std::getline(stream, pair, ';'))
+	{
 		size_t eqPos = pair.find('=');
-		if (eqPos != std::string::npos) {
+		if (eqPos != std::string::npos)
+		{
 
 			std::string key = trim(pair.substr(0, eqPos));
 			std::string value = trim(pair.substr(eqPos + 1));
@@ -59,6 +62,9 @@ std::map<std::string, std::string> HttpRequest::getCookies() const {
 
 bool HttpRequest::appendData(const std::string &data)
 {
+	if (_isComplete)
+		return true;
+
 	// Security: prevent mem exhaustion attack
 	if (_rawData.length() + data.length() > MAX_REQUEST_SIZE)
 	{
@@ -69,16 +75,13 @@ bool HttpRequest::appendData(const std::string &data)
 
 	_rawData += data;
 
-	// if not complete try to parse
-	if (!_isComplete)
-	{
-		_isComplete = parse();
+	// try to parse with the new data
+	_isComplete = parse();
 
-		// If parsing failed with an error, mark as complete anyway
-		// so we can send the error response immediately
-		if (!_isComplete && _errorCode)
-			_isComplete = true;
-	}
+	// If parsing failed with an error, mark as complete anyway
+	// so we can send the error response immediately
+	if (!_isComplete && _errorCode)
+		_isComplete = true;
 
 	return _isComplete;
 }
@@ -183,12 +186,12 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 			for (size_t i = 0; i < key.length(); i++)
 			{
 				unsigned char c = static_cast<unsigned char>(key[i]);
-				bool isValid =	(c >= 'a' && c <= 'z') ||  // lettres minuscules
-								(c >= 'A' && c <= 'Z') ||  // lettres majuscules
-								(c >= '0' && c <= '9') ||  // chiffres
-								c == '!' || c == '#' || c == '$' || c == '%' || c == '&' ||
-								c == '\'' || c == '*' || c == '+' || c == '-' || c == '.' ||
-								c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+				bool isValid = (c >= 'a' && c <= 'z') || // lettres minuscules
+							   (c >= 'A' && c <= 'Z') || // lettres majuscules
+							   (c >= '0' && c <= '9') || // chiffres
+							   c == '!' || c == '#' || c == '$' || c == '%' || c == '&' ||
+							   c == '\'' || c == '*' || c == '+' || c == '-' || c == '.' ||
+							   c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
 
 				if (!isValid)
 					return setError(400); // Bad request
@@ -202,27 +205,28 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 			_headers[normalizeHeaderKey(key)] = value;
 		}
 
-		pos = lineEnd  + 2;
+		pos = lineEnd + 2;
 	}
 
 	return true;
 }
 
-bool HttpRequest::parseChunked(size_t offset)
+bool HttpRequest::parseChunked()
 {
 	std::string &data = _rawData;
-	std::string body;
-	size_t pos = offset;  // Start from offset instead of 0
-	size_t totalBodySize = 0;
+	size_t pos = _chunkParsePos;
 
 	while (true)
 	{
-		// Find chunk size line
+		size_t sizeLineStart = pos;
+		// Need a full chunk size line
 		size_t lineEnd = data.find("\r\n", pos);
 		if (lineEnd == std::string::npos)
-			return false; // Incomplete chunk
+		{
+			_chunkParsePos = pos;
+			return false; // incomplete chunk size line
+		}
 
-		// Parse chunk size (hexa)
 		std::string sizeStr = data.substr(pos, lineEnd - pos);
 
 		// Support chunk extensions: "HEX;ext=..."
@@ -243,52 +247,54 @@ bool HttpRequest::parseChunked(size_t offset)
 
 		errno = 0;
 		unsigned long v = std::strtoul(sizeStr.c_str(), NULL, 16);
-
 		if (errno)
 			return setError(400); // Bad request
 
 		size_t chunkSize = static_cast<size_t>(v);
-
-		// Security: Check individual chunk size
-		if (chunkSize > MAX_CHUNK_SIZE)
-			return setError(413); // Payload Too Large
-
 		pos = lineEnd + 2; // skip "\r\n"
 
 		// Last chunk (size = 0)
 		if (!chunkSize)
 		{
-			// After "0\r\n", we need at least "\r\n" to complete the chunked encoding
-			// Format: "0\r\n\r\n" (with no trailers) or "0\r\n[trailers]\r\n"
-			// Check if we have the final "\r\n"
+			// Need final CRLF after the zero-size chunk
 			if (pos + 2 > data.length())
-				return false; // incomplete
-			
-			// Verify final CRLF (we're ignoring trailers for simplicity)
+			{
+				_chunkParsePos = sizeLineStart; // wait for more data
+				return false;
+			}
+
 			if (data.compare(pos, 2, "\r\n") != 0)
 				return setError(400); // Bad request
 
-			_body = body;
+			_chunkParsePos = pos + 2;
+			_chunkDone = true;
+			_isComplete = true;
 			return true;
 		}
 
-		// Security: Check total accumulated body size
-		totalBodySize += chunkSize;
-		if (totalBodySize > MAX_BODY_SIZE)
+		// Security: Check individual chunk size
+		if (chunkSize > MAX_CHUNK_SIZE)
 			return setError(413); // Payload Too Large
 
-		// Check if chunk is complete (full data)
-		if (pos + chunkSize + 2 > data.length())
-			return false; // Incomplete chunk data
+		// Security: Check total accumulated body size
+		if (_chunkTotalSize + chunkSize > MAX_BODY_SIZE)
+			return setError(413); // Payload Too Large
 
-		// Security: chunked data must be followed by "\r\n"
+		// Need full chunk payload + trailing CRLF
+		if (pos + chunkSize + 2 > data.length())
+		{
+			_chunkParsePos = sizeLineStart; // retry from size line when more data arrives
+			return false;
+		}
+
 		if (data.compare(pos + chunkSize, 2, "\r\n"))
 			return setError(400); // Bad request
 
-		// Extract chunk data
-		//body += data.substr(pos, chunkSize);
-		body.append(data, pos, chunkSize);
-		pos += chunkSize + 2; // Skip data + \r\n
+		// Append chunk payload and advance
+		_body.append(data, pos, chunkSize);
+		_chunkTotalSize += chunkSize;
+		pos += chunkSize + 2;
+		_chunkParsePos = pos;
 	}
 }
 
@@ -317,7 +323,7 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 			pos += 2;
 
 		// Check if end delimiter
-		if (_body.substr(boundaryPos, endDelimiter.length()) ==  endDelimiter)
+		if (_body.substr(boundaryPos, endDelimiter.length()) == endDelimiter)
 			break;
 
 		// Find headers end (\r\n\r\n)
@@ -373,98 +379,163 @@ bool HttpRequest::parseMultipart(const std::string &boundary)
 
 bool HttpRequest::parse()
 {
-	// Search for end of headers
-	size_t headersEnd = _rawData.find("\r\n\r\n");
-	if (headersEnd == std::string::npos)
-		return false;
-
-	// Extract headers
-	std::string headersBlock = _rawData.substr(0, headersEnd + 2);  // Include first \r\n
-
-	// Parse request line + headers
-	if (!parseRequestLine(headersBlock))
-		return false;
-	if (!parseHeaders(headersBlock))
-		return false;
-
-	// Security: check if Host is in the header mandatory in HTTP/1.1
-	if (_version == "HTTP/1.1" && getHeader("host").empty())
-		return setError(400); // Bad request
-
-	// Check if body type (chunked or Content-Length)
-	size_t bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
-
-	// Security: Check Transfer-Encoding and Content-Length
-	std::string te = toLowercase(trim(getHeader("transfer-encoding")));
-	std::string clStr = getHeader("content-length");
-
-	// If both TE and CL (anti request smuggling)
-	// Ignore Content-Length completely to prevent desync attacks
-	if (!te.empty())
-		clStr.clear();
-
-	// Case 1 Chunked "Transfer-Encoding"
-	if (te.find("chunked") != std::string::npos)
+	// 1) Parse headers once
+	if (!_headersParsed)
 	{
-		// Don't erase headers yet - parseChunked will work with offset
-		bool result = parseChunked(bodyStart);
-		if (result)
+		size_t headersEnd = _rawData.find("\r\n\r\n");
+		if (headersEnd == std::string::npos)
+			return false;
+
+		std::string headersBlock = _rawData.substr(0, headersEnd + 2); // Include first \r\n
+
+		if (!parseRequestLine(headersBlock))
 		{
-			// Only erase headers after successful parsing
-			_rawData.erase(0, bodyStart);
+			if (_errorCode)
+				_isComplete = true;
+			return _isComplete;
 		}
-		return result;
-	}
-
-	if (!te.empty())
-		return setError(501); // Not implemented
-
-	// Case 2 Content Length
-	if (!clStr.empty())
-	{
-		// Security: Validate Content-length format only digit
-		for (size_t i = 0; i < clStr.length(); i++)
+		if (!parseHeaders(headersBlock))
 		{
-			unsigned char d = static_cast<unsigned char>(clStr[i]);
-			if (!std::isdigit(d))
-				return setError(400); // Bad request
+			if (_errorCode)
+				_isComplete = true;
+			return _isComplete;
 		}
 
-		// Security: Check for overflow (max 20 digits)
-		if (clStr.length() > 20)
-			return setError(413); // Payload Too Large
-
-		size_t contentLength = parseIntSafe(clStr.c_str(), "Content-Length header");
-
-		// Security: Check Content-Length against max body size
-		if (contentLength > MAX_BODY_SIZE)
-			return setError(413); // Payload Too Large
-
-		if (bodyStart > _rawData.length() || contentLength > _rawData.length() - bodyStart)
-			return false; // incomplete body
-
-		// Extract body with exact content length
-		_body = _rawData.substr(bodyStart, contentLength);
-	}
-	else
-		_body = ""; // No content length = no body
-
-	// Check if multipart/form-data
-	if (!getHeader("content-type").empty())
-	{
-		std::string contentType = getHeader("content-type");
-		if (contentType.find("multipart/form-data") != std::string::npos)
+		// Security: check if Host is mandatory in HTTP/1.1
+		if (_version == "HTTP/1.1" && getHeader("host").empty())
 		{
-			// Extract boundary
-			size_t boundaryPos = contentType.find("boundary=");
-			if (boundaryPos != std::string::npos)
+			_isComplete = true;
+			return setError(400); // Bad request
+		}
+
+		_bodyStart = headersEnd + 4; // +4 for "\r\n\r\n"
+		std::string te = toLowercase(trim(getHeader("transfer-encoding")));
+		std::string clStr = getHeader("content-length");
+
+		// If both TE and CL (anti request smuggling) ignore Content-Length
+		if (!te.empty())
+			clStr.clear();
+
+		if (!te.empty())
+		{
+			if (te.find("chunked") == std::string::npos)
 			{
-				std::string boundary = contentType.substr(boundaryPos + 9);
-				if (!parseMultipart(boundary))
-					return false;
+				_isComplete = true;
+				return setError(501); // Not implemented
+			}
+			_isChunked = true;
+			// Drop headers to keep buffer small for incremental chunk parsing
+			_rawData.erase(0, _bodyStart);
+			_bodyStart = 0;
+			_chunkParsePos = 0;
+			_chunkTotalSize = 0;
+			_chunkDone = false;
+		}
+		else
+		{
+			_isChunked = false;
+			_contentLength = 0;
+
+			if (!clStr.empty())
+			{
+				for (size_t i = 0; i < clStr.length(); i++)
+				{
+					unsigned char d = static_cast<unsigned char>(clStr[i]);
+					if (!std::isdigit(d))
+					{
+						_isComplete = true;
+						return setError(400); // Bad request
+					}
+				}
+
+				// Security: Check for overflow (max 20 digits)
+				if (clStr.length() > 20)
+				{
+					_isComplete = true;
+					return setError(413); // Payload Too Large
+				}
+
+				size_t contentLength = parseIntSafe(clStr.c_str(), "Content-Length header");
+
+				// Security: Check Content-Length against max body size
+				if (contentLength > MAX_BODY_SIZE)
+				{
+					_isComplete = true;
+					return setError(413); // Payload Too Large
+				}
+
+				_contentLength = contentLength;
 			}
 		}
+
+		_headersParsed = true;
 	}
 
+	if (_errorCode)
+	{
+		_isComplete = true;
+		return true;
+	}
+
+	// 2) Parse body depending on mode
+	if (_isChunked)
+	{
+		bool parsed = parseChunked();
+		if (_errorCode)
+			_isComplete = true;
+
+		// When the final chunk is parsed, the body is ready
+		if (_isComplete && !_errorCode)
+		{
+			// Check multipart/form-data only once when body is complete
+			std::string contentType = getHeader("content-type");
+			if (!_uploadedFiles.empty() || contentType.empty())
+				return true;
+
+			if (contentType.find("multipart/form-data") != std::string::npos)
+			{
+				size_t boundaryPos = contentType.find("boundary=");
+				if (boundaryPos != std::string::npos)
+				{
+					std::string boundary = contentType.substr(boundaryPos + 9);
+					if (!parseMultipart(boundary))
+						return false;
+				}
+			}
+			return true;
+		}
+
+		return parsed;
+	}
+
+	// Content-Length body
+	if (_contentLength > 0)
+	{
+		if (_bodyStart > _rawData.length() || _contentLength > _rawData.length() - _bodyStart)
+			return false; // incomplete body
+
+		_body = _rawData.substr(_bodyStart, _contentLength);
+		_isComplete = true;
+
+		std::string contentType = getHeader("content-type");
+		if (!contentType.empty())
+		{
+			if (contentType.find("multipart/form-data") != std::string::npos)
+			{
+				size_t boundaryPos = contentType.find("boundary=");
+				if (boundaryPos != std::string::npos)
+				{
+					std::string boundary = contentType.substr(boundaryPos + 9);
+					if (!parseMultipart(boundary))
+						return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	// No body
+	_body = "";
+	_isComplete = true;
 	return true;
 }

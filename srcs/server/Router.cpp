@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/20 19:33:58 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/22 14:07:36 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,26 +117,64 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			std::string relativePath = decodedPath;
 			if (relativePath.find(locationPath) == 0)
 				relativePath = decodedPath.substr(locationPath.length());
+			// If the request exactly matches the location path, stay at that location root
+			if (relativePath.empty())
+				relativePath = "/";
 			if (relativePath.empty() || relativePath[0] != '/')
 				relativePath = "/" + relativePath;
-			match.filePath = match.location->getRoot() + relativePath;
-			std::cout<<"\n PATH:"<<match.filePath<<std::endl;
 
-			// Security check
-			if (!isPathSafe(match.filePath))
+			// If we are at the location root, try its index files
+			if (relativePath == "/")
+			{
+				const std::vector<std::string> &locIndexes = match.location->getIndex();
+				for (size_t i = 0; i < locIndexes.size(); i++)
+				{
+					std::string idxPath = match.location->getRoot() + "/" + locIndexes[i];
+					if (fileExists(idxPath))
+					{
+						relativePath = "/" + locIndexes[i];
+						break;
+					}
+				}
+			}
+
+			match.filePath = match.location->getRoot() + relativePath;
+
+			std::cout << "PATH:" << match.filePath << std::endl; // DEBUG
+
+			// Security check bound to the matched location root
+			if (!isPathSafe(match.filePath, match.location->getRoot()))
 			{
 				match.statusCode = 403;
 				return match;
+			}
+
+			// If the resolved path is a directory, try serving an index file inside it
+			if (isDirectory(match.filePath))
+			{
+				const std::vector<std::string> &locIndexes = match.location->getIndex();
+				for (size_t i = 0; i < locIndexes.size(); ++i)
+				{
+					std::string idxCandidate = match.filePath + "/" + locIndexes[i];
+					if (fileExists(idxCandidate))
+					{
+						match.filePath = idxCandidate;
+						break;
+					}
+				}
 			}
 
 			// Check if request should be handled by CGI
 			std::string cgiExt = match.location->getCgiExtension();
 			if (!cgiExt.empty())
 			{
-				try {
+				try
+				{
 					if (cgiExt == getFileExtension(match.filePath))
 						match.isCGI = true;
-				} catch (const std::exception &e) {
+				}
+				catch (const std::exception &e)
+				{
 					// If getFileExtension fails, not a CGI request
 				}
 			}

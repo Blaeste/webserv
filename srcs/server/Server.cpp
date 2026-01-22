@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 21:32:46 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/22 18:21:40 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,20 +29,21 @@
 int Server::_s_sigpipe[2] = {-1, -1};
 
 // Special member function(s)
-Server::Server(const Config& config)
-	: _configs(config.getServers())
-	, _running(false)
-	, _lastSessionCleanup(0)
+Server::Server(const Config &config)
+	: _configs(config.getServers()), _running(false), _lastSessionCleanup(0)
 {
 	installSignals();
 	setupListenSockets();
 }
 
-Server::~Server() {
+Server::~Server()
+{
 	// Kill all active CGI processes and clean up
-	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		CGIProcess* cgi = it->second.getCGIProcess();
-		if (cgi) {
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		CGIProcess *cgi = it->second.getCGIProcess();
+		if (cgi)
+		{
 			kill(cgi->pid, SIGKILL);
 			waitpid(cgi->pid, NULL, 0);
 			delete cgi;
@@ -60,11 +61,13 @@ Server::~Server() {
 }
 
 // Public method(s)
-void Server::run() {
+void Server::run()
+{
 	_running = true;
 	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
 
-	while (_running) {
+	while (_running)
+	{
 		// Check for idle client timeouts
 		handleClientTimeouts();
 		handleCGITimeouts();
@@ -76,7 +79,8 @@ void Server::run() {
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size(); i++) {
+		for (size_t i = 0; i < _pollFds.size(); i++)
+		{
 			int revents = _pollFds[i].revents;
 			if (!revents)
 				continue;
@@ -84,10 +88,12 @@ void Server::run() {
 			SocketType type = _socketTypes[fd];
 
 			// Handle POLLIN (incoming data to read)
-			if (revents & POLLIN) {
+			if (revents & POLLIN)
+			{
 
 				// Handle SIGINT or SIGTERM
-				if (type == SOCKET_SIGNAL) {
+				if (type == SOCKET_SIGNAL)
+				{
 					handleSignalPipeReadable();
 					break;
 				}
@@ -111,18 +117,21 @@ void Server::run() {
 	}
 }
 
-void Server::stop() {
+void Server::stop()
+{
 	_running = false;
 }
 
 // Private method(s)
-void Server::setupListenSockets() {
+void Server::setupListenSockets()
+{
 	// Create one listening socket per configuration (one per port)
 	std::vector<int> port;
-	for (size_t i = 0; i < _configs.size(); i++) {
-		if(std::find(port.begin(), port.end(), _configs[i].getPort()) != port.end())
+	for (size_t i = 0; i < _configs.size(); i++)
+	{
+		if (std::find(port.begin(), port.end(), _configs[i].getPort()) != port.end())
 		{
-			std::cout << "Server "<<_configs[i].getServerName()<<" listening on port " << _configs[i].getPort() << std::endl;
+			std::cout << "Server " << _configs[i].getServerName() << " listening on port " << _configs[i].getPort() << std::endl;
 			continue; // Skip duplicate ports
 		}
 		port.push_back(_configs[i].getPort());
@@ -132,7 +141,8 @@ void Server::setupListenSockets() {
 
 		// Configure SO_REUSEADDR to allow address reuse and prevent "Address already in use" error
 		int opt = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("setsockopt() failed");
 		}
@@ -143,13 +153,15 @@ void Server::setupListenSockets() {
 		addr.sin_family = AF_INET;		   // IPv4
 		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
 		addr.sin_port = htons(port[i]);	   // Convert port to network byte order
-		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("bind() failed");
 		}
 
 		// Start listening for incoming connections
-		if (listen(listenFd, 128) < 0) {
+		if (listen(listenFd, 128) < 0)
+		{
 			safeClose(listenFd);
 			throw std::runtime_error("listen() failed");
 		}
@@ -161,17 +173,19 @@ void Server::setupListenSockets() {
 		pfd.revents = 0;
 		_pollFds.push_back(pfd);
 		_socketTypes[listenFd] = SOCKET_LISTEN;
-		std::cout << "Server "<<_configs[i].getServerName()<<" listening on port " << port[i] << std::endl;
+		std::cout << "Server " << _configs[i].getServerName() << " listening on port " << port[i] << std::endl;
 	}
 }
 
-void Server::acceptNewClient(int listenSocket) {
+void Server::acceptNewClient(int listenSocket)
+{
 	struct sockaddr_in clientAddr;
 	socklen_t addrLen = sizeof(clientAddr);
 
 	// Accept a new incoming connection (non-blocking)
 	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
-	if (clientFd < 0) {
+	if (clientFd < 0)
+	{
 		std::cerr << "[Server] accept failed on fd " << listenSocket << std::endl;
 		return; // No connection available right now
 	}
@@ -181,9 +195,12 @@ void Server::acceptNewClient(int listenSocket) {
 	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
 
 	// Set the client socket to non-blocking mode
-	try {
+	try
+	{
 		setNonBlocking(clientFd);
-	} catch (const std::exception& e) {
+	}
+	catch (const std::exception &e)
+	{
 		std::cerr << "[Server] " << e.what() << " for fd " << clientFd << std::endl;
 		safeClose(clientFd);
 		return;
@@ -202,15 +219,20 @@ void Server::acceptNewClient(int listenSocket) {
 	Logger::logConnection(clientFd, std::string(clientIp));
 }
 
-void Server::handleClientTimeouts() {
+void Server::handleClientTimeouts()
+{
 	std::map<int, Client>::iterator it = _clients.begin();
-	while (it != _clients.end()) {
-		if (it->second.hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT)) {
+	while (it != _clients.end())
+	{
+		if (it->second.hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
+		{
 			int fd = it->first;
 			std::cout << "Client timeout (fd " << fd << ")" << std::endl;
 			++it;
-			for (size_t j = 0; j < _pollFds.size(); j++) {
-				if (_pollFds[j].fd == fd) {
+			for (size_t j = 0; j < _pollFds.size(); j++)
+			{
+				if (_pollFds[j].fd == fd)
+				{
 					removeClient(fd, j);
 					break;
 				}
@@ -221,21 +243,41 @@ void Server::handleClientTimeouts() {
 	}
 }
 
-void Server::handleClientRead(size_t clientIndex) {
+void Server::handleClientRead(size_t clientIndex)
+{
 
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
-	if (it == _clients.end()) {
+	if (it == _clients.end())
+	{
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
-	Client& client = it->second;
+	Client &client = it->second;
 
 	// Read data from socket
-	if (!client.readData()) {
+	if (!client.readData())
+	{
 		removeClient(clientFd, clientIndex);
+		return;
+	}
+
+	// If an early error response is already prepared (e.g., size limit), switch to write-only
+	if (client.isResponseReady())
+	{
+		_pollFds[clientIndex].events = POLLOUT;
+		return;
+	}
+
+	// Early size guard: if body already exceeds configured limit, send 413 and close
+	const ServerConfig *earlyCfg = selectConfig(client.getRequest(), clientFd);
+	if (!client.isResponseReady() && earlyCfg && client.getRequest().getBody().size() > earlyCfg->getMaxBodySize())
+	{
+		client.buildErrorResponse(413);
+		client.markCloseAfterResponse();
+		_pollFds[clientIndex].events = POLLOUT;
 		return;
 	}
 
@@ -244,31 +286,45 @@ void Server::handleClientRead(size_t clientIndex) {
 		return;
 
 	// Build response
-	if (!client.isResponseReady()) {
+	if (!client.isResponseReady())
+	{
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
 
-		const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
-		if (!config) {
+		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+		if (!config)
+		{
 			client.buildErrorResponse(500);
 			client.setState(STATE_IDLE);
-			_pollFds[clientIndex].events |= POLLOUT;
+			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
+			return;
+		}
+
+		// Enforce configured body size limit before routing/CGI
+		if (client.getRequest().getBody().size() > config->getMaxBodySize())
+		{
+			client.buildErrorResponse(413);
+			client.markCloseAfterResponse();
+			client.setState(STATE_IDLE);
+			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
 
 		// Check if this is a CGI request
-		HttpRequest& request = const_cast<HttpRequest&>(client.getRequest());
+		HttpRequest &request = const_cast<HttpRequest &>(client.getRequest());
 		RouteMatch match = _router.matchRoute(*config, request);
 
-		if (match.statusCode == 200 && match.isCGI) {
+		if (match.statusCode == 200 && match.isCGI)
+		{
 			// Start CGI asynchronously
 			CGI cgi;
-			CGIProcess* cgiProc = cgi.startAsync(match, request);
+			CGIProcess *cgiProc = cgi.startAsync(match, request);
 
-			if (!cgiProc) {
+			if (!cgiProc)
+			{
 				client.buildErrorResponse(500);
 				client.setState(STATE_IDLE);
-				_pollFds[clientIndex].events |= POLLOUT;
+				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 				return;
 			}
 
@@ -285,7 +341,8 @@ void Server::handleClientRead(size_t clientIndex) {
 			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
 
 			// If POST with body, also monitor pipeIn for writing
-			if (cgiProc->pipeIn != -1) {
+			if (cgiProc->pipeIn != -1)
+			{
 				pollfd pfdIn;
 				pfdIn.fd = cgiProc->pipeIn;
 				pfdIn.events = POLLOUT;
@@ -293,23 +350,29 @@ void Server::handleClientRead(size_t clientIndex) {
 				_pollFds.push_back(pfdIn);
 				_socketTypes[cgiProc->pipeIn] = SOCKET_CGI;
 			}
-
-		} else {
+		}
+		else
+		{
 			// Regular non-CGI request
 			client.buildResponse(*config, _router, _sessions);
 			client.setState(STATE_IDLE);
-			_pollFds[clientIndex].events |= POLLOUT;
+			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 		}
-	} else
-		_pollFds[clientIndex].events |= POLLOUT; // Response already ready, enable POLLOUT
+	}
+	else
+	{
+		_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
+	}
 }
 
-void Server::handleClientWrite(size_t clientIndex) {
+void Server::handleClientWrite(size_t clientIndex)
+{
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
-	if (it == _clients.end()) {
+	if (it == _clients.end())
+	{
 		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
 		return;
 	}
@@ -323,26 +386,29 @@ void Server::handleClientWrite(size_t clientIndex) {
 	removeClient(clientFd, clientIndex);
 }
 
-void Server::removeClient(int fd, size_t pollIndex) {
+void Server::removeClient(int fd, size_t pollIndex)
+{
 	safeClose(fd);
 	_clients.erase(fd);
 	_socketTypes.erase(fd);
 	_pollFds.erase(_pollFds.begin() + pollIndex);
 }
 
-const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const {
+const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const
+{
 	std::string host = request.getHeader("Host");
 	int localPort = getSocketPort(clientFd);
 
 	// Remove port from Host header if present
 	size_t colonPos = host.find(':');
 
-	const ServerConfig* defaultForPort = NULL;
+	const ServerConfig *defaultForPort = NULL;
 	if (colonPos != std::string::npos)
 		host = host.substr(0, colonPos);
 
 	// Find config matching server_name
-	for (size_t i = 0; i < _configs.size(); i++) {
+	for (size_t i = 0; i < _configs.size(); i++)
+	{
 		if (_configs[i].getPort() != localPort)
 			continue;
 		if (!defaultForPort)
@@ -353,18 +419,21 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 	return defaultForPort;
 }
 
-void Server::handleCGITimeouts() {
+void Server::handleCGITimeouts()
+{
 	const int CGI_TIMEOUT = 5; // 5 seconds timeout for CGI
 	time_t now = time(NULL);
 
-	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		Client& client = it->second;
-		CGIProcess* cgi = client.getCGIProcess();
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		Client &client = it->second;
+		CGIProcess *cgi = client.getCGIProcess();
 		if (!cgi)
 			continue;
 
 		// Check if CGI has timed out
-		if (now - cgi->startTime > CGI_TIMEOUT) {
+		if (now - cgi->startTime > CGI_TIMEOUT)
+		{
 			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
 
 			// Kill the CGI process
@@ -378,11 +447,14 @@ void Server::handleCGITimeouts() {
 				close(cgi->pipeIn);
 
 			// Remove pipes from poll
-			for (size_t i = 0; i < _pollFds.size(); ) {
-				if (_pollFds[i].fd == cgi->pipeOut || _pollFds[i].fd == cgi->pipeIn) {
+			for (size_t i = 0; i < _pollFds.size();)
+			{
+				if (_pollFds[i].fd == cgi->pipeOut || _pollFds[i].fd == cgi->pipeIn)
+				{
 					_socketTypes.erase(_pollFds[i].fd);
 					_pollFds.erase(_pollFds.begin() + i);
-				} else
+				}
+				else
 					i++;
 			}
 
@@ -396,7 +468,8 @@ void Server::handleCGITimeouts() {
 
 			// Enable POLLOUT to send the error response
 			for (size_t i = 0; i < _pollFds.size(); ++i)
-				if (_pollFds[i].fd == it->first) {
+				if (_pollFds[i].fd == it->first)
+				{
 					_pollFds[i].events = POLLOUT;
 					break;
 				}
@@ -404,24 +477,30 @@ void Server::handleCGITimeouts() {
 	}
 }
 
-void Server::handleCGIPipe(size_t pipeIndex) {
+void Server::handleCGIPipe(size_t pipeIndex)
+{
 	int pipeFd = _pollFds[pipeIndex].fd;
 
 	// Find the client that owns this CGI
-	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it) {
-		Client& client = it->second;
-		CGIProcess* cgi = client.getCGIProcess();
+	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+	{
+		Client &client = it->second;
+		CGIProcess *cgi = client.getCGIProcess();
 		if (!cgi)
 			continue;
 
 		// Handle pipeOut (reading CGI output or detecting closure)
-		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR))) {
+		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
+		{
 			char buffer[4096];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
-			if (bytes > 0) {
+			if (bytes > 0)
+			{
 				cgi->output.append(buffer, bytes);
-			} else {
+			}
+			else
+			{
 				// EOF or error - CGI finished
 				// EOF - CGI finished
 				close(cgi->pipeOut);
@@ -446,9 +525,12 @@ void Server::handleCGIPipe(size_t pipeIndex) {
 				_socketTypes.erase(pipeFd);
 
 				// Remove pipeIn from poll if it exists
-				if (cgi->pipeIn != -1) {
-					for (size_t i = 0; i < _pollFds.size(); ++i) {
-						if (_pollFds[i].fd == cgi->pipeIn) {
+				if (cgi->pipeIn != -1)
+				{
+					for (size_t i = 0; i < _pollFds.size(); ++i)
+					{
+						if (_pollFds[i].fd == cgi->pipeIn)
+						{
 							_pollFds.erase(_pollFds.begin() + i);
 							_socketTypes.erase(cgi->pipeIn);
 							break;
@@ -461,8 +543,10 @@ void Server::handleCGIPipe(size_t pipeIndex) {
 				client.setState(STATE_IDLE);
 
 				// Enable POLLOUT to send the response
-				for (size_t i = 0; i < _pollFds.size(); ++i) {
-					if (_pollFds[i].fd == it->first) {
+				for (size_t i = 0; i < _pollFds.size(); ++i)
+				{
+					if (_pollFds[i].fd == it->first)
+					{
 						_pollFds[i].events |= POLLOUT;
 						break;
 					}
@@ -473,18 +557,22 @@ void Server::handleCGIPipe(size_t pipeIndex) {
 		}
 
 		// Handle pipeIn (writing POST body to CGI)
-		if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT)) {
-			if (!cgi->inputWritten) {
-				const std::string& body = client.getRequest().getBody();
+		if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT))
+		{
+			if (!cgi->inputWritten)
+			{
+				const std::string &body = client.getRequest().getBody();
 				ssize_t written = write(pipeFd, body.c_str(), body.size());
 
-				if (written > 0) {
+				if (written > 0)
+				{
 					cgi->inputWritten = true;
 					close(cgi->pipeIn);
 
 					// Remove pipeIn from poll
 					for (size_t i = 0; i < _pollFds.size(); ++i)
-						if (_pollFds[i].fd == cgi->pipeIn) {
+						if (_pollFds[i].fd == cgi->pipeIn)
+						{
 							_pollFds.erase(_pollFds.begin() + i);
 							_socketTypes.erase(cgi->pipeIn);
 							break;
@@ -497,7 +585,8 @@ void Server::handleCGIPipe(size_t pipeIndex) {
 	}
 }
 
-void Server::handleSessionTimeouts() {
+void Server::handleSessionTimeouts()
+{
 	// Check cleanup interval
 	if (time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
 		return;
@@ -505,8 +594,10 @@ void Server::handleSessionTimeouts() {
 
 	// Remove expired sessions
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
-	while (it != _sessions.end()) {
-		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT) {
+	while (it != _sessions.end())
+	{
+		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT)
+		{
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
 			_sessions.erase(toErase);
@@ -517,13 +608,16 @@ void Server::handleSessionTimeouts() {
 }
 
 // Drain pipe so it doesn't remain readable and stop server
-void Server::handleSignalPipeReadable() {
+void Server::handleSignalPipeReadable()
+{
 	char buf[64];
-	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0);
+	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0)
+		;
 	_running = false;
 }
 
-void Server::addSignalPipeToPoll() {
+void Server::addSignalPipeToPoll()
+{
 	pollfd pfd;
 	pfd.fd = _s_sigpipe[0];
 	pfd.events = POLLIN;
@@ -533,12 +627,14 @@ void Server::addSignalPipeToPoll() {
 }
 
 // Called by OS when SIGINT/SIGTERM received (async-signal-safe)
-void Server::signalHandler(int) {
+void Server::signalHandler(int)
+{
 	if (_s_sigpipe[1] != -1)
 		write(_s_sigpipe[1], "1", 1);
 }
 
-void Server::installSignals() {
+void Server::installSignals()
+{
 	// Create self-pipe for safe signal handling in poll()
 	if (pipe(_s_sigpipe) == -1)
 		throw std::runtime_error(std::string("pipe() failed: ") + std::strerror(errno));

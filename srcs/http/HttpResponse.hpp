@@ -73,8 +73,9 @@ class HttpResponse
 			/**
 			 * @brief Serves a static file as the HTTP response body.
 			 * @param path The path to the file to serve.
+			 * @param root The location root that bounds what can be served.
 			 */
-			void serveFile(const std::string &path);
+			void serveFile(const std::string &path, const std::string &root);
 
 			/**
 			 * @brief Serves an error page for the given HTTP status code.
@@ -92,8 +93,9 @@ class HttpResponse
 			/**
 			 * @brief Handles DELETE requests for the given path.
 			 * @param path The path to the resource to delete.
+			 * @param uploadRoot The upload directory that bounds deletions.
 			 */
-			void serveDelete(const std::string &path);
+			void serveDelete(const std::string &path, const std::string &uploadRoot);
 
 			/**
 			 * @brief Handles file upload by saving uploaded files to a directory.

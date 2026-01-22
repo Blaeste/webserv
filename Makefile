@@ -6,7 +6,7 @@
 #    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 22:18:44 by lmarck           ###   ########.fr        #
+#    Updated: 2026/01/22 18:52:10 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -29,14 +29,15 @@ include ${MK_DIR}/git.mk
 # ============================================================================ #
 
 .SILENT:
-.PHONY: all clean fclean re
+.ONESHELL:
+.PHONY: all clean fclean re kill
 
 # Executable name
 NAME = webserv
 
 # Compiler and flags
 CXX = c++
-CXXFLAGS = -Wall -Wextra -Werror -std=c++98
+CXXFLAGS = -Wall -Wextra -Werror -O3 -std=c++98
 INCLUDES = -I includes
 
 # ============================================================================ #
@@ -93,6 +94,16 @@ fclean: clean
 # Rebuild everything from scratch
 re: fclean all
 
+# Kill any running instance of the local webserv binary
+kill:
+	@bin="$$(cd "$(dir $(lastword $(MAKEFILE_LIST)))" && pwd)/$(NAME)"; \
+	pids=$$(pgrep -f "$$bin" || pgrep -x "$(NAME)" || true); \
+	if [ -n "$$pids" ]; then \
+		kill $$pids && echo "✓ Killed running $(NAME): $$pids"; \
+	else \
+		echo "No running $(NAME) found"; \
+	fi
+
 test: re
 	-pkill webserv || true
 	gnome-terminal -- bash -c './webserv config/default.conf; exec bash' &
@@ -109,52 +120,49 @@ eval: re
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
 	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
 	@chmod +x tester cgi_tester
-	@if [ ! -f config/eval.conf ]; then \
-		echo "server {" > config/eval.conf; \
-		echo "    listen 8080;" >> config/eval.conf; \
-		echo "    server_name localhost;" >> config/eval.conf; \
-		echo "    error_page 400 /error_pages/400.html;" >> config/eval.conf; \
-		echo "    error_page 403 /error_pages/403.html;" >> config/eval.conf; \
-		echo "    error_page 404 /error_pages/404.html;" >> config/eval.conf; \
-		echo "    error_page 405 /error_pages/405.html;" >> config/eval.conf; \
-		echo "    error_page 413 /error_pages/413.html;" >> config/eval.conf; \
-		echo "    error_page 500 /error_pages/500.html;" >> config/eval.conf; \
-		echo "    error_page 501 /error_pages/501.html;" >> config/eval.conf; \
-		echo "    error_page 504 /error_pages/504.html;" >> config/eval.conf; \
-		echo "" >> config/eval.conf; \
-		echo "    # / - GET requests ONLY" >> config/eval.conf; \
-		echo "    location / {" >> config/eval.conf; \
-		echo "        root ./www;" >> config/eval.conf; \
-		echo "        index index.html index.htm;" >> config/eval.conf; \
-		echo "        allowed_methods GET;" >> config/eval.conf; \
-		echo "        autoindex on;" >> config/eval.conf; \
-		echo "    }" >> config/eval.conf; \
-		echo "" >> config/eval.conf; \
-		echo "    # /post_body - POST requests with maxBody of 100 bytes" >> config/eval.conf; \
-		echo "    location /post_body {" >> config/eval.conf; \
-		echo "        root ./www;" >> config/eval.conf; \
-		echo "        allowed_methods POST;" >> config/eval.conf; \
-		echo "        client_max_body_size 100;" >> config/eval.conf; \
-		echo "    }" >> config/eval.conf; \
-		echo "" >> config/eval.conf; \
-		echo "    # /directory/ - GET requests, root = YoupiBanane, index = youpi.bad_extension" >> config/eval.conf; \
-		echo "    location /directory {" >> config/eval.conf; \
-		echo "        root ./YoupiBanane;" >> config/eval.conf; \
-		echo "        index youpi.bad_extension;" >> config/eval.conf; \
-		echo "        allowed_methods GET;" >> config/eval.conf; \
-		echo "        autoindex on;" >> config/eval.conf; \
-		echo "    }" >> config/eval.conf; \
-		echo "" >> config/eval.conf; \
-		echo "    # Fichiers .bla - POST requests via CGI (partout où ils se trouvent)" >> config/eval.conf; \
-		echo "    location /directory/youpi.bla {" >> config/eval.conf; \
-		echo "        root ./YoupiBanane;" >> config/eval.conf; \
-		echo "        allowed_methods POST;" >> config/eval.conf; \
-		echo "        cgi_extension .bla;" >> config/eval.conf; \
-		echo "        cgi_path ./cgi_test;" >> config/eval.conf; \
-		echo "    }" >> config/eval.conf; \
-		echo "}" >> config/eval.conf; \
-		echo "✓ Created config/eval.conf"; \
-	fi
+	@cat > config/eval.conf <<-'EOF'
+	server {
+	    listen 8080;
+	    server_name localhost;
+	    error_page 400 /error_pages/400.html;
+	    error_page 403 /error_pages/403.html;
+	    error_page 404 /error_pages/404.html;
+	    error_page 405 /error_pages/405.html;
+	    error_page 413 /error_pages/413.html;
+	    error_page 500 /error_pages/500.html;
+	    error_page 501 /error_pages/501.html;
+	    error_page 504 /error_pages/504.html;
+		client_max_body_size 105M;
+
+	    # / - GET requests ONLY
+	    location / {
+	        root ./www;
+	        index index.html index.htm;
+	        allowed_methods GET;
+	        autoindex on;
+	    }
+
+		# /post_body - POST requests with maxBody of 100 bytes
+		location /post_body {
+		    root ./www;
+		    allowed_methods POST;
+		    client_max_body_size 100;
+		}
+
+		# /directory/
+		location /directory {
+		    root ./YoupiBanane;
+		    index youpi.bad_extension;
+		    allowed_methods GET POST;
+		    autoindex off;
+		    cgi_extension .bla;
+		    cgi_path ./cgi_test;
+			client_max_body_size 50M;
+		}
+	}
+	EOF
+
+	@echo "✓ Created config/eval.conf"
 	@mkdir -p YoupiBanane/nop
 	@mkdir -p YoupiBanane/Yeah
 	@touch YoupiBanane/youpi.bad_extension
