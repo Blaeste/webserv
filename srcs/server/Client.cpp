@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 13:20:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/22 18:21:40 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,37 +23,37 @@
 
 // Constructor: initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket)
-	, _clientIp(clientIp)
-	, _lastActivity(time(NULL))
-	, _requestComplete(false)
-	, _responseReady(false)
-	, _state(STATE_IDLE)
-	, _cgiProcess(NULL)
-{}
+	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_IDLE), _cgiProcess(NULL)
+{
+}
 
 // Private method(s)
-void Client::handleSession(std::map<std::string, SessionData>& sessions) {
+void Client::handleSession(std::map<std::string, SessionData> &sessions)
+{
 
 	std::map<std::string, std::string> cookies = _request.getCookies();
 	std::string sessionId;
 
-	if (cookies.find("session_id") != cookies.end()) {
+	if (cookies.find("session_id") != cookies.end())
+	{
 		sessionId = cookies["session_id"];
 
 		// Update existing session or create new if expired
-		if (sessions.find(sessionId) != sessions.end()) {
+		if (sessions.find(sessionId) != sessions.end())
+		{
 			sessions[sessionId].lastActive = time(NULL);
 
 			// Only count html request (for good count page visit)
 			std::string uri = _request.getUri();
 			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
 			bool isHtmlPage = (uri == "/" ||
-							uri.find(".html") != std::string::npos ||
-							(uri.find('.') == std::string::npos && uri != "/counter-api"));
+							   uri.find(".html") != std::string::npos ||
+							   (uri.find('.') == std::string::npos && uri != "/counter-api"));
 			if (isHtmlPage && !isInternalRequest)
-					sessions[sessionId].visitCount++;
-		} else {
+				sessions[sessionId].visitCount++;
+		}
+		else
+		{
 			// Invalid/expired session → create new
 			sessionId = generateSessionId();
 			sessions[sessionId].lastActive = time(NULL);
@@ -61,7 +61,9 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 			sessions[sessionId].username = "";
 			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
 		}
-	} else {
+	}
+	else
+	{
 		// New session
 		sessionId = generateSessionId();
 		sessions[sessionId].lastActive = time(NULL);
@@ -74,15 +76,18 @@ void Client::handleSession(std::map<std::string, SessionData>& sessions) {
 }
 
 // Accessor(s)
-int Client::getSocket() const {
+int Client::getSocket() const
+{
 	return _socket;
 }
 
-const std::string &Client::getClientIp() const {
+const std::string &Client::getClientIp() const
+{
 	return _clientIp;
 }
 
-bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const {
+bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
+{
 	time_t timeout;
 
 	// Use longer timeout during processing to allow CGI scripts to complete
@@ -94,36 +99,55 @@ bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const {
 	return time(NULL) - _lastActivity > timeout;
 }
 
-void Client::updateActivity() {
+void Client::updateActivity()
+{
 	_lastActivity = time(NULL);
 }
 
-const HttpRequest& Client::getRequest() const {
+const HttpRequest &Client::getRequest() const
+{
 	return _request;
 }
 
-bool Client::isRequestComplete() const {
+bool Client::isRequestComplete() const
+{
 	return _requestComplete;
 }
 
-bool Client::isResponseReady() const {
+bool Client::isResponseReady() const
+{
 	return _responseReady;
 }
 
-void Client::setState(ClientState state) {
+bool Client::shouldCloseAfterResponse() const
+{
+	return _closeAfterResponse;
+}
+
+void Client::markCloseAfterResponse()
+{
+	_response.setHeader("Connection", "close");
+	_closeAfterResponse = true;
+}
+
+void Client::setState(ClientState state)
+{
 	_state = state;
 }
 
-CGIProcess* Client::getCGIProcess() const {
+CGIProcess *Client::getCGIProcess() const
+{
 	return _cgiProcess;
 }
 
-void Client::setCGIProcess(CGIProcess* cgi) {
+void Client::setCGIProcess(CGIProcess *cgi)
+{
 	_cgiProcess = cgi;
 }
 
 // Public method(s)
-bool Client::readData() { // Read data from socket into buffer and parse request
+bool Client::readData()
+{ // Read data from socket into buffer and parse request
 	char buffer[4096];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
 	if (bytesRead <= 0)
@@ -131,10 +155,13 @@ bool Client::readData() { // Read data from socket into buffer and parse request
 	// Append only the new data to the request
 	std::string newData(buffer, bytesRead);
 	_request.appendData(newData);
-	if (_request.isComplete()) {
+	if (_request.isComplete())
+	{
 		_requestComplete = true;
-		if (_request.getErrorCode()) {
+		if (_request.getErrorCode())
+		{
 			buildErrorResponse(_request.getErrorCode());
+			markCloseAfterResponse();
 			_responseReady = true;
 		}
 	}
@@ -142,30 +169,39 @@ bool Client::readData() { // Read data from socket into buffer and parse request
 	return true;
 }
 
-void Client::buildErrorResponse(int statusCode) {
+void Client::buildErrorResponse(int statusCode)
+{
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
 	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-	if (fileExists(errorPage)) {
-		try {
+	if (fileExists(errorPage))
+	{
+		try
+		{
 			_response.setBody(readFile(errorPage));
-		} catch (const std::exception& e) {
+		}
+		catch (const std::exception &e)
+		{
 			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
 			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 		}
-	} else
+	}
+	else
 		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 }
 
-void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions) {
+void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
+{
 
 	// Timer
 	struct timeval start, end;
 	gettimeofday(&start, NULL);
 
 	// Check body size limit
-	if (_request.getBody().size() > config.getMaxBodySize()) {
+	if (_request.getBody().size() > config.getMaxBodySize())
+	{
 		buildErrorResponse(413);
+		markCloseAfterResponse();
 		// log + return
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
@@ -176,7 +212,8 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 
 	handleSession(sessions);
 
-	if (_request.getUri() == "/counter-api") {
+	if (_request.getUri() == "/counter-api")
+	{
 		SessionData &session = sessions[_sessionId];
 
 		std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
@@ -188,16 +225,17 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		gettimeofday(&end, NULL);
 		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
 		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(),
-							 _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
+						   _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
 		_responseReady = true;
-		return ;
+		return;
 	}
 
 	// Continue with normal routing
 	RouteMatch match = router.matchRoute(config, _request);
 
 	// Handle redirections
-	if (!match.redirectUrl.empty()) {
+	if (!match.redirectUrl.empty())
+	{
 		_response.setStatus(match.statusCode);
 		_response.setHeader("Location", match.redirectUrl);
 		_response.setBody("");
@@ -209,7 +247,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
-		_response.serveDelete(match.filePath);
+		_response.serveDelete(match.filePath, match.location->getUploadPath());
 
 	// Handle file upload (POST with uploaded files)
 	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
@@ -221,7 +259,7 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 
 	// Serve static file
 	else
-		_response.serveFile(match.filePath);
+		_response.serveFile(match.filePath, match.location->getRoot());
 
 	// Logging
 	gettimeofday(&end, NULL);
@@ -235,31 +273,35 @@ void Client::buildResponse(const ServerConfig& config, Router& router, std::map<
 		_response.getBody().size(),
 		responseTime,
 		config.getServerName(),
-		config.getPort()
-	);
+		config.getPort());
 	_responseReady = true;
 }
 
-void Client::buildResponseFromCGI(const CGIResult& result) {
-	if (result.statusCode == 200) {
+void Client::buildResponseFromCGI(const CGIResult &result)
+{
+	if (result.statusCode == 200)
+	{
 		_response.setStatus(200);
 		_response.setHeader("Content-Type", result.contentType);
 		_response.setBody(result.output);
-	} else
+	}
+	else
 		_response.serveError(result.statusCode, "");
 	_responseReady = true;
 }
 
-
-bool Client::sendResponse() {
+bool Client::sendResponse()
+{
 	std::string rawResponse = _response.build();
 
 	// Send with partial send handling
 	ssize_t totalSent = 0;
 	ssize_t remaining = rawResponse.size();
-	while (remaining > 0) {
+	while (remaining > 0)
+	{
 		ssize_t sent = send(_socket, rawResponse.data() + totalSent, remaining, 0);
-		if (sent < 0) {
+		if (sent < 0)
+		{
 			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << std::endl;
 			return false;
 		}
