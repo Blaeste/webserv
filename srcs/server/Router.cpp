@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/26 12:07:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/26 14:04:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -171,8 +171,8 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			{
 				try
 				{
-					// CGI is only triggered for POST requests (as per 42 eval requirements)
-					if (request.getMethod() == "POST" && cgiExt == getFileExtension(match.filePath))
+				// CGI works for both GET and POST requests
+				if (cgiExt == getFileExtension(match.filePath))
 						match.isCGI = true;
 				}
 				catch (const std::exception &e)
