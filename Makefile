@@ -156,7 +156,7 @@ eval: re
 		    allowed_methods GET POST;
 		    autoindex off;
 		    cgi_extension .bla;
-		    cgi_path ./cgi_test;
+		    cgi_path ./cgi_tester;
 			client_max_body_size 50M;
 		}
 	}

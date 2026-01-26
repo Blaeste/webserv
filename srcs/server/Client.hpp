@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/22 17:51:29 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/26 12:23:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,8 @@ private:
 	std::string _sessionId;
 	ClientState _state;
 	CGIProcess *_cgiProcess; // NULL if no CGI active
+	std::string _cachedResponse; // Cached response for progressive sending
+	size_t _bytesSent; // Bytes already sent from cached response
 
 public:
 	// Default constructor

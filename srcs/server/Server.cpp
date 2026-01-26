@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/22 18:21:40 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/26 12:28:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -378,11 +378,20 @@ void Server::handleClientWrite(size_t clientIndex)
 	}
 	Client &client = it->second;
 
-	// Send response
-	if (!client.sendResponse())
-		std::cerr << "Error sending response to fd " << clientFd << std::endl;
+	// Update activity timestamp during progressive sending
+	client.updateActivity();
+	
+	// Send response (may be progressive for large responses)
+	bool sendComplete = client.sendResponse();
+	
+	if (!sendComplete) {
+		// Sending not complete (EAGAIN or large response)
+		// Keep POLLOUT active and retry later
+		std::cout << "[Server] Response sending incomplete, will retry on next POLLOUT" << std::endl;
+		return; // Don't close connection yet
+	}
 
-	// Close connection and cleanup after sending
+	// Response fully sent, close connection and cleanup
 	removeClient(clientFd, clientIndex);
 }
 
@@ -498,11 +507,13 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			if (bytes > 0)
 			{
 				cgi->output.append(buffer, bytes);
+				std::cerr << "[CGI] Read " << bytes << " bytes from stdout, total: " << cgi->output.size() << std::endl;
 			}
 			else
 			{
 				// EOF or error - CGI finished
 				// EOF - CGI finished
+				std::cerr << "[CGI] EOF detected, total output: " << cgi->output.size() << " bytes" << std::endl;
 				close(cgi->pipeOut);
 				if (cgi->pipeIn != -1)
 					close(cgi->pipeIn);
@@ -510,6 +521,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				// Wait for process to avoid zombie
 				int status;
 				waitpid(cgi->pid, &status, 0);
+				std::cerr << "[CGI] ASSERT: Process exited with status: " << WEXITSTATUS(status) << std::endl;
 
 				// Parse CGI output and build response
 				CGIResult result;
@@ -562,22 +574,46 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			if (!cgi->inputWritten)
 			{
 				const std::string &body = client.getRequest().getBody();
-				ssize_t written = write(pipeFd, body.c_str(), body.size());
+				size_t remaining = body.size() - cgi->bytesWritten;
+				
+				if (remaining > 0) {
+					// Progress update for large bodies (every 10 MB)
+					if (cgi->bytesWritten % (10 * 1024 * 1024) == 0 || body.size() < 1024 * 1024) {
+						std::cout << "[CGI] Progress: " << (cgi->bytesWritten / (1024.0 * 1024.0)) 
+						          << " MB / " << (body.size() / (1024.0 * 1024.0)) 
+						          << " MB (" << (cgi->bytesWritten * 100 / body.size()) << "%)" << std::endl;
+					}
+					
+					std::cerr << "[CGI] Writing to stdin: " << cgi->bytesWritten << "/" << body.size() << " bytes (remaining: " << remaining << ")" << std::endl;
+					ssize_t written = write(pipeFd, body.c_str() + cgi->bytesWritten, remaining);
+					
+					if (written > 0) {
+						cgi->bytesWritten += written;
+						std::cout << "[CGI] ✓ Wrote " << written << " bytes, total: " << cgi->bytesWritten << "/" << body.size() 
+						          << " (" << (cgi->bytesWritten * 100 / body.size()) << "%)" << std::endl;
+						
+						// Check if all data written
+						if (cgi->bytesWritten >= body.size()) {
+							std::cout << "[CGI] ✓✓✓ ASSERT: All POST data written (" << cgi->bytesWritten << " bytes = " 
+							          << (cgi->bytesWritten / (1024.0 * 1024.0)) << " MB)" << std::endl;
+							cgi->inputWritten = true;
+							close(cgi->pipeIn);
 
-				if (written > 0)
-				{
-					cgi->inputWritten = true;
-					close(cgi->pipeIn);
-
-					// Remove pipeIn from poll
-					for (size_t i = 0; i < _pollFds.size(); ++i)
-						if (_pollFds[i].fd == cgi->pipeIn)
-						{
-							_pollFds.erase(_pollFds.begin() + i);
-							_socketTypes.erase(cgi->pipeIn);
-							break;
+							// Remove pipeIn from poll
+							for (size_t i = 0; i < _pollFds.size(); ++i)
+								if (_pollFds[i].fd == cgi->pipeIn)
+								{
+									_pollFds.erase(_pollFds.begin() + i);
+									_socketTypes.erase(cgi->pipeIn);
+									break;
+								}
+							cgi->pipeIn = -1;
 						}
-					cgi->pipeIn = -1;
+					} else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+						std::cerr << "[CGI] ❌ ASSERT: Write error to stdin: " << strerror(errno) << std::endl;
+					} else if (written < 0) {
+						std::cout << "[CGI] Write would block (EAGAIN), will retry..." << std::endl;
+					}
 				}
 			}
 		}

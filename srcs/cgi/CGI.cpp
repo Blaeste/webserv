@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/16 10:14:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/26 12:29:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 #include <vector>
+#include <cerrno>
 
 // Private method(s)
 std::string CGI::readFromPipe(int fd) {
@@ -62,7 +63,13 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	std::string scriptName = uri;
 	if (pos != std::string::npos)
 		scriptName = uri.substr(0, pos);
-	_env["SCRIPT_NAME"] = scriptName;
+	_env["SCRIPT_NAME"] = "";
+	
+	// PATH_INFO - For 42 tester: use the full URI path (not just relative path)
+	_env["PATH_INFO"] = scriptName;
+	_env["PATH_TRANSLATED"] = match.filePath;
+	std::cout << "[CGI-ENV] PATH_INFO = [" << scriptName << "]" << std::endl;
+	std::cout << "[CGI-ENV] PATH_TRANSLATED = [" << match.filePath << "]" << std::endl;
 
 	// Server info
 	_env["SERVER_NAME"] = match.serverName;
@@ -106,14 +113,28 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 // Public method(s)
 void CGI::parseHeaders(const std::string& output, CGIResult& result) {
+	std::cout << "[CGI] Parsing output (" << output.size() << " bytes = " 
+	          << (output.size() / (1024.0 * 1024.0)) << " MB)" << std::endl;
+	
+	// Truncate display for large outputs
+	std::string displayOutput = output;
+	if (displayOutput.size() > 500) {
+		displayOutput = displayOutput.substr(0, 500) + "... [truncated, total " + intToString(output.size()) + " bytes]";
+	}
+	std::cout << "[CGI] Raw output: [" << displayOutput << "]" << std::endl;
+	
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos) {
 		// No headers separator, treat all as body
+		std::cout << "[CGI] No \\r\\n\\r\\n found, treating all as body" << std::endl;
 		result.output = output;
 		return;
 	}
 	std::string headersBlock = output.substr(0, headersEnd);
 	std::string body = output.substr(headersEnd + 4);
+	
+	std::cout << "[CGI] Headers block: [" << headersBlock << "]" << std::endl;
+	std::cout << "[CGI] Body size: " << body.size() << " bytes (" << (body.size() / (1024.0 * 1024.0)) << " MB)" << std::endl;
 
 	// Parse headers line by line
 	size_t pos = 0;
@@ -123,21 +144,28 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 			lineEnd = headersBlock.length();
 		std::string line = headersBlock.substr(pos, lineEnd - pos);
 
+		std::cout << "[CGI] Parsing header line: [" << line << "]" << std::endl;
+
 		// Check for Status header
 		if (!line.find("Status: ")) {
 			std::string statusLine = line.substr(8); // Skip "Status: "
 			// Extract status code (first 3 digits)
-			if (statusLine.length() >= 3)
+			if (statusLine.length() >= 3) {
 				result.statusCode = parseIntSafe(statusLine.substr(0, 3).c_str(), "CGI status code");
+				std::cout << "[CGI] Found Status: " << result.statusCode << std::endl;
+			}
 		}
 
 		// Check for Content-Type header
-		else if (!line.find("Content-Type: "))
+		else if (!line.find("Content-Type: ")) {
 			result.contentType = line.substr(14); // skip "Content-Type: "
+			std::cout << "[CGI] Found Content-Type: " << result.contentType << std::endl;
+		}
 
 		pos = lineEnd + 2;
 	}
 	result.output = body;
+	std::cout << "[CGI] Final status code: " << result.statusCode << std::endl;
 }
 
 CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request) {
@@ -145,13 +173,14 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	setupEnvironment(match, request);
 	
 	CGIProcess* cgi = new CGIProcess();
+	std::cerr << "[CGI] Starting CGI for: " << match.filePath << std::endl;
 	
 	// Create pipes for CGI communication
 	int pipeOut[2];  // CGI stdout
 	int pipeIn[2];   // CGI stdin
 	
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1) {
-		std::cerr << "CGI: Failed to create pipes" << std::endl;
+		std::cerr << "[CGI] ASSERT: Failed to create pipes" << std::endl;
 		delete cgi;
 		return NULL;
 	}
@@ -160,7 +189,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	pid_t pid = fork();
 	
 	if (pid == -1) {
-		std::cerr << "CGI: Failed to create pipes" << std::endl;
+		std::cerr << "[CGI] ASSERT: Failed to fork" << std::endl;
 		close(pipeOut[0]); close(pipeOut[1]);
 		close(pipeIn[0]); close(pipeIn[1]);
 		delete cgi;
@@ -179,6 +208,14 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		close(pipeIn[0]);
 		close(pipeOut[1]);
 
+		// Get CGI interpreter path and convert to absolute BEFORE chdir
+		std::string interpreter = match.location->getCgiPath();
+		char absoluteInterpreter[PATH_MAX];
+		if (interpreter[0] != '/' && realpath(interpreter.c_str(), absoluteInterpreter)) {
+			interpreter = std::string(absoluteInterpreter);
+			std::cerr << "[CGI-CHILD] Converted interpreter to absolute path: " << interpreter << std::endl;
+		}
+
 		// Change to script directory for relative path access
 		std::string scriptPath = match.filePath;
 		std::string scriptName = scriptPath; // Will hold just the filename after chdir
@@ -186,6 +223,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		if (lastSlash != std::string::npos) {
 			std::string scriptDir = scriptPath.substr(0, lastSlash);
 			scriptName = scriptPath.substr(lastSlash + 1); // Extract filename only
+			std::cerr << "[CGI-CHILD] Changing directory to: " << scriptDir << std::endl;
 			if (chdir(scriptDir.c_str()) != 0) {
 				std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
 			}
@@ -200,8 +238,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		}
 		envp.push_back(NULL);
 
-		// Execute CGI
-		std::string interpreter = match.location->getCgiPath();
+		// Execute CGI with absolute interpreter path
 		// Use scriptName (basename) after chdir
 		char* argv[] = {
 			const_cast<char*>(interpreter.c_str()),
@@ -209,10 +246,11 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 			NULL
 		};
 
+		std::cerr << "[CGI-CHILD] About to execve: " << interpreter << " " << scriptName << std::endl;
 		execve(interpreter.c_str(), argv, &envp[0]);
 
 		// If execve fails
-		std::cerr << "CGI: execve failed" << std::endl;
+		std::cerr << "CGI: execve failed for: " << interpreter << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;
 		exit(1);
 	}
 
@@ -229,8 +267,14 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	fcntl(cgi->pipeIn, F_SETFL, O_NONBLOCK);
 
 	// If POST request, mark that we need to write body
-	if (request.getMethod() == "POST" && !request.getBody().empty())
+	if (request.getMethod() == "POST" && !request.getBody().empty()) {
 		cgi->inputWritten = false;
+		cgi->bytesWritten = 0;
+		std::cout << "[CGI] ============================================" << std::endl;
+		std::cout << "[CGI] POST body size to write: " << request.getBody().size() << " bytes" << std::endl;
+		std::cout << "[CGI] POST body size to write: " << (request.getBody().size() / (1024.0 * 1024.0)) << " MB" << std::endl;
+		std::cout << "[CGI] ============================================" << std::endl;
+	}
 	else {
 		cgi->inputWritten = true;
 		close(cgi->pipeIn);

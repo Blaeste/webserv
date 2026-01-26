@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/06 13:54:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/26 12:05:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,7 @@ struct RouteMatch {
 
 	const Location* location;
 	std::string filePath;
+	std::string pathInfo; // Relative path for CGI PATH_INFO
 	bool isRedirect;
 	std::string redirectUrl;
 	int statusCode;

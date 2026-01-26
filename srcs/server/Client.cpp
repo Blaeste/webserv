@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/22 18:21:40 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/26 12:34:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,13 +17,15 @@
 #include "../utils/Logger.hpp"
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
+#include <cerrno>
+#include <cstring>
 #include <iostream>
 #include <sys/socket.h>
 #include <unistd.h>
 
 // Constructor: initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_IDLE), _cgiProcess(NULL)
+	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_IDLE), _cgiProcess(NULL), _bytesSent(0)
 {
 }
 
@@ -292,23 +294,51 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 
 bool Client::sendResponse()
 {
-	std::string rawResponse = _response.build();
+	// Build response only once and cache it
+	if (_cachedResponse.empty()) {
+		_cachedResponse = _response.build();
+		_bytesSent = 0;
+		std::cout << "[Client] Prepared response: " << _cachedResponse.size() << " bytes (" 
+		          << (_cachedResponse.size() / (1024.0 * 1024.0)) << " MB)" << std::endl;
+	}
 
-	// Send with partial send handling
-	ssize_t totalSent = 0;
-	ssize_t remaining = rawResponse.size();
+	// Send remaining data
+	size_t remaining = _cachedResponse.size() - _bytesSent;
 	while (remaining > 0)
 	{
-		ssize_t sent = send(_socket, rawResponse.data() + totalSent, remaining, 0);
+		ssize_t sent = send(_socket, _cachedResponse.data() + _bytesSent, remaining, 0);
 		if (sent < 0)
 		{
-			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << std::endl;
+			if (errno == EAGAIN || errno == EWOULDBLOCK) {
+				std::cout << "[Client] send would block, sent " << _bytesSent << "/" << _cachedResponse.size() 
+				          << " bytes (" << (_bytesSent * 100 / _cachedResponse.size()) << "%) - will retry" << std::endl;
+				return false; // Not done yet, will retry on next POLLOUT
+			}
+			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << " errno=" << errno 
+			          << " (" << strerror(errno) << ")" << std::endl;
 			return false;
 		}
-		if (!sent)
+		if (sent == 0)
 			break; // Connection closed by peer
-		totalSent += sent;
+		
+		_bytesSent += sent;
 		remaining -= sent;
+		
+		// Progress update for large responses (every 10 MB)
+		if (_cachedResponse.size() > 1024 * 1024 && _bytesSent % (10 * 1024 * 1024) < (size_t)sent) {
+			std::cout << "[Client] Send progress: " << (_bytesSent / (1024.0 * 1024.0)) << " MB / " 
+			          << (_cachedResponse.size() / (1024.0 * 1024.0)) << " MB (" 
+			          << (_bytesSent * 100 / _cachedResponse.size()) << "%)" << std::endl;
+		}
 	}
-	return (!remaining); // true if everything was sent
+	
+	if (remaining == 0) {
+		std::cout << "[Client] ✓✓✓ Sent complete response: " << _bytesSent << "/" << _cachedResponse.size() 
+		          << " bytes (100%)" << std::endl;
+		_cachedResponse.clear(); // Free memory
+		_bytesSent = 0;
+		return true;
+	}
+	
+	return false; // Not complete yet
 }
