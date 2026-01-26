@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/16 10:25:31 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/26 13:25:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,8 @@ Location::Location() :
 	_uploadPath(""),
 	_redirect(""),
 	_cgiExtension(""),
-	_cgiPath("")
+	_cgiPath(""),
+	_maxBodySize(0)
 {
 	_allowedMethods.reserve(3); // GET POST DELETE
 	_index.reserve(4); // generaly no more
@@ -88,6 +89,11 @@ void Location::setCgiPath(const std::string &path)
 	_cgiPath = path;
 }
 
+void Location::setMaxBodySize(size_t size)
+{
+	_maxBodySize = size;
+}
+
 // Getter(s)
 const std::string &Location::getPath() const
 {
@@ -133,7 +139,10 @@ const std::string &Location::getCgiPath() const
 {
 	return _cgiPath;
 }
-
+size_t Location::getMaxBodySize() const
+{
+	return _maxBodySize;
+}
 // Public Method(s)
 bool Location::isMethodAllowed(const std::string &method) const {
 	return std::find(_allowedMethods.begin(), _allowedMethods.end(), method)

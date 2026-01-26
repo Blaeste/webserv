@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/16 10:04:40 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/01/26 13:31:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,20 +33,21 @@ class Location
 			std::string _redirect; // "" or URL redirection
 			std::string _cgiExtension; // ".php"
 			std::string _cgiPath; // "usr/bin/php-cgi"
+		size_t _maxBodySize; // 0 = use server default
 
-	public:
+public:
 
-		// Default constructor
+	// Default constructor
 
-			Location();
+		Location();
 
-		// Setter(s) => set replace val, add add val
+	// Setter(s) => set replace val, add add val
 
-			/**
-			 * @brief Sets the path of the location.
-			 * @param path The path to set (e.g., "/uploads").
-			 */
-			void setPath(const std::string &path);
+		/**
+		 * @brief Sets the path of the location.
+		 * @param path The path to set (e.g., "/uploads").
+		 */
+		void setPath(const std::string &path);
 
 			/**
 			 * @brief Sets the root directory for this location.
@@ -96,25 +97,31 @@ class Location
 			 */
 			void setCgiPath(const std::string &path);
 
-		// Getter(s)
+		/**
+		 * @brief Sets the maximum body size for this location.
+		 * @param size Maximum body size in bytes (0 = use server default).
+		 */
+		void setMaxBodySize(size_t size);
 
-			/**
-			 * @brief Gets the path of the location.
-			 * @return The path as a string.
-			 */
-			const std::string &getPath() const;
+	// Getter(s)
 
-			/**
-			 * @brief Gets the root directory.
-			 * @return The root directory as a string.
-			 */
-			const std::string &getRoot() const;
+		/**
+		 * @brief Gets the path of the location.
+		 * @return The path as a string.
+		 */
+		const std::string &getPath() const;
 
-			/**
-			 * @brief Gets the list of allowed HTTP methods.
-			 * @return A constant reference to a vector of allowed methods.
-			 */
-			const std::vector<std::string> &getAllowedMethods() const;
+		/**
+		 * @brief Gets the root directory.
+		 * @return The root directory as a string.
+		 */
+		const std::string &getRoot() const;
+
+		/**
+		 * @brief Gets the list of allowed HTTP methods.
+		 * @return A constant reference to a vector of allowed methods.
+		 */
+		const std::vector<std::string> &getAllowedMethods() const;
 
 			/**
 			 * @brief Gets the list of index files.
@@ -152,13 +159,20 @@ class Location
 			 */
 			const std::string &getCgiPath() const;
 
-		// Public method(s)
-
 			/**
-			 * @brief Checks if a given HTTP method is allowed in this location.
-			 * @param method The HTTP method to check (e.g., "GET", "POST").
-			 * @return true if the method is allowed, false otherwise.
+			 * @brief Gets the maximum body size for this location.
+			 * @return Maximum body size in bytes (0 = use server default).
 			 */
-			bool isMethodAllowed(const std::string &method) const;
+			size_t getMaxBodySize() const;
+
+	// Public method(s)
+
+		/**
+		 * @brief Checks if a given HTTP method is allowed in this location.
+		 * @param method The HTTP method to check (e.g., "GET", "POST").
+		 * @return true if the method is allowed, false otherwise.
+		 */
+		bool isMethodAllowed(const std::string &method) const;
 
 };
+

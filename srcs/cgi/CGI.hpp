@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:39:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/26 11:45:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,9 +32,10 @@ struct CGIProcess {
 	time_t startTime;
 	std::string output;
 	bool inputWritten; // true when POST body fully written
+	size_t bytesWritten; // Number of bytes written so far
 
 	// Default constructor
-	CGIProcess() : pid(-1), pipeOut(-1), pipeIn(-1), startTime(0), inputWritten(false) {}
+	CGIProcess() : pid(-1), pipeOut(-1), pipeIn(-1), startTime(0), inputWritten(false), bytesWritten(0) {}
 
 };
 

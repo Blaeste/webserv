@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/01/22 14:07:36 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/26 14:04:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -139,6 +139,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			}
 
 			match.filePath = match.location->getRoot() + relativePath;
+			match.pathInfo = relativePath; // Store for CGI PATH_INFO
 
 			std::cout << "PATH:" << match.filePath << std::endl; // DEBUG
 
@@ -170,7 +171,8 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			{
 				try
 				{
-					if (cgiExt == getFileExtension(match.filePath))
+				// CGI works for both GET and POST requests
+				if (cgiExt == getFileExtension(match.filePath))
 						match.isCGI = true;
 				}
 				catch (const std::exception &e)
