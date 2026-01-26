@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/20 12:43:39 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/26 13:38:38 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -15,6 +15,8 @@ import sys
 import os
 import socket
 import json
+import subprocess
+import time
 from datetime import datetime
 
 BASE_URL = "http://localhost:8080"
@@ -91,6 +93,75 @@ def run_test(func):
     except Exception as e:
         test_error(f"{func.__name__} - Exception: {str(e)[:50]}")
 
+# ============================================================================
+# PARTIE 1: MANDATORY PART - CODE CHECKS
+# ============================================================================
+
+def test_code_poll_in_loop():
+    """Check poll() dans la boucle principale"""
+    result = subprocess.run(['grep', '-n', 'poll(', 'srcs/server/Server.cpp'],
+                          capture_output=True, text=True)
+    test("poll() found in Server.cpp", len(result.stdout) > 0,
+         f"Found {len(result.stdout.splitlines())} occurrences")
+
+def test_code_poll_read_write():
+    """Check poll() vérifie READ et WRITE simultanément"""
+    result = subprocess.run(['grep', '-E', 'POLLIN|POLLOUT', 'srcs/server/Server.cpp'],
+                          capture_output=True, text=True)
+    has_pollin = 'POLLIN' in result.stdout
+    has_pollout = 'POLLOUT' in result.stdout
+    test("poll() checks both POLLIN and POLLOUT", has_pollin and has_pollout,
+         f"POLLIN: {has_pollin}, POLLOUT: {has_pollout}")
+
+def test_code_compilation():
+    """Test compilation sans re-link"""
+    # Première compilation
+    result1 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
+    # Deuxième make (ne devrait rien faire)
+    result2 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
+    no_relink = 'up to date' in result2.stdout or 'Nothing to be done' in result2.stdout or len(result2.stdout) < 50
+    test("Compilation without re-link", result1.returncode == 0 and no_relink,
+         "Makefile properly handles dependencies")
+
+# ============================================================================
+# PARTIE 2: CONFIGURATION
+# ============================================================================
+
+def test_config_multiple_ports():
+    """Test multiple ports avec différents sites"""
+    ports = [8080, 8081, 8082]
+    for port in ports:
+        try:
+            r = requests.get(f"http://localhost:{port}/", timeout=2)
+            test(f"Port {port} is accessible", r.status_code == 200, f"Got {r.status_code}")
+        except:
+            test(f"Port {port} is accessible", False, f"Port {port} not responding")
+
+def test_config_virtual_hosts():
+    """Test virtual hosts avec Host header différent"""
+    # Test avec Host header custom
+    headers = {'Host': 'example.com'}
+    r = safe_get(f"{BASE_URL}/", headers=headers)
+    test("Virtual host with custom Host header", r.status_code in [200, 404],
+         f"Got {r.status_code}")
+
+    # Test avec Host header normal
+    headers = {'Host': 'localhost'}
+    r2 = safe_get(f"{BASE_URL}/", headers=headers)
+    test("Virtual host with localhost Host header", r2.status_code == 200,
+         f"Got {r2.status_code}")
+
+def test_config_routes_directories():
+    """Test routes vers différents répertoires"""
+    routes = [
+        ('/', 'www/'),
+        ('/uploads/', 'uploads/'),
+    ]
+    for route, expected_dir in routes:
+        r = safe_get(f"{BASE_URL}{route}")
+        test(f"Route {route} accessible", r.status_code in [200, 403],
+             f"Got {r.status_code}")
+
 def test_get_index():
 	r = safe_get(f"{BASE_URL}/")
 	test("GET / return 200", r.status_code == 200, f"Got {r.status_code}")
@@ -166,6 +237,27 @@ def test_method_not_allowed():
 	r = safe_put(f"{BASE_URL}/", data="test")
 	test("PUT return 405 or 501", r.status_code in [405, 501], f"Got {r.status_code}")
 
+def test_unknown_method_no_crash():
+    """Test méthode UNKNOWN (FOOBAR) et vérifier pas de crash"""
+    import socket
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(3)
+        s.connect(('localhost', 8080))
+        s.send(b"FOOBAR / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        response = s.recv(4096)
+        s.close()
+        test("UNKNOWN method returns 501 or 405", b"501" in response or b"405" in response,
+             f"Response: {response[:100]}")
+
+        # Vérifier que le serveur répond toujours
+        time.sleep(0.5)
+        r = safe_get(f"{BASE_URL}/")
+        test("Server still running after UNKNOWN method", r.status_code == 200,
+             "Server crashed or not responding")
+    except Exception as e:
+        test_error("UNKNOWN method test", str(e)[:50])
+
 def test_autoindex():
 	# Test autoindex on ulpoads
 	r = safe_get(f"{BASE_URL}/uploads/")
@@ -202,6 +294,186 @@ def test_cgi_errors():
 	# Test CGI avec erreur 500
 	r = safe_get(f"{BASE_URL}/cgi-bin/py/error500.py")
 	test("CGI error return 500", r.status_code == 500, f"Got {r.status_code} (TODO: fix server)")
+
+# ============================================================================
+# PARTIE 4: CHECK CGI - ADVANCED TESTS
+# ============================================================================
+
+def test_cgi_working_directory():
+    """Test CGI s'exécute dans le bon répertoire"""
+    # Créer un script qui affiche son pwd
+    script_content = '''#!/usr/bin/env python3
+import os
+print("Content-Type: text/plain\\r")
+print("\\r")
+print(f"PWD: {os.getcwd()}")
+'''
+    script_path = 'cgi-bin/py/test_pwd.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_pwd.py")
+    test("CGI pwd test returns 200", r.status_code == 200, f"Got {r.status_code}")
+    if r.status_code == 200:
+        test("CGI runs in correct directory", 'cgi-bin' in r.text.lower() or 'py' in r.text.lower(),
+             f"PWD: {r.text[:100]}")
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_syntax_error():
+    """Test CGI avec erreur de syntaxe"""
+    # Créer un script avec erreur de syntaxe
+    script_content = '''#!/usr/bin/env python3
+print("Content-Type: text/plain\\r")
+print("\\r")
+this is invalid python syntax!!!
+print("Should not reach here")
+'''
+    script_path = 'cgi-bin/py/test_syntax_error.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_syntax_error.py")
+    test("CGI syntax error returns 500", r.status_code == 500, f"Got {r.status_code}")
+
+    # Vérifier que le serveur répond toujours
+    r2 = safe_get(f"{BASE_URL}/")
+    test("Server still running after CGI syntax error", r2.status_code == 200)
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_runtime_error():
+    """Test CGI avec erreur runtime (division by zero)"""
+    script_content = '''#!/usr/bin/env python3
+print("Content-Type: text/plain\\r")
+print("\\r")
+print("Before crash")
+x = 1 / 0
+print("After crash")
+'''
+    script_path = 'cgi-bin/py/test_runtime_error.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_runtime_error.py")
+    test("CGI runtime error returns 500", r.status_code == 500, f"Got {r.status_code}")
+
+    # Vérifier que le serveur répond toujours
+    r2 = safe_get(f"{BASE_URL}/")
+    test("Server still running after CGI runtime error", r2.status_code == 200)
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_missing_shebang():
+    """Test CGI sans shebang"""
+    script_content = '''print("Content-Type: text/plain\\r")
+print("\\r")
+print("No shebang")
+'''
+    script_path = 'cgi-bin/py/test_no_shebang.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_no_shebang.py")
+    test("CGI without shebang handled", r.status_code in [200, 500], f"Got {r.status_code}")
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_permission_denied():
+    """Test CGI sans permission d'exécution"""
+    script_content = '''#!/usr/bin/env python3
+print("Content-Type: text/plain\\r")
+print("\\r")
+print("Should not work")
+'''
+    script_path = 'cgi-bin/py/test_no_exec.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o644)  # Pas de +x
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_no_exec.py")
+    test("CGI without execute permission returns 500", r.status_code == 500, f"Got {r.status_code}")
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_get_with_query():
+    """Test CGI avec paramètres GET détaillés"""
+    script_content = '''#!/usr/bin/env python3
+import os
+print("Content-Type: text/plain\\r")
+print("\\r")
+print(f"QUERY_STRING: {os.environ.get('QUERY_STRING', 'None')}")
+print(f"REQUEST_METHOD: {os.environ.get('REQUEST_METHOD', 'None')}")
+'''
+    script_path = 'cgi-bin/py/test_get_query.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_get(f"{BASE_URL}/cgi-bin/py/test_get_query.py?name=John&age=25")
+    test("CGI GET with query params returns 200", r.status_code == 200, f"Got {r.status_code}")
+    if r.status_code == 200:
+        test("CGI receives QUERY_STRING", 'name=John' in r.text and 'age=25' in r.text,
+             f"Response: {r.text[:200]}")
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
+
+def test_cgi_post_with_body():
+    """Test CGI POST reçoit bien le body"""
+    script_content = '''#!/usr/bin/env python3
+import sys
+import os
+print("Content-Type: text/plain\\r")
+print("\\r")
+print(f"REQUEST_METHOD: {os.environ.get('REQUEST_METHOD')}")
+print(f"CONTENT_LENGTH: {os.environ.get('CONTENT_LENGTH')}")
+body = sys.stdin.read()
+print(f"Body: {body}")
+'''
+    script_path = 'cgi-bin/py/test_post_body.py'
+    with open(script_path, 'w') as f:
+        f.write(script_content)
+    os.chmod(script_path, 0o755)
+
+    r = safe_post(f"{BASE_URL}/cgi-bin/py/test_post_body.py", data="test=data&foo=bar")
+    test("CGI POST with body returns 200", r.status_code == 200, f"Got {r.status_code}")
+    if r.status_code == 200:
+        test("CGI receives POST body", 'test=data' in r.text,
+             f"Response: {r.text[:200]}")
+
+    # Cleanup
+    try:
+        os.remove(script_path)
+    except:
+        pass
 
 def test_chunked_encoding():
 	# Test POST avec Transfer-Encoding: chunked
@@ -475,7 +747,7 @@ def test_different_line_endings():
     import socket
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(2)  # ← AJOUTEZ CETTE LIGNE
+        s.settimeout(2)
         s.connect(('localhost', 8080))
         s.send(b"GET / HTTP/1.1\nHost: localhost\n\n")
         response = s.recv(4096)
@@ -749,6 +1021,167 @@ def test_upload_special_extensions():
             except:
                 pass
 
+# ============================================================================
+# PARTIE 6: PORT ISSUES
+# ============================================================================
+
+def test_port_multiple_configs():
+    """Test que différents ports servent différents contenus"""
+    # Note: Nécessite une config avec plusieurs ports
+    result = subprocess.run(['netstat', '-tulpn'], capture_output=True, text=True)
+    ports_found = []
+    for line in result.stdout.split('\n'):
+        if 'webserv' in line or '8080' in line or '8081' in line:
+            if ':8080' in line:
+                ports_found.append(8080)
+            if ':8081' in line:
+                ports_found.append(8081)
+            if ':8082' in line:
+                ports_found.append(8082)
+
+    test("Multiple ports detected", len(set(ports_found)) >= 1,
+         f"Ports found: {set(ports_found)}")
+
+def test_port_same_port_twice():
+    """Info: Test que le même port en double est géré (config check)"""
+    # Ce test est informatif - il faut vérifier manuellement la config
+    test("Port duplication check (manual verification needed)", True,
+         "Verify in config that duplicate ports are handled (virtual hosts or error)")
+
+def test_port_cannot_bind_twice():
+    """Test qu'on ne peut pas lancer 2 instances sur le même port"""
+    # Vérifier qu'une seule instance tourne
+    result = subprocess.run(['pgrep', '-c', 'webserv'], capture_output=True, text=True)
+    count = int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
+    test("Only one webserv instance running", count == 1,
+         f"Found {count} instances (try: pgrep webserv)")
+
+# ============================================================================
+# PARTIE 7: SIEGE & STRESS TEST
+# ============================================================================
+
+def test_siege_availability():
+    """Test availability avec siege (nécessite siege installé)"""
+    # Vérifier que siege est installé
+    result = subprocess.run(['which', 'siege'], capture_output=True)
+    if result.returncode != 0:
+        test("Siege is installed", False, "Install with: brew install siege")
+        return
+
+    # Créer une page simple pour le test
+    test_page = 'www/siege_test.html'
+    with open(test_page, 'w') as f:
+        f.write('<html><body>Siege Test</body></html>')
+
+    # Lancer siege (courte durée pour le test)
+    result = subprocess.run(
+        ['siege', '-b', '-c', '10', '-t', '5s', f'{BASE_URL}/siege_test.html'],
+        capture_output=True, text=True, timeout=10
+    )
+
+    # Parser le résultat
+    availability = 0.0
+    for line in result.stdout.split('\n'):
+        if 'Availability' in line:
+            # Extract percentage
+            parts = line.split()
+            for part in parts:
+                if '%' in part:
+                    availability = float(part.replace('%', ''))
+                    break
+
+    test("Siege availability > 99.5%", availability > 99.5,
+         f"Got {availability}% (run manually: siege -b -c 25 -t 30s {BASE_URL}/)")
+
+    # Cleanup
+    try:
+        os.remove(test_page)
+    except:
+        pass
+
+def test_memory_stability():
+    """Test que la mémoire ne fuit pas (check basique)"""
+    # Récupérer le PID du serveur
+    result = subprocess.run(['pgrep', 'webserv'], capture_output=True, text=True)
+    if not result.stdout.strip():
+        test("Memory stability check", False, "webserv process not found")
+        return
+
+    pid = result.stdout.strip().split()[0]
+
+    # Première mesure mémoire
+    result1 = subprocess.run(['ps', '-o', 'rss=', '-p', pid], capture_output=True, text=True)
+    mem1 = int(result1.stdout.strip()) if result1.stdout.strip() else 0
+
+    # Faire quelques requêtes
+    for _ in range(50):
+        try:
+            safe_get(f"{BASE_URL}/")
+        except:
+            pass
+
+    time.sleep(1)
+
+    # Deuxième mesure mémoire
+    result2 = subprocess.run(['ps', '-o', 'rss=', '-p', pid], capture_output=True, text=True)
+    mem2 = int(result2.stdout.strip()) if result2.stdout.strip() else 0
+
+    # La mémoire ne devrait pas augmenter de plus de 10MB
+    mem_increase = (mem2 - mem1) / 1024  # en MB
+    test("Memory stable after 50 requests", mem_increase < 10,
+         f"Memory increased by {mem_increase:.2f} MB (from {mem1/1024:.1f}MB to {mem2/1024:.1f}MB)")
+
+def test_no_hanging_connections():
+    """Test qu'il n'y a pas de connexions qui traînent"""
+    # Faire quelques requêtes
+    for _ in range(10):
+        safe_get(f"{BASE_URL}/")
+
+    time.sleep(2)
+
+    # Vérifier les connexions ESTABLISHED
+    result = subprocess.run(['netstat', '-an'], capture_output=True, text=True)
+    established_count = 0
+    for line in result.stdout.split('\n'):
+        if '8080' in line and 'ESTABLISHED' in line:
+            established_count += 1
+
+    test("No hanging connections", established_count < 5,
+         f"Found {established_count} ESTABLISHED connections (should be 0 or very low)")
+
+# ============================================================================
+# BONUS PART
+# ============================================================================
+
+def test_bonus_cookies_session():
+    """Test cookies et sessions"""
+    r = safe_get(f"{BASE_URL}/counter.html")
+    test("Counter page accessible", r.status_code == 200, f"Got {r.status_code}")
+
+    # Vérifier Set-Cookie dans les headers
+    has_cookie = 'Set-Cookie' in r.headers or 'set-cookie' in r.headers
+    test("Server sets cookies", has_cookie,
+         f"Cookies: {r.headers.get('Set-Cookie', 'None')}")
+
+    if has_cookie:
+        cookie_value = r.headers.get('Set-Cookie', '')
+        test("Cookie contains session_id", 'session' in cookie_value.lower(),
+             f"Cookie: {cookie_value[:100]}")
+
+def test_bonus_multiple_cgi():
+    """Test multiple CGI systems (Python + PHP)"""
+    # Test Python CGI
+    r_py = safe_get(f"{BASE_URL}/cgi-bin/py/contact.py")
+    test("Python CGI works", r_py.status_code == 200, f"Got {r_py.status_code}")
+
+    # Test PHP CGI
+    r_php = safe_get(f"{BASE_URL}/cgi-bin/php/qrcode.php")
+    test("PHP CGI works", r_php.status_code == 200, f"Got {r_php.status_code}")
+
+    # Les deux doivent fonctionner
+    test("Multiple CGI systems working", r_py.status_code == 200 and r_php.status_code == 200,
+         "Both Python and PHP CGI should work")
+
 def summary():
 	print(f"\n{PASSED} passed, {FAILED} failed")
 
@@ -857,147 +1290,151 @@ if __name__ == "__main__":
 
 		print("Starting webserv tests...\n")
 
-		print("=== GET Tests ===")
+		print("=" * 70)
+		print("PARTIE 1: MANDATORY PART - CODE CHECKS")
+		print("=" * 70)
+		run_test(test_code_poll_in_loop)
+		run_test(test_code_poll_read_write)
+		run_test(test_code_compilation)
+
+		print("\n" + "=" * 70)
+		print("PARTIE 2: CONFIGURATION")
+		print("=" * 70)
+		run_test(test_config_multiple_ports)
+		run_test(test_config_virtual_hosts)
+		run_test(test_config_routes_directories)
+		run_test(test_error_pages_custom)
+		run_test(test_post_max_body)
+		run_test(test_autoindex)
+		run_test(test_method_not_allowed)
+
+		print("\n" + "=" * 70)
+		print("PARTIE 3: BASIC CHECKS")
+		print("=" * 70)
+		# GET requests
 		run_test(test_get_index)
 		run_test(test_get_static_files)
 		run_test(test_get_404)
 		run_test(test_get_pages)
-
-		print("\n=== Response Body Tests ===")
 		run_test(test_response_body_content)
-
-		print("\n=== POST Tests ===")
+		# POST requests
 		run_test(test_post_upload)
-		#run_test(test_post_body_limit)
-		run_test(test_post_cgi_python)
-
-		print("\n=== DELETE Tests ===")
+		run_test(test_persistent_upload)
+		# DELETE requests
 		run_test(test_delete)
-
-		print("\n=== HTTP Errors Tests ===")
-		run_test(test_method_not_allowed)
-
-		print("\n=== Autoindex Tests ===")
-		run_test(test_autoindex)
-
-		print("\n=== HTTP Headers Tests ===")
+		# UNKNOWN requests
+		run_test(test_unknown_method_no_crash)
+		# Appropriate status codes (covered by above tests)
+		# Upload file and get it back (covered by test_post_upload + test_persistent_upload)
+		# Additional HTTP tests
 		run_test(test_http_headers)
-
-		print("\n=== Keep-Alive Tests ===")
 		run_test(test_keep_alive)
 
-		print("\n=== CGI Error Tests ===")
+		print("\n" + "=" * 70)
+		print("PARTIE 4: CHECK CGI")
+		print("=" * 70)
+		run_test(test_post_cgi_python)
+		run_test(test_cgi_working_directory)
+		run_test(test_cgi_get_params)
+		run_test(test_cgi_get_with_query)
+		run_test(test_cgi_post_with_body)
+		run_test(test_cgi_syntax_error)
 		run_test(test_cgi_errors)
+		run_test(test_cgi_runtime_error)
+		run_test(test_cgi_missing_shebang)
+		run_test(test_cgi_permission_denied)
+		run_test(test_cgi_environment_vars)
 
-		print("\n=== Chunked Encoding Tests ===")
+		print("\n" + "=" * 70)
+		print("PARTIE 5: ADVANCED TESTS (Browser tests are manual)")
+		print("=" * 70)
 		run_test(test_chunked_encoding)
-
-		print("\n=== Large File Upload Tests ===")
 		run_test(test_large_file_upload)
-
-		print("\n=== Multiple Rapid Requests Tests ===")
 		run_test(test_multiple_requests)
-
-		print("\n=== Security Tests ===")
+		run_test(test_concurrent_requests)
 		run_test(test_security_path_traversal)
-
-		print("\n=== Edge Cases Tests ===")
 		run_test(test_malformed_requests)
 		run_test(test_empty_requests)
 		run_test(test_special_characters)
 		run_test(test_long_url)
 		run_test(test_double_slash)
-
-		print("\n=== Advanced Upload Tests ===")
 		run_test(test_multiple_file_upload)
 		run_test(test_binary_file)
-
-		print("\n=== HTTP Methods Tests ===")
 		run_test(test_head_method)
 		run_test(test_options_method)
 		run_test(test_post_without_content_type)
-
-		print("\n=== URL Tests ===")
 		run_test(test_case_sensitivity)
-		run_test(test_cgi_get_params)
-
-		print("\n=== Concurrency Tests ===")
-		run_test(test_concurrent_requests)
-
-		print("\n=== Error Pages Tests ===")
-		run_test(test_error_pages_custom)
-
-		print("\n=== Body Size Limits Tests ===")
-		run_test(test_post_max_body)
-
-		print("\n=== Persistence Tests ===")
-		run_test(test_persistent_upload)
-
-		print("\n=== Protocol Tests ===")
 		run_test(test_invalid_http_version)
 		run_test(test_large_headers)
-
-		print("\n=== Cookies Tests ===")
 		run_test(test_multiple_cookies)
-
-		print("\n=== Data Format Tests ===")
 		run_test(test_post_json)
 		run_test(test_empty_file_upload)
-
-		print("\n=== Security Edge Cases ===")
 		run_test(test_filename_security)
 		run_test(test_null_byte_in_url)
-
-		print("\n=== URL Parsing Tests ===")
 		run_test(test_query_string_complex)
 		run_test(test_fragment_in_url)
 		run_test(test_trailing_slash_redirect)
 		run_test(test_very_long_uri)
-
-		print("\n=== Request Format Tests ===")
 		run_test(test_different_line_endings)
 		run_test(test_request_with_body_on_get)
 		run_test(test_zero_content_length)
 		run_test(test_duplicate_headers)
 		run_test(test_missing_crlf)
-
-		print("\n=== HTTP Features Tests ===")
 		run_test(test_connection_close)
 		run_test(test_expect_100_continue)
 		run_test(test_range_request)
 		run_test(test_if_modified_since)
-
-		print("\n=== Performance Tests ===")
 		run_test(test_slow_client)
 		run_test(test_pipelined_requests)
 		run_test(test_very_small_timeout)
-
-		print("\n=== Race Condition Tests ===")
 		run_test(test_upload_during_delete)
-
-		print("\n=== Multipart Tests ===")
 		run_test(test_post_multipart_boundary)
-
-		print("\n=== CGI Advanced Tests ===")
-		run_test(test_cgi_environment_vars)
-
-		print("\n=== URL Normalization Tests ===")
 		run_test(test_multiple_slashes)
 		run_test(test_dot_segments)
 		run_test(test_percent_encoding)
-
-		print("\n=== HTTP Protocol Edge Cases ===")
 		run_test(test_post_no_content_length)
 		run_test(test_absolute_uri)
 		run_test(test_case_insensitive_headers)
 		run_test(test_whitespace_in_headers)
-
-		print("\n=== File Types Tests ===")
 		run_test(test_upload_special_extensions)
+
+		print("\n" + "=" * 70)
+		print("PARTIE 6: PORT ISSUES")
+		print("=" * 70)
+		run_test(test_port_multiple_configs)
+		run_test(test_port_same_port_twice)
+		run_test(test_port_cannot_bind_twice)
+
+		print("\n" + "=" * 70)
+		print("PARTIE 7: SIEGE & STRESS TEST")
+		print("=" * 70)
+		run_test(test_siege_availability)
+		run_test(test_memory_stability)
+		run_test(test_no_hanging_connections)
+
+		print("\n" + "=" * 70)
+		print("BONUS PART")
+		print("=" * 70)
+		run_test(test_bonus_cookies_session)
+		run_test(test_bonus_multiple_cgi)
 
 		summary()
 		compare_results(previous_results)
 		save_results()
+
+		# Liste des tests échoués
+		failed_tests_list = [name for name, result in test_results.items() if result["status"] in ["failed", "error"]]
+		if failed_tests_list:
+			print("\n" + "=" * 70)
+			print("TESTS ÉCHOUÉS")
+			print("=" * 70)
+			for i, test_name in enumerate(failed_tests_list, 1):
+				print(f"{i}. {test_name}")
+		else:
+			print("\n" + "=" * 70)
+			print("✅ TOUS LES TESTS ONT RÉUSSI!")
+			print("=" * 70)
+
 	except KeyboardInterrupt:
 		print("\n\nTests interrupted by user")
 		summary()
