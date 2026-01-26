@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/26 12:34:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/26 13:25:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -199,8 +199,15 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	struct timeval start, end;
 	gettimeofday(&start, NULL);
 
-	// Check body size limit
-	if (_request.getBody().size() > config.getMaxBodySize())
+	// Match route to get location-specific settings
+	RouteMatch match = router.matchRoute(config, _request);
+
+	// Check body size limit (use location limit if set, otherwise server limit)
+	size_t maxBodySize = match.location->getMaxBodySize();
+	if (maxBodySize == 0)
+		maxBodySize = config.getMaxBodySize();
+
+	if (_request.getBody().size() > maxBodySize)
 	{
 		buildErrorResponse(413);
 		markCloseAfterResponse();
@@ -232,10 +239,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		return;
 	}
 
-	// Continue with normal routing
-	RouteMatch match = router.matchRoute(config, _request);
-
-	// Handle redirections
+	// Handle redirections (reuse match from above)
 	if (!match.redirectUrl.empty())
 	{
 		_response.setStatus(match.statusCode);
@@ -255,6 +259,14 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
 		_response.handleUpload(_request, match.location->getUploadPath());
 
+	// Handle simple POST without files (return 200 OK)
+	else if (_request.getMethod() == "POST")
+	{
+		_response.setStatus(200);
+		_response.setHeader("Content-Type", "text/plain");
+		_response.setBody("OK");
+	}
+		
 	// Serve directory listing if autoindex is enabled
 	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
 		_response.serveDirectoryListing(match.filePath, _request.getUri());
