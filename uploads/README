@@ -1,0 +1,46 @@
+Bienvenue sur votre session personnelle de 42 Mulhouse.\n\nVous devez surveiller la consommation de vos ressources et sauvegarder régulièrement vos données sur un second espace (Git, Drive, USB...). Pour verrouiller votre session, vous pouvez utiliser la touche F14.\n\nBonne piscine !
+
+Le Bluetooth est désactivé par défaut. Vous pouvez utiliser `bluetoothctl` dans votre `login.sh` pour exécuter `power on`, puis `connect [id]` à votre device.
+
+Les commandes suivantes vous permettent d'installer les versions de vos choix :
+ - **Python** `pyenv` https://github.com/pyenv/pyenv
+ - **Node.js** `nvm` https://github.com/nvm-sh/nvm
+ - **Ruby** `rvm` https://github.com/rvm/rvm
+ - **Rust** `rustup` https://rust-lang.github.io/rustup/
+ - **Go** `g` https://github.com/voidint/g
+ - **Java** `sdk` https://sdkman.io/
+
+**ft_lock** (touche **F14**) est l'outil permettant de verrouiller votre session. Il est configuré pour se déconnecter automatiquement après **42 minutes** d'inactivité.  
+
+Vous pouvez éditer le fichier `/etc/hosts`. Toutefois, ces modifications seront effacées à chaque connexion/déconnexion. Pour les rendre persistantes, ajoutez-les à `$HOME/login.sh`.  
+
+**Sublime Text** a été déconnecté du réseau afin d'éviter les pop-ups intempestifs. Pour installer vos plugins, réactivez temporairement le réseau avec :  
+```bash
+flatpak override --user --share=network com.sublimetext.three
+```  
+
+Les **navigateurs** sont automatiquement mis à jour chaque matin et les **IDEs** chaque lundi. **Docker**, **VirtualBox** et **Unity** sont mis à jour **manuellement sur demande**.  
+Les applications installées via **ftpkg** sont mises à jour automatiquement en arrière-plan. Vous pouvez demander au **Bocal** d'en ajouter d'autres si elles sont disponibles sur [Flathub](https://flathub.org/).  
+
+Les données de **/goinfre** sont supprimées dès que l'espace disque des iMacs dépasse **90 %**. Le disque de votre **HOME** n'est pas concerné.  
+
+**Raccourcis clavier** :  
+- **Verrouiller l’écran** : F14  
+- **Se déconnecter** : F15  
+
+Pour réinitialiser votre session :  
+```bash
+touch $HOME/.reset
+```  
+
+Le **shell par défaut** est **zsh**, accompagné du framework **Oh My Zsh** et des plugins suivants :  
+- `zsh-autosuggestions`  
+- `zsh-syntax-highlighting`  
+- `bash-insulter`  
+
+Les plugins d’IDE suivants, dédiés aux **Headers** et à la **Norminette**, sont installés lors de l'initialisation de votre HOME :  
+- [Sublime Text - 42 Headers](https://github.com/Globidev/Sublime-Text-42-Headers)  
+- [VS Code - 42 Header](https://marketplace.visualstudio.com/items?itemName=kube.42header)  
+- [VS Code - Norminette 3](https://marketplace.visualstudio.com/items?itemName=MariusvanWijk-JoppeKoers.codam-norminette-3)  
+- [JetBrains - FT Header](https://plugins.jetbrains.com/plugin/20703-ft-header)  
+- [JetBrains - FT Norminette](https://plugins.jetbrains.com/plugin/20723-ft-norminette)  
