@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/27 13:14:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/27 13:49:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -439,7 +439,7 @@ void Server::handleCGITimeouts()
 			continue;
 
 		// Check if CGI has timed out
-		if (now - cgi->startTime > CGI_TIMEOUT)
+		if (now - cgi->startTime > CGI_EXECUTION_TIMEOUT)
 		{
 			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
 
