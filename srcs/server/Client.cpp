@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/26 13:25:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/27 13:07:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -310,8 +310,6 @@ bool Client::sendResponse()
 	if (_cachedResponse.empty()) {
 		_cachedResponse = _response.build();
 		_bytesSent = 0;
-		std::cout << "[Client] Prepared response: " << _cachedResponse.size() << " bytes (" 
-		          << (_cachedResponse.size() / (1024.0 * 1024.0)) << " MB)" << std::endl;
 	}
 
 	// Send remaining data
@@ -321,11 +319,8 @@ bool Client::sendResponse()
 		ssize_t sent = send(_socket, _cachedResponse.data() + _bytesSent, remaining, 0);
 		if (sent < 0)
 		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK) {
-				std::cout << "[Client] send would block, sent " << _bytesSent << "/" << _cachedResponse.size() 
-				          << " bytes (" << (_bytesSent * 100 / _cachedResponse.size()) << "%) - will retry" << std::endl;
+			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				return false; // Not done yet, will retry on next POLLOUT
-			}
 			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << " errno=" << errno 
 			          << " (" << strerror(errno) << ")" << std::endl;
 			return false;
@@ -335,18 +330,9 @@ bool Client::sendResponse()
 		
 		_bytesSent += sent;
 		remaining -= sent;
-		
-		// Progress update for large responses (every 10 MB)
-		if (_cachedResponse.size() > 1024 * 1024 && _bytesSent % (10 * 1024 * 1024) < (size_t)sent) {
-			std::cout << "[Client] Send progress: " << (_bytesSent / (1024.0 * 1024.0)) << " MB / " 
-			          << (_cachedResponse.size() / (1024.0 * 1024.0)) << " MB (" 
-			          << (_bytesSent * 100 / _cachedResponse.size()) << "%)" << std::endl;
-		}
 	}
 	
-	if (remaining == 0) {
-		std::cout << "[Client] ✓✓✓ Sent complete response: " << _bytesSent << "/" << _cachedResponse.size() 
-		          << " bytes (100%)" << std::endl;
+	if (!remaining) {
 		_cachedResponse.clear(); // Free memory
 		_bytesSent = 0;
 		return true;

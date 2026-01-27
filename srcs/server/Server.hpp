@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 13:00:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/27 12:51:04 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,8 +54,9 @@ class Server {
 			enum {
 				SESSION_TIMEOUT = 1800, // 30 minutes
 				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
-				CLIENT_IDLE_TIMEOUT = 30, // 30 seconds
-				CLIENT_PROCESSING_TIMEOUT = 300 // 5 minutes - timeout for processing/CGI execution
+				CLIENT_IDLE_TIMEOUT = 120, // 2 minutes - temps entre deux requêtes keep-alive
+				CLIENT_PROCESSING_TIMEOUT = 600, // 10 minutes - timeout pour processing/CGI execution
+				CGI_TIMEOUT = 120 // 5 minutes - timeout pour CGI (uploads volumineux, scripts lents)
 			};
 			std::vector<ServerConfig> _configs;
 			std::vector<pollfd> _pollFds;

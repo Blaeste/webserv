@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/26 12:28:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/27 13:14:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -387,7 +387,6 @@ void Server::handleClientWrite(size_t clientIndex)
 	if (!sendComplete) {
 		// Sending not complete (EAGAIN or large response)
 		// Keep POLLOUT active and retry later
-		std::cout << "[Server] Response sending incomplete, will retry on next POLLOUT" << std::endl;
 		return; // Don't close connection yet
 	}
 
@@ -430,7 +429,6 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 
 void Server::handleCGITimeouts()
 {
-	const int CGI_TIMEOUT = 5; // 5 seconds timeout for CGI
 	time_t now = time(NULL);
 
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
@@ -505,15 +503,10 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
 			if (bytes > 0)
-			{
 				cgi->output.append(buffer, bytes);
-				std::cerr << "[CGI] Read " << bytes << " bytes from stdout, total: " << cgi->output.size() << std::endl;
-			}
 			else
 			{
 				// EOF or error - CGI finished
-				// EOF - CGI finished
-				std::cerr << "[CGI] EOF detected, total output: " << cgi->output.size() << " bytes" << std::endl;
 				close(cgi->pipeOut);
 				if (cgi->pipeIn != -1)
 					close(cgi->pipeIn);
@@ -521,7 +514,6 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				// Wait for process to avoid zombie
 				int status;
 				waitpid(cgi->pid, &status, 0);
-				std::cerr << "[CGI] ASSERT: Process exited with status: " << WEXITSTATUS(status) << std::endl;
 
 				// Parse CGI output and build response
 				CGIResult result;
@@ -577,25 +569,12 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				size_t remaining = body.size() - cgi->bytesWritten;
 				
 				if (remaining > 0) {
-					// Progress update for large bodies (every 10 MB)
-					if (cgi->bytesWritten % (10 * 1024 * 1024) == 0 || body.size() < 1024 * 1024) {
-						std::cout << "[CGI] Progress: " << (cgi->bytesWritten / (1024.0 * 1024.0)) 
-						          << " MB / " << (body.size() / (1024.0 * 1024.0)) 
-						          << " MB (" << (cgi->bytesWritten * 100 / body.size()) << "%)" << std::endl;
-					}
-					
-					std::cerr << "[CGI] Writing to stdin: " << cgi->bytesWritten << "/" << body.size() << " bytes (remaining: " << remaining << ")" << std::endl;
 					ssize_t written = write(pipeFd, body.c_str() + cgi->bytesWritten, remaining);
-					
 					if (written > 0) {
 						cgi->bytesWritten += written;
-						std::cout << "[CGI] ✓ Wrote " << written << " bytes, total: " << cgi->bytesWritten << "/" << body.size() 
-						          << " (" << (cgi->bytesWritten * 100 / body.size()) << "%)" << std::endl;
 						
 						// Check if all data written
 						if (cgi->bytesWritten >= body.size()) {
-							std::cout << "[CGI] ✓✓✓ ASSERT: All POST data written (" << cgi->bytesWritten << " bytes = " 
-							          << (cgi->bytesWritten / (1024.0 * 1024.0)) << " MB)" << std::endl;
 							cgi->inputWritten = true;
 							close(cgi->pipeIn);
 
