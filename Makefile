@@ -157,7 +157,7 @@ eval: re
 		    autoindex off;
 		    cgi_extension .bla;
 		    cgi_path ./cgi_tester;
-			client_max_body_size 50M;
+			client_max_body_size 105M;
 		}
 	}
 	EOF

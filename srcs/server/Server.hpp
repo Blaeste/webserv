@@ -54,9 +54,9 @@ class Server {
 			enum {
 				SESSION_TIMEOUT = 1800, // 30 minutes
 				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
-				CLIENT_IDLE_TIMEOUT = 75, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
-				CLIENT_PROCESSING_TIMEOUT = 180, // 3 minutes - request processing timeout, including CGI execution
-				CGI_EXECUTION_TIMEOUT = 90 // 90 seconds - single CGI execution timeout (large uploads, slow scripts)
+				CLIENT_IDLE_TIMEOUT = 175, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
+				CLIENT_PROCESSING_TIMEOUT = 280, // 3 minutes - request processing timeout, including CGI execution
+				CGI_EXECUTION_TIMEOUT = 190 // 90 seconds - single CGI execution timeout (large uploads, slow scripts)
 			};
 			std::vector<ServerConfig> _configs;
 			std::vector<pollfd> _pollFds;
