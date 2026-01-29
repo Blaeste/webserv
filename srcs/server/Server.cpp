@@ -271,14 +271,27 @@ void Server::handleClientRead(size_t clientIndex)
 		return;
 	}
 
-	// Early size guard: if body already exceeds configured limit, send 413 and close
+	// Early size guard: if body already exceeds configured limit (location override
+	// server default if defined), send 413 and close.
 	const ServerConfig *earlyCfg = selectConfig(client.getRequest(), clientFd);
-	if (!client.isResponseReady() && earlyCfg && client.getRequest().getBody().size() > earlyCfg->getMaxBodySize())
+	if (!client.isResponseReady() && earlyCfg)
 	{
-		client.buildErrorResponse(413);
-		client.markCloseAfterResponse();
-		_pollFds[clientIndex].events = POLLOUT;
-		return;
+		// Default to server-level limit
+		size_t maxBodySize = earlyCfg->getMaxBodySize();
+
+		// If we can resolve a location, prefer its specific limit when set
+		HttpRequest &earlyRequest = const_cast<HttpRequest &>(client.getRequest());
+		RouteMatch earlyMatch = _router.matchRoute(*earlyCfg, earlyRequest);
+		if (earlyMatch.location && earlyMatch.location->getMaxBodySize() > 0)
+			maxBodySize = earlyMatch.location->getMaxBodySize();
+
+		if (client.getRequest().getBody().size() > maxBodySize)
+		{
+			client.buildErrorResponse(413);
+			client.markCloseAfterResponse();
+			_pollFds[clientIndex].events = POLLOUT;
+			return;
+		}
 	}
 
 	// Check if request is complete
@@ -300,8 +313,15 @@ void Server::handleClientRead(size_t clientIndex)
 			return;
 		}
 
+		// Match route to determine effective body size limit (location overrides server)
+		HttpRequest &request = const_cast<HttpRequest &>(client.getRequest());
+		RouteMatch match = _router.matchRoute(*config, request);
+		size_t maxBodySize = config->getMaxBodySize();
+		if (match.location && match.location->getMaxBodySize() > 0)
+			maxBodySize = match.location->getMaxBodySize();
+
 		// Enforce configured body size limit before routing/CGI
-		if (client.getRequest().getBody().size() > config->getMaxBodySize())
+		if (request.getBody().size() > maxBodySize)
 		{
 			client.buildErrorResponse(413);
 			client.markCloseAfterResponse();
@@ -311,8 +331,6 @@ void Server::handleClientRead(size_t clientIndex)
 		}
 
 		// Check if this is a CGI request
-		HttpRequest &request = const_cast<HttpRequest &>(client.getRequest());
-		RouteMatch match = _router.matchRoute(*config, request);
 
 		if (match.statusCode == 200 && match.isCGI)
 		{
@@ -645,7 +663,10 @@ void Server::addSignalPipeToPoll()
 void Server::signalHandler(int)
 {
 	if (_s_sigpipe[1] != -1)
-		write(_s_sigpipe[1], "1", 1);
+	{
+		ssize_t ret = write(_s_sigpipe[1], "1", 1);
+		(void)ret;
+	}
 }
 
 void Server::installSignals()
