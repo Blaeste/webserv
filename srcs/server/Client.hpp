@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/26 12:23:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 14:31:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ struct CGIResult;
 // Enum(s)
 enum ClientState
 {
-	STATE_IDLE,		 // Reading request or writing response
+	STATE_KEEPALIVE,		 // Reading request or writing response
 	STATE_PROCESSING // Processing request (buildResponse, CGI execution)
 };
 

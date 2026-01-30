@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/30 14:08:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 14:32:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -224,7 +224,7 @@ void Server::handleClientTimeouts()
 	std::map<int, Client>::iterator it = _clients.begin();
 	while (it != _clients.end())
 	{
-		if (it->second.hasTimedOut(CLIENT_IDLE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
+		if (it->second.hasTimedOut(CLIENT_KEEPALIVE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
 		{
 			int fd = it->first;
 			std::cout << "Client timeout (fd " << fd << ")" << std::endl;
@@ -308,7 +308,7 @@ void Server::handleClientRead(size_t clientIndex)
 		if (!config)
 		{
 			client.buildErrorResponse(500);
-			client.setState(STATE_IDLE);
+			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 			return;
 		}
@@ -325,7 +325,7 @@ void Server::handleClientRead(size_t clientIndex)
 		{
 			client.buildErrorResponse(413);
 			client.markCloseAfterResponse();
-			client.setState(STATE_IDLE);
+			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -344,7 +344,7 @@ void Server::handleClientRead(size_t clientIndex)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
 			else {
 				client.buildErrorResponse(500);
-				client.setState(STATE_IDLE);
+				client.setState(STATE_KEEPALIVE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 				return;
 			}
@@ -376,7 +376,7 @@ void Server::handleClientRead(size_t clientIndex)
 		{
 			// Regular non-CGI request
 			client.buildResponse(*config, _router, _sessions);
-			client.setState(STATE_IDLE);
+			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 		}
 	}
@@ -490,7 +490,7 @@ void Server::handleCGITimeouts()
 			// Clean up CGI
 			delete cgi;
 			client.setCGIProcess(NULL);
-			client.setState(STATE_IDLE);
+			client.setState(STATE_KEEPALIVE);
 
 			// Enable POLLOUT to send the error response
 			for (size_t i = 0; i < _pollFds.size(); ++i)
@@ -567,7 +567,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				}
 				delete cgi;
 				client.setCGIProcess(NULL);
-				client.setState(STATE_IDLE);
+				client.setState(STATE_KEEPALIVE);
 				// Enable POLLOUT to send the response
 				for (size_t i = 0; i < _pollFds.size(); ++i)
 					if (_pollFds[i].fd == it->first)
