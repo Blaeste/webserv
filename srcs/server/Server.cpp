@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/27 13:49:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 11:45:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -533,19 +533,24 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				int status;
 				waitpid(cgi->pid, &status, 0);
 
-				// Parse CGI output and build response
-				CGIResult result;
-				result.output = cgi->output;
-				CGI cgiParser;
-				cgiParser.parseHeaders(cgi->output, result);
+				if ((WIFEXITED(status) && WEXITSTATUS(status)) // CGI exited with error code
+					|| WIFSIGNALED(status) // CGI was killed by signal
+					|| cgi->output.empty() // No output from CGI
+					|| cgi->output.find("Content-Type:") == std::string::npos) // Parse output if successful
+					client.buildErrorResponse(500);
+				else {
+					// Parse CGI output and build response
+					CGIResult result;
+					result.output = cgi->output;
+					CGI cgiParser;
+					cgiParser.parseHeaders(cgi->output, result);
+					client.buildResponseFromCGI(result); // Build response from CGI result
+				}
 
-				// Build response from CGI result
-				client.buildResponseFromCGI(result);
-
+				// CLEANUP
 				// Clean up CGI pipes from poll
 				_pollFds.erase(_pollFds.begin() + pipeIndex);
 				_socketTypes.erase(pipeFd);
-
 				// Remove pipeIn from poll if it exists
 				if (cgi->pipeIn != -1)
 				{
@@ -559,21 +564,16 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						}
 					}
 				}
-
 				delete cgi;
 				client.setCGIProcess(NULL);
 				client.setState(STATE_IDLE);
-
 				// Enable POLLOUT to send the response
 				for (size_t i = 0; i < _pollFds.size(); ++i)
-				{
 					if (_pollFds[i].fd == it->first)
 					{
 						_pollFds[i].events |= POLLOUT;
 						break;
 					}
-				}
-
 				return;
 			}
 		}
