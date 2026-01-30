@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:29 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 13:16:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 13:32:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,7 @@ ServerConfig::ServerConfig()
 	: _port(8080) // Default port
 	, _serverName("localhost") // Default name
 	, _maxBodySize(1048576) // Default size (1MB)
+	, _cgiTimeout(90)
 {}
 
 // Setter(s)
@@ -39,6 +40,10 @@ void ServerConfig::setMaxBodySize(size_t size) {
 
 void ServerConfig::addLocation(const Location &location) {
 	_locations.push_back(location);
+}
+
+void ServerConfig::setCgiTimeout(size_t timeout) {
+	_cgiTimeout = timeout;
 }
 
 // Getters
@@ -67,4 +72,8 @@ size_t ServerConfig::getMaxBodySize() const {
 
 const std::vector<Location> &ServerConfig::getLocations() const {
 	return _locations;
+}
+
+size_t ServerConfig::getCgiTimeout() const {
+	return _cgiTimeout;
 }

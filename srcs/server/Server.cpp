@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/30 11:45:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 14:08:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -335,11 +335,14 @@ void Server::handleClientRead(size_t clientIndex)
 		if (match.statusCode == 200 && match.isCGI)
 		{
 			// Start CGI asynchronously
+			const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+			size_t cgiExecutionTimeout = config ? config->getCgiTimeout() : DEFAULT_CGI_EXECUTION_TIMEOUT;
+
 			CGI cgi;
 			CGIProcess *cgiProc = cgi.startAsync(match, request);
-
-			if (!cgiProc)
-			{
+			if (cgiProc)
+				cgiProc->executionTimeout = cgiExecutionTimeout;
+			else {
 				client.buildErrorResponse(500);
 				client.setState(STATE_IDLE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
@@ -455,9 +458,7 @@ void Server::handleCGITimeouts()
 		CGIProcess *cgi = client.getCGIProcess();
 		if (!cgi)
 			continue;
-
-		// Check if CGI has timed out
-		if (now - cgi->startTime > CGI_EXECUTION_TIMEOUT)
+		if (now - cgi->startTime > cgi->executionTimeout)
 		{
 			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
 

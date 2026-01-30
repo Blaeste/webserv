@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/26 13:25:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 13:34:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -176,6 +176,8 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 			server.addErrorPage(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)), tokens[2]);
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			server.setMaxBodySize(parseSize(tokens[1], "Server #" + sizetToString(serverIndex)));
+		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
+			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)));
 	}
 
 	// Parse each location block

@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/22 18:52:10 by lmarck           ###   ########.fr        #
+#    Updated: 2026/01/30 13:35:08 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -114,7 +114,7 @@ test: re
 		python3 -m pip --version >/dev/null 2>&1 || python3 -m ensurepip --upgrade >/dev/null 2>&1; \
 		python3 -m pip install --user -q requests \
 	)
-	python3 webServeTester.py
+	python3 webServTester.py
 
 eval: re
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester

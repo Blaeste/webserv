@@ -1,12 +1,12 @@
 # **************************************************************************** #
 #                                                                              #
 #                                                         :::      ::::::::    #
-#    webServeTester.py                                  :+:      :+:    :+:    #
+#    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/26 13:38:38 by eschwart         ###   ########.fr        #
+#    Updated: 2026/01/30 13:36:27 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -19,7 +19,7 @@ import subprocess
 import time
 from datetime import datetime
 
-BASE_URL = "http://localhost:8080"
+BASE_URL = "http://localhost:8082"
 TIMEOUT = 5
 PASSED = 0
 FAILED = 0

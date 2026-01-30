@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/12 13:19:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 13:31:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,6 +31,7 @@ class ServerConfig
 			std::map<int, std::string> _errorPages; // {404: "/error_pages/404.html", 500: ...}
 			size_t _maxBodySize; // 10485760 (10M en bytes)
 			std::vector<Location> _locations; // Location list
+			size_t _cgiTimeout;
 
 	public:
 
@@ -71,6 +72,12 @@ class ServerConfig
 			 */
 			void addLocation(const Location &location);
 
+			/**
+			 * @brief Sets the CGI execution timeout in seconds.
+			 * @param timeout The timeout duration in seconds.
+			 */
+			void setCgiTimeout(size_t timeout);
+
 		// Getters
 
 			/**
@@ -109,5 +116,11 @@ class ServerConfig
 			 * @return A constant reference to a vector of Location objects.
 			 */
 			const std::vector<Location> &getLocations() const;
+
+			/**
+			 * @brief Gets the CGI execution timeout.
+			 * @return The timeout duration in seconds.
+			 */
+			size_t getCgiTimeout() const;
 
 };
