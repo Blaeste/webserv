@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/27 13:49:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/01/30 12:13:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,7 +56,7 @@ class Server {
 				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
 				CLIENT_IDLE_TIMEOUT = 75, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
 				CLIENT_PROCESSING_TIMEOUT = 180, // 3 minutes - request processing timeout, including CGI execution
-				CGI_EXECUTION_TIMEOUT = 90 // 90 seconds - single CGI execution timeout (large uploads, slow scripts)
+				CGI_EXECUTION_TIMEOUT = 90 // 10 seconds - single CGI execution timeout (prevents hanging scripts)
 			};
 			std::vector<ServerConfig> _configs;
 			std::vector<pollfd> _pollFds;

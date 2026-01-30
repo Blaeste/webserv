@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/22 19:03:11 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/01/30 12:08:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -465,6 +465,12 @@ bool HttpRequest::parse()
 				}
 
 				_contentLength = contentLength;
+			}
+			else if (_method == "POST" || _method == "PUT")
+			{
+				// POST/PUT requires Content-Length or Transfer-Encoding
+				_isComplete = true;
+				return setError(411); // Length Required
 			}
 		}
 
