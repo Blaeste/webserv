@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/30 13:35:08 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/02 14:16:21 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -167,9 +167,11 @@ eval: re
 	@mkdir -p YoupiBanane/Yeah
 	@touch YoupiBanane/youpi.bad_extension
 	@touch YoupiBanane/youpi.bla
+	@touch YoupiBanane/youpla.bla
 	@touch YoupiBanane/nop/youpi.bad_extension
 	@touch YoupiBanane/nop/other.pouic
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
+	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
 	@./webserv config/eval.conf &
 	@sleep 1
