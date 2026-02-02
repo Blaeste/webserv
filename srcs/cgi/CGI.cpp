@@ -154,6 +154,12 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request) {
 
 	setupEnvironment(match, request);
+
+	// Refuse to run CGI scripts without execute permission
+	if (access(match.filePath.c_str(), X_OK) != 0) {
+		std::cerr << "[CGI] Script not executable: " << match.filePath << std::endl;
+		return NULL;
+	}
 	
 	CGIProcess* cgi = new CGIProcess();
 	
