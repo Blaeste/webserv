@@ -1,4 +1,6 @@
 function loadHeader() {
+	ensureFavicon();
+
 	const header = `
 		<header>
 			<a href="/" class="header-banner-link">
@@ -10,7 +12,7 @@ function loadHeader() {
 				<a href="/qrcode.html">QR Code</a>
 				<a href="/errors.html">Errors</a>
 				<a href="/http-test.html">HTTP</a>
-				<a href="/contact.html">Contact</a>				
+				<a href="/contact.html">Contact</a>
 				<a href="/about.html">About</a>
 			</nav>
 			<div class="header-info">
@@ -25,6 +27,16 @@ function loadHeader() {
 	updateVisitCounter();
 }
 
+function ensureFavicon() {
+	if (!document.head.querySelector('link[rel="icon"]')) {
+		const link = document.createElement('link');
+		link.rel = 'icon';
+		link.href = '/favicon.ico';
+		link.sizes = 'any';
+		document.head.appendChild(link);
+	}
+}
+
 function updateStatusCode() {
 	const pill = document.getElementById('status-pill');
 	if (!pill) return;
@@ -35,7 +47,7 @@ function updateStatusCode() {
 	})
 		.then(response => {
 			const code = response.status;
-			let label ='status code: ' + code + ' ' + (response.statusText || '');
+			let label = 'status code: ' + code + ' ' + (response.statusText || '');
 			pill.textContent = label.trim();
 
 			pill.classList.remove('status-loading', 'status-2xx', 'status-4xx', 'status-5xx');
