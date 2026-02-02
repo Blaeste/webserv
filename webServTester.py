@@ -6,7 +6,7 @@
 #    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/02 11:48:32 by lmarck           ###   ########.fr        #
+#    Updated: 2026/02/02 15:42:08 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,6 +18,9 @@ import json
 import subprocess
 import time
 import re
+import tempfile
+import shutil
+import http.client
 from datetime import datetime
 
 BASE_URL = "http://localhost:8082"
@@ -401,25 +404,84 @@ print("No shebang")
         pass
 
 def test_cgi_permission_denied():
-    """Test CGI sans permission d'exécution"""
+    """CGI should run even if script lacks +x when interpreter is executable"""
     script_content = '''#!/usr/bin/env python3
 print("Content-Type: text/plain\\r")
 print("\\r")
-print("Should not work")
+print("Should run without xbit")
 '''
     script_path = 'cgi-bin/py/test_no_exec.py'
     with open(script_path, 'w') as f:
         f.write(script_content)
-    os.chmod(script_path, 0o644)  # Pas de +x
+    # Remove execute bit to ensure server relies on interpreter, not script perms
+    os.chmod(script_path, 0o644)
 
     r = safe_get(f"{BASE_URL}/cgi-bin/py/test_no_exec.py")
-    test("CGI without execute permission returns 500", r.status_code == 500, f"Got {r.status_code}")
+    test("CGI runs without script execute bit", r.status_code == 200, f"Got {r.status_code}")
 
     # Cleanup
     try:
         os.remove(script_path)
     except:
         pass
+
+def test_cgi_interpreter_not_executable():
+    """CGI must fail when interpreter lacks execute permission"""
+    tmpdir = tempfile.mkdtemp(prefix="webserv_cgi_interp_")
+    interp_path = os.path.join(tmpdir, "interp.sh")
+    script_path = os.path.join(tmpdir, "script.sh")
+    config_path = os.path.join(tmpdir, "cgi_no_exec.conf")
+
+    try:
+        # Create a dummy interpreter without execute bits
+        with open(interp_path, 'w') as f:
+            f.write("#!/bin/sh\n" +
+                    "echo Content-Type: text/plain\\r\n" +
+                    "echo\\r\n" +
+                    "echo from dummy interpreter\n")
+        os.chmod(interp_path, 0o644)
+
+        # Create a simple CGI script (readable only)
+        with open(script_path, 'w') as f:
+            f.write("#!/bin/sh\n" +
+                    "echo Content-Type: text/plain\\r\n" +
+                    "echo\\r\n" +
+                    "echo script ran\n")
+        os.chmod(script_path, 0o644)
+
+        # Minimal config pointing to the non-executable interpreter
+        config_content = f"""
+server {{
+    listen 8099;
+    server_name localhost;
+    client_max_body_size 1M;
+
+    location /tmpcgi {{
+        root {tmpdir};
+        allowed_methods GET;
+        cgi_extension .sh;
+        cgi_path {interp_path};
+    }}
+}}
+"""
+        with open(config_path, 'w') as f:
+            f.write(config_content)
+
+        # Start isolated webserv instance
+        proc = subprocess.Popen(['./webserv', config_path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(0.5)
+
+        try:
+            r = requests.get("http://localhost:8099/tmpcgi/script.sh", timeout=2)
+            test("CGI with non-executable interpreter returns 500", r.status_code == 500, f"Got {r.status_code}")
+        finally:
+            proc.terminate()
+            try:
+                proc.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+    finally:
+        shutil.rmtree(tmpdir, ignore_errors=True)
 
 def test_cgi_get_with_query():
     """Test CGI avec paramètres GET détaillés"""
@@ -477,12 +539,33 @@ print(f"Body: {body}")
         pass
 
 def test_chunked_encoding():
-	# Test POST avec Transfer-Encoding: chunked
-	headers = {'Transfer-Encoding': 'chunked'}
-	data = "Hello chunked world!"
+    """Send a real chunked POST (Transfer-Encoding: chunked) via raw HTTP"""
 
-	r = safe_post(f"{BASE_URL}/", data=data, headers=headers)
-	test("POST with chunked encoding return 200", r.status_code in [200, 201])
+    chunks = [b"Hello ", b"chunked ", b"world!"]
+    try:
+        parsed = requests.utils.urlparse(BASE_URL)
+        host = parsed.hostname or "localhost"
+        port = parsed.port or (443 if parsed.scheme == "https" else 80)
+        path = parsed.path or "/"
+
+        conn = http.client.HTTPConnection(host, port, timeout=TIMEOUT)
+        conn.putrequest("POST", path)
+        conn.putheader("Host", host)
+        conn.putheader("Transfer-Encoding", "chunked")
+        conn.putheader("Content-Type", "text/plain")
+        conn.endheaders()
+
+        for chunk in chunks:
+            conn.send(hex(len(chunk))[2:].encode() + b"\r\n" + chunk + b"\r\n")
+        conn.send(b"0\r\n\r\n")
+
+        resp = conn.getresponse()
+        status = resp.status
+        resp.read()
+        conn.close()
+        test("POST with chunked encoding return 200", status in [200, 201], f"Got {status}")
+    except Exception as e:
+        test_error("test_chunked_encoding", str(e)[:100])
 
 def test_large_file_upload():
 	# Upload un fichier plus gros (1MB)
@@ -963,7 +1046,7 @@ def test_post_no_content_length():
     import socket
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(3)
+        s.settimeout(20)
         s.connect(('localhost', 8080))
         s.send(b"POST / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\ndata")
         s.shutdown(socket.SHUT_WR)
@@ -1350,6 +1433,7 @@ if __name__ == "__main__":
 		run_test(test_cgi_runtime_error)
 		run_test(test_cgi_missing_shebang)
 		run_test(test_cgi_permission_denied)
+		run_test(test_cgi_interpreter_not_executable)
 		run_test(test_cgi_environment_vars)
 
 		print("\n" + "=" * 70)

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/27 13:14:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/02 13:58:25 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,7 +45,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 	// Basic CGI variables
 	_env["REQUEST_METHOD"] = request.getMethod();
-	
+
 	// Convert script path to absolute path for PHP-CGI
 	char absolutePath[PATH_MAX];
 	if (realpath(match.filePath.c_str(), absolutePath))
@@ -64,7 +64,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	if (pos != std::string::npos)
 		scriptName = uri.substr(0, pos);
 	_env["SCRIPT_NAME"] = "";
-	
+
 	// PATH_INFO - For 42 tester: use the full URI path (not just relative path)
 	_env["PATH_INFO"] = scriptName;
 	_env["PATH_TRANSLATED"] = match.filePath;
@@ -115,7 +115,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	std::string displayOutput = output;
 	if (displayOutput.size() > 500)
 		displayOutput = displayOutput.substr(0, 500) + "... [truncated, total " + intToString(output.size()) + " bytes]";
-	
+
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos) {
 		// No headers separator, treat all as body
@@ -125,7 +125,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	}
 	std::string headersBlock = output.substr(0, headersEnd);
 	std::string body = output.substr(headersEnd + 4);
-	
+
 	// Parse headers line by line
 	size_t pos = 0;
 	while (pos < headersBlock.length()) {
@@ -155,27 +155,37 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 
 	setupEnvironment(match, request);
 
-	// Refuse to run CGI scripts without execute permission
-	if (access(match.filePath.c_str(), X_OK) != 0) {
-		std::cerr << "[CGI] Script not executable: " << match.filePath << std::endl;
+	// Validate interpreter is executable and script is readable
+	std::string interpreter = match.location->getCgiPath();
+	char absoluteInterpreter[PATH_MAX];
+	if (interpreter[0] != '/' && realpath(interpreter.c_str(), absoluteInterpreter))
+		interpreter = std::string(absoluteInterpreter);
+
+	if (access(interpreter.c_str(), X_OK) != 0) {
+		std::cerr << "[CGI] Interpreter not executable: " << interpreter << std::endl;
 		return NULL;
 	}
-	
+
+	if (access(match.filePath.c_str(), R_OK) != 0) {
+		std::cerr << "[CGI] Script not readable: " << match.filePath << std::endl;
+		return NULL;
+	}
+
 	CGIProcess* cgi = new CGIProcess();
-	
+
 	// Create pipes for CGI communication
 	int pipeOut[2];  // CGI stdout
 	int pipeIn[2];   // CGI stdin
-	
+
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1) {
 		std::cerr << "[CGI] ASSERT: Failed to create pipes" << std::endl;
 		delete cgi;
 		return NULL;
 	}
-	
+
 	cgi->startTime = time(NULL);
 	pid_t pid = fork();
-	
+
 	if (pid == -1) {
 		std::cerr << "[CGI] ASSERT: Failed to fork" << std::endl;
 		close(pipeOut[0]); close(pipeOut[1]);
@@ -183,16 +193,16 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		delete cgi;
 		return NULL;
 	}
-	
+
 	if (!pid) {
 		// Child process - execute CGI script
 		close(pipeOut[0]);  // Close read end
 		close(pipeIn[1]);   // Close write end
-		
+
 		// Redirect stdin/stdout
 		dup2(pipeIn[0], STDIN_FILENO);
 		dup2(pipeOut[1], STDOUT_FILENO);
-		
+
 		close(pipeIn[0]);
 		close(pipeOut[1]);
 
@@ -216,7 +226,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 
 		// Prepare environment variables
 		std::vector<char*> envp;
-		for (std::map<std::string, std::string>::const_iterator it = _env.begin(); 
+		for (std::map<std::string, std::string>::const_iterator it = _env.begin();
 			 it != _env.end(); ++it) {
 			std::string envStr = it->first + "=" + it->second;
 			envp.push_back(strdup(envStr.c_str()));
