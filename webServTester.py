@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/01/30 14:27:29 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/02 11:48:32 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -17,6 +17,7 @@ import socket
 import json
 import subprocess
 import time
+import re
 from datetime import datetime
 
 BASE_URL = "http://localhost:8082"
@@ -1071,24 +1072,30 @@ def test_siege_availability():
     # Créer une page simple pour le test
     test_page = 'www/siege_test.html'
     with open(test_page, 'w') as f:
-        f.write('<html><body>Siege Test</body></html>')
+        f.write('')
 
     # Lancer siege (courte durée pour le test)
     result = subprocess.run(
-        ['siege', '-b', '-c', '10', '-t', '5s', f'{BASE_URL}/siege_test.html'],
-        capture_output=True, text=True, timeout=10
+        ['siege', '-b', '-c', '20', '-t', '20s', f'{BASE_URL}/siege_test.html'],
+        capture_output=True, text=True, timeout=30
     )
 
-    # Parser le résultat
-    availability = 0.0
-    for line in result.stdout.split('\n'):
-        if 'Availability' in line:
-            # Extract percentage
-            parts = line.split()
-            for part in parts:
-                if '%' in part:
-                    availability = float(part.replace('%', ''))
-                    break
+    # Parser le résultat (stdout et stderr, case-insensitive)
+    availability = None
+    output = (result.stdout or '') + '\n' + (result.stderr or '')
+    for line in output.split('\n'):
+        if 'availability' in line.lower():
+            # Extract percentage or bare float, accept comma decimal separator
+            match = re.search(r'(\d+[.,]?\d*)\s*%', line)
+            if match:
+                availability = float(match.group(1).replace(',', '.'))
+                break
+            match = re.search(r'(\d+[.,]?\d*)', line)
+            if match:
+                availability = float(match.group(1).replace(',', '.'))
+                break
+    if availability is None:
+        availability = 0.0
 
     test("Siege availability > 99.5%", availability > 99.5,
          f"Got {availability}% (run manually: siege -b -c 25 -t 30s {BASE_URL}/)")
