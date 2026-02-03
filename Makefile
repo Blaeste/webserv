@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/02 14:16:21 by lmarck           ###   ########.fr        #
+#    Updated: 2026/02/03 15:05:56 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -173,9 +173,11 @@ eval: re
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	@./webserv config/eval.conf &
+	gnome-terminal -- bash -c './webserv config/eval.conf; exec bash' &
 	@sleep 1
 	./tester http://localhost:8080
+	@echo "✓ Tests completed, stopping server..."
+	@-pkill webserv 2>/dev/null || true
 
 clear_eval:
 	@rm -rf YoupiBanane
