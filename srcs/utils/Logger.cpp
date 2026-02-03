@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 13:31:16 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/03 12:30:28 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,13 +104,6 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 
 	// keep last time stamp
 	_lastRequestTime = now;
-}
-
-void Logger::logConnection(int fd, const std::string &clientIP)
-{
-	// Supprimé pour éviter le spam - info visible dans le log de requête
-	(void)fd;
-	(void)clientIP;
 }
 
 void Logger::logError(const std::string &message)

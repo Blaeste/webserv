@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/02 15:42:08 by lmarck           ###   ########.fr        #
+#    Updated: 2026/02/03 12:28:26 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -1370,6 +1370,16 @@ def check_server_running():
 		print(f"{YELLOW}→{RESET} Make sure webserv is running on {BASE_URL}")
 		return False
 
+def stop_server():
+	"""Arrete le serveur webserv"""
+	print("\nStopping webserv...")
+	try:
+		subprocess.run(['pkill', '-SIGTERM', 'webserv'], capture_output=True)
+		time.sleep(0.5)  # Give it time to shutdown gracefully
+		print(f"{GREEN}✓{RESET} Server stopped")
+	except Exception as e:
+		print(f"{YELLOW}⚠{RESET} Could not stop server: {str(e)}")
+
 if __name__ == "__main__":
 	try:
 		if not check_server_running():
@@ -1512,6 +1522,7 @@ if __name__ == "__main__":
 		summary()
 		compare_results(previous_results)
 		save_results()
+		stop_server()
 
 		# Liste des tests échoués
 		failed_tests_list = [name for name, result in test_results.items() if result["status"] in ["failed", "error"]]
@@ -1531,3 +1542,4 @@ if __name__ == "__main__":
 		summary()
 		compare_results(previous_results)
 		save_results()
+		stop_server()
