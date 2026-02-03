@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/30 14:38:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 12:18:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,8 @@ Client::Client(int socket, const std::string &clientIp)
 	, _state(STATE_KEEPALIVE)
 	, _cgiProcess(NULL)
 	, _bytesSent(0)
+	, _cgiStartTime()
+	, _serverConfig(NULL)
 {}
 
 // Private method(s)
@@ -129,6 +131,11 @@ CGIProcess *Client::getCGIProcess() const {
 
 void Client::setCGIProcess(CGIProcess *cgi) {
 	_cgiProcess = cgi;
+}
+
+void Client::setCGITiming(const ServerConfig &config) {
+	gettimeofday(&_cgiStartTime, NULL);
+	_serverConfig = &config;
 }
 
 // Public method(s)
@@ -271,6 +278,25 @@ void Client::buildResponseFromCGI(const CGIResult &result) {
 		_response.setBody(result.output);
 	} else
 		_response.serveError(result.statusCode, "");
+	
+	// Log CGI requests
+	if (_serverConfig) {
+		struct timeval end;
+		gettimeofday(&end, NULL);
+		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 + 
+		                      (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
+		
+		Logger::logRequest(
+			_request.getMethod(),
+			_request.getUri(),
+			_clientIp,
+			_response.getStatus(),
+			_response.getBody().size(),
+			responseTime,
+			_serverConfig->getServerName(),
+			_serverConfig->getPort());
+	}
+	
 	_responseReady = true;
 }
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/30 14:31:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 12:06:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,8 @@ private:
 	CGIProcess *_cgiProcess; // NULL if no CGI active
 	std::string _cachedResponse; // Cached response for progressive sending
 	size_t _bytesSent; // Bytes already sent from cached response
+	timeval _cgiStartTime; // Start time for CGI requests
+	const ServerConfig *_serverConfig; // Server config for logging
 
 public:
 	// Default constructor
@@ -72,6 +74,7 @@ public:
 	void setState(ClientState state);
 	CGIProcess *getCGIProcess() const;
 	void setCGIProcess(CGIProcess *cgi);
+	void setCGITiming(const ServerConfig &config);
 
 	// Public method(s)
 
