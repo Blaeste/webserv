@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 14:21:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 14:26:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,8 +92,9 @@ void Logger::flushGroupedRequests()
 	if (_requestCount > 1)
 		countStr << " " << GRAY << "(" << _requestCount << ")" << RESET;
 
-	std::cout
+	std::cout << "\r"
 				<< std::setw(25) << std::left << serverStr.str() << " "
+				<< GRAY << "|" << RESET << " "
 				<< "[" << getCurrentTime() << "] "
 				<< GRAY << "|" << RESET << " "
 				<< methodColor << BOLD << _lastMethod << RESET
@@ -106,9 +107,15 @@ void Logger::flushGroupedRequests()
 				<< std::setw(5) << std::right << formatSize(_lastSize) << " "
 				<< GRAY << "|" << RESET << " "
 				<< _lastClientIP
-				<< countStr.str()
-				<< std::endl;
+				<< countStr.str();
+	std::cout.flush();
+}
 
+void Logger::finalizeGroupedRequests()
+{
+	if (_requestCount > 0)
+		std::cout << std::endl;
+	
 	_requestCount = 0;
 	_totalTime = 0.0;
 	_minTime = 0.0;
@@ -136,14 +143,14 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		isInactive = (timeDiff > 100);
 	}
 
-	// If different request or inactive period, flush grouped requests
+	// If different request or inactive period, finalize and start new group
 	if (!isSameRequest || isInactive) {
-		flushGroupedRequests();
+		finalizeGroupedRequests();
 		
 		if (isInactive && _lastRequestTime.tv_sec != 0)
 			std::cout << GRAY << std::string(91, '-') << RESET << std::endl;
 		
-		// Start new group (don't print server/timestamp yet, will be done in flush)
+		// Start new group
 		_lastMethod = method;
 		_lastUri = uri;
 		_lastClientIP = clientIP;
@@ -155,14 +162,20 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		_maxTime = responseTime;
 		_lastServerName = serverName;
 		_lastServerPort = port;
+		
+		// Display immediately
+		flushGroupedRequests();
 	} else {
-		// Add to current group
+		// Add to current group and update display
 		_requestCount++;
 		_totalTime += responseTime;
 		if (responseTime < _minTime)
 			_minTime = responseTime;
 		if (responseTime > _maxTime)
 			_maxTime = responseTime;
+		
+		// Update display in place
+		flushGroupedRequests();
 	}
 	
 	_lastRequestTime = now;

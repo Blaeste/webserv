@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 13:55:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 14:26:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,9 +42,10 @@ static std::string _lastUri;
 	static std::string _lastServerName;
 	static int _lastServerPort;
 
-		static void flushGroupedRequests();
+	static void flushGroupedRequests();
+	static void finalizeGroupedRequests();
 
-	public:
+public:
 		static void logRequest(const std::string &method, const std::string &uri,
 								const std::string &clientIP, int statusCode,
 								size_t responseSize, double responseTime,
