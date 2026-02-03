@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/30 14:32:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 12:31:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -216,7 +216,6 @@ void Server::acceptNewClient(int listenSocket)
 	pfd.revents = 0;
 	_pollFds.push_back(pfd);
 	_socketTypes[clientFd] = SOCKET_CLIENT;
-	Logger::logConnection(clientFd, std::string(clientIp));
 }
 
 void Server::handleClientTimeouts()
@@ -337,6 +336,10 @@ void Server::handleClientRead(size_t clientIndex)
 			// Start CGI asynchronously
 			const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 			size_t cgiExecutionTimeout = config ? config->getCgiTimeout() : DEFAULT_CGI_EXECUTION_TIMEOUT;
+
+			// Store timing info for CGI logging
+			if (config)
+				client.setCGITiming(*config);
 
 			CGI cgi;
 			CGIProcess *cgiProc = cgi.startAsync(match, request);

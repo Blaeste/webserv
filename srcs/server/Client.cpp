@@ -25,9 +25,18 @@
 
 // Constructor: initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0)
-{
-}
+	: _socket(socket)
+	, _clientIp(clientIp)
+	, _lastActivity(time(NULL))
+	, _requestComplete(false)
+	, _responseReady(false)
+	, _closeAfterResponse(false)
+	, _state(STATE_KEEPALIVE)
+	, _cgiProcess(NULL)
+	, _bytesSent(0)
+	, _cgiStartTime()
+	, _serverConfig(NULL)
+{}
 
 // Private method(s)
 void Client::handleSession(std::map<std::string, SessionData> &sessions)
@@ -141,6 +150,11 @@ CGIProcess *Client::getCGIProcess() const
 void Client::setCGIProcess(CGIProcess *cgi)
 {
 	_cgiProcess = cgi;
+}
+
+void Client::setCGITiming(const ServerConfig &config) {
+	gettimeofday(&_cgiStartTime, NULL);
+	_serverConfig = &config;
 }
 
 // Public method(s)
@@ -297,6 +311,25 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	}
 	else
 		_response.serveError(result.statusCode, "");
+	
+	// Log CGI requests
+	if (_serverConfig) {
+		struct timeval end;
+		gettimeofday(&end, NULL);
+		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 + 
+		                      (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
+		
+		Logger::logRequest(
+			_request.getMethod(),
+			_request.getUri(),
+			_clientIp,
+			_response.getStatus(),
+			_response.getBody().size(),
+			responseTime,
+			_serverConfig->getServerName(),
+			_serverConfig->getPort());
+	}
+	
 	_responseReady = true;
 }
 

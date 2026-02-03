@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/09 13:31:37 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/03 12:29:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,8 +36,6 @@ class Logger {
 								const std::string &clientIP, int statusCode,
 								size_t responseSize, double responseTime,
 								 std::string serverName, int port);
-
-		static void logConnection(int fd, const std::string &clientIP);
 
 		static void logError(const std::string &message);
 
