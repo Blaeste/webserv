@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 14:14:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 14:21:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -95,6 +95,7 @@ void Logger::flushGroupedRequests()
 	std::cout
 				<< std::setw(25) << std::left << serverStr.str() << " "
 				<< "[" << getCurrentTime() << "] "
+				<< GRAY << "|" << RESET << " "
 				<< methodColor << BOLD << _lastMethod << RESET
 				<< std::string(methodPadding, ' ') << " "
 				<< displayUri
