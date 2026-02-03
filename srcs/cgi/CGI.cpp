@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/02 13:58:25 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/02/03 13:55:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,7 +119,6 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos) {
 		// No headers separator, treat all as body
-		std::cout << "[CGI] No \\r\\n\\r\\n found, treating all as body" << std::endl;
 		result.output = output;
 		return;
 	}

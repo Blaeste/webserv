@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 12:30:28 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 14:07:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,8 +16,19 @@
 #include <iomanip>
 #include <sstream>
 
-// Initialisation de la variable statique
+// Initialisation des variables statiques
 timeval Logger::_lastRequestTime = {0, 0};
+std::string Logger::_lastMethod = "";
+std::string Logger::_lastUri = "";
+std::string Logger::_lastClientIP = "";
+int Logger::_lastStatus = 0;
+size_t Logger::_lastSize = 0;
+int Logger::_requestCount = 0;
+double Logger::_totalTime = 0.0;
+double Logger::_minTime = 0.0;
+double Logger::_maxTime = 0.0;
+std::string Logger::_lastServerName = "";
+int Logger::_lastServerPort = 0;
 
 std::string Logger::getCurrentTime()
 {
@@ -53,56 +64,102 @@ std::string Logger::getStatusColor(int statusCode)
 	return RESET;
 }
 
+void Logger::flushGroupedRequests()
+{
+	if (_requestCount == 0)
+		return;
+
+	std::string statusColor = getStatusColor(_lastStatus);
+	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : CYAN;
+
+	std::string displayUri = _lastUri;
+	if (displayUri.length() > 20)
+		displayUri = displayUri.substr(0, 18) + "..";
+
+	// Calculate padding for method+URI (30 chars total)
+	std::string plainMethodUri = _lastMethod + " " + displayUri;
+	int methodUriPadding = 30 - plainMethodUri.length();
+	if (methodUriPadding < 0) methodUriPadding = 0;
+
+	// Format server:port with fixed width
+	std::stringstream serverStr;
+	serverStr << _lastServerName << ":" << _lastServerPort;
+
+	// Format count suffix (after IP)
+	std::stringstream countStr;
+	if (_requestCount > 1)
+		countStr << " " << GRAY << "(" << _requestCount << ")" << RESET;
+
+	std::cout
+				<< std::setw(25) << std::left << serverStr.str() << " "
+				<< "[" << getCurrentTime() << "] "
+				<< methodColor << BOLD << _lastMethod << RESET << " " << displayUri
+				<< std::string(methodUriPadding, ' ') << " "
+				<< GRAY << "→" << RESET << " "
+				<< statusColor << BOLD << _lastStatus << RESET << " "
+				<< GRAY << "|" << RESET << " "
+				<< std::setw(5) << std::right << formatSize(_lastSize) << " "
+				<< GRAY << "|" << RESET << " "
+				<< _lastClientIP
+				<< countStr.str()
+				<< std::endl;
+
+	_requestCount = 0;
+	_totalTime = 0.0;
+	_minTime = 0.0;
+	_maxTime = 0.0;
+}
+
 void Logger::logRequest(const std::string &method, const std::string &uri,
 								const std::string &clientIP, int statusCode,
 								size_t responseSize, double responseTime,
 								 std::string serverName, int port)
 {
-	std::string statusColor = getStatusColor(statusCode);
-	std::string methodColor = (method == "GET") ? BLUE : (method == "POST") ? MAGENTA : CYAN;
-
 	// Get time
 	timeval now;
 	gettimeofday(&now, NULL);
 
-	// if inactiv put separator
+	// Check if this request is identical to the previous one
+	bool isSameRequest = (_lastMethod == method && _lastUri == uri && 
+	                      _lastStatus == statusCode && _lastSize == responseSize);
+
+	// Check for inactivity (separator between bursts)
+	bool isInactive = false;
 	if (_lastRequestTime.tv_sec != 0) {
 		long timeDiff = (now.tv_sec - _lastRequestTime.tv_sec) * 1000 +
 						(now.tv_usec - _lastRequestTime.tv_usec) / 1000;
-		if (timeDiff > 100) {
+		isInactive = (timeDiff > 100);
+	}
+
+	// If different request or inactive period, flush grouped requests
+	if (!isSameRequest || isInactive) {
+		flushGroupedRequests();
+		
+		if (isInactive && _lastRequestTime.tv_sec != 0)
 			std::cout << GRAY << std::string(91, '-') << RESET << std::endl;
-		}
+		
+		// Start new group (don't print server/timestamp yet, will be done in flush)
+		_lastMethod = method;
+		_lastUri = uri;
+		_lastClientIP = clientIP;
+		_lastStatus = statusCode;
+		_lastSize = responseSize;
+		_requestCount = 1;
+		_totalTime = responseTime;
+		_minTime = responseTime;
+		_maxTime = responseTime;
+		_lastServerName = serverName;
+		_lastServerPort = port;
+	} else {
+		// Add to current group
+		_requestCount++;
+		_totalTime += responseTime;
+		if (responseTime < _minTime)
+			_minTime = responseTime;
+		if (responseTime > _maxTime)
+			_maxTime = responseTime;
 	}
-
-	// Truncate URI if too long
-	std::string displayUri = uri;
-	if (displayUri.length() > 20) {
-		displayUri = displayUri.substr(0, 18) + "..";
-	}
-
-	// log
-	std::stringstream timeStr;
-	if (responseTime < 1.0)
-		timeStr << std::fixed << std::setprecision(0) << std::setw(4) << (responseTime * 1000) << "µs";
-	else
-		timeStr << std::fixed << std::setprecision(1) << std::setw(5) << responseTime << "ms";
-
-	std::cout
-				<< serverName << ":" << port << " "
-				<< "[" << getCurrentTime() << "] "
-				<< methodColor << BOLD << std::setw(7) << std::left << method << RESET << " "
-				<< std::setw(20) << std::left << displayUri << " "
-				<< GRAY << "→" << RESET << " "
-				<< statusColor << BOLD << statusCode << RESET << " "
-				<< GRAY << "|" << RESET << " "
-				<< formatSize(responseSize) << " "
-				<< GRAY << "|" << RESET << " "
-				<< timeStr.str() << " "
-				<< GRAY << "|" << RESET << " "
-				<< GRAY << "(" << clientIP << ")" << RESET
-				<< std::endl;
-
-	// keep last time stamp
+	
 	_lastRequestTime = now;
 }
 
