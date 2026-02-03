@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 14:07:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/03 14:14:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,13 +73,15 @@ void Logger::flushGroupedRequests()
 	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : CYAN;
 
 	std::string displayUri = _lastUri;
-	if (displayUri.length() > 20)
-		displayUri = displayUri.substr(0, 18) + "..";
+	if (displayUri.length() > 25)
+		displayUri = displayUri.substr(0, 23) + "..";
 
-	// Calculate padding for method+URI (30 chars total)
-	std::string plainMethodUri = _lastMethod + " " + displayUri;
-	int methodUriPadding = 30 - plainMethodUri.length();
-	if (methodUriPadding < 0) methodUriPadding = 0;
+	// Calculate padding for method (8 chars) and URI (25 chars)
+	int methodPadding = 8 - _lastMethod.length();
+	if (methodPadding < 0) methodPadding = 0;
+	
+	int uriPadding = 25 - displayUri.length();
+	if (uriPadding < 0) uriPadding = 0;
 
 	// Format server:port with fixed width
 	std::stringstream serverStr;
@@ -93,8 +95,10 @@ void Logger::flushGroupedRequests()
 	std::cout
 				<< std::setw(25) << std::left << serverStr.str() << " "
 				<< "[" << getCurrentTime() << "] "
-				<< methodColor << BOLD << _lastMethod << RESET << " " << displayUri
-				<< std::string(methodUriPadding, ' ') << " "
+				<< methodColor << BOLD << _lastMethod << RESET
+				<< std::string(methodPadding, ' ') << " "
+				<< displayUri
+				<< std::string(uriPadding, ' ') << " "
 				<< GRAY << "→" << RESET << " "
 				<< statusColor << BOLD << _lastStatus << RESET << " "
 				<< GRAY << "|" << RESET << " "
