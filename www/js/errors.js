@@ -12,10 +12,6 @@ function updateRequestPreview() {
 	let description = '';
 
 	switch (code) {
-		case '400':
-			path = '/error_pages/400.html';
-			description = 'Direct navigation to 400 error page (actual bad request errors are difficult to trigger from browser)';
-			break;
 		case '403':
 			path = '/..%2Fconfig/default.conf';
 			description = 'Attempt encoded path traversal (../) which the server blocks with a 403';
@@ -31,8 +27,8 @@ function updateRequestPreview() {
 			break;
 		case '413':
 			method = 'POST';
-			path = '/';
-			description = 'Send an oversized POST body to exceed the 10MB limit and trigger 413';
+			path = '/uploads';
+			description = 'Submit an oversized POST to /uploads to exceed the 10MB limit and trigger a genuine 413 response from the server';
 			break;
 		case '504':
 			path = '/cgi-bin/py/timeout.py';
@@ -63,9 +59,6 @@ function testError() {
 
 	// Trigger error based on code
 	switch (code) {
-		case '400':
-			window.location.href = '/error_pages/400.html';
-			break;
 		case '403':
 			fetch('/..%2Fconfig/default.conf', { headers: { 'X-Internal-Request': 'true' } })
 				.then(response => {
@@ -91,8 +84,9 @@ function testError() {
 				});
 			break;
 		case '413': {
-			const oversized = 'a'.repeat(11 * 1024 * 1024); // ~11MB
-			fetch('/', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: oversized })
+			const oversized = new Blob(['a'.repeat(11 * 1024 * 1024)], { type: 'application/octet-stream' });
+			resultDiv.innerHTML = '<p>Submitting oversized payload (~11MB) to /uploads to trigger a server-side 413...</p>';
+			fetch('/uploads', { method: 'POST', body: oversized })
 				.then(response => {
 					if (response.status === 413) {
 						window.location.href = '/error_pages/413.html';
