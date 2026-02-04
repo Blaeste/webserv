@@ -6,7 +6,7 @@
 /*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 13:55:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/04 15:15:15 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,18 +25,9 @@
 
 // Constructor: initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket)
-	, _clientIp(clientIp)
-	, _lastActivity(time(NULL))
-	, _requestComplete(false)
-	, _responseReady(false)
-	, _closeAfterResponse(false)
-	, _state(STATE_KEEPALIVE)
-	, _cgiProcess(NULL)
-	, _bytesSent(0)
-	, _cgiStartTime()
-	, _serverConfig(NULL)
-{}
+	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(), _serverConfig(NULL)
+{
+}
 
 // Private method(s)
 void Client::handleSession(std::map<std::string, SessionData> &sessions)
@@ -116,6 +107,16 @@ const HttpRequest &Client::getRequest() const
 	return _request;
 }
 
+int Client::getResponseStatus()
+{
+	return _response.getStatus();
+}
+
+size_t Client::getResponseBodySize() const
+{
+	return _response.getBody().size();
+}
+
 bool Client::isRequestComplete() const
 {
 	return _requestComplete;
@@ -152,7 +153,8 @@ void Client::setCGIProcess(CGIProcess *cgi)
 	_cgiProcess = cgi;
 }
 
-void Client::setCGITiming(const ServerConfig &config) {
+void Client::setCGITiming(const ServerConfig &config)
+{
 	gettimeofday(&_cgiStartTime, NULL);
 	_serverConfig = &config;
 }
@@ -311,14 +313,15 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	}
 	else
 		_response.serveError(result.statusCode, "");
-	
+
 	// Log CGI requests
-	if (_serverConfig) {
+	if (_serverConfig)
+	{
 		struct timeval end;
 		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 + 
-		                      (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
-		
+		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 +
+							  (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
+
 		Logger::logRequest(
 			_request.getMethod(),
 			_request.getUri(),
@@ -329,7 +332,7 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 			_serverConfig->getServerName(),
 			_serverConfig->getPort());
 	}
-	
+
 	_responseReady = true;
 }
 

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 12:06:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/04 15:15:15 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@ struct CGIResult;
 // Enum(s)
 enum ClientState
 {
-	STATE_KEEPALIVE,		 // Reading request or writing response
+	STATE_KEEPALIVE, // Reading request or writing response
 	STATE_PROCESSING // Processing request (buildResponse, CGI execution)
 };
 
@@ -49,10 +49,10 @@ private:
 	bool _closeAfterResponse;
 	std::string _sessionId;
 	ClientState _state;
-	CGIProcess *_cgiProcess; // NULL if no CGI active
-	std::string _cachedResponse; // Cached response for progressive sending
-	size_t _bytesSent; // Bytes already sent from cached response
-	timeval _cgiStartTime; // Start time for CGI requests
+	CGIProcess *_cgiProcess;		   // NULL if no CGI active
+	std::string _cachedResponse;	   // Cached response for progressive sending
+	size_t _bytesSent;				   // Bytes already sent from cached response
+	timeval _cgiStartTime;			   // Start time for CGI requests
 	const ServerConfig *_serverConfig; // Server config for logging
 
 public:
@@ -67,6 +67,8 @@ public:
 	bool hasTimedOut(time_t readTimeout, time_t processingTimeout) const; // ← Modified signature
 	void updateActivity();
 	const HttpRequest &getRequest() const;
+	int getResponseStatus();
+	size_t getResponseBodySize() const;
 	bool isRequestComplete() const;
 	bool isResponseReady() const;
 	bool shouldCloseAfterResponse() const;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 12:31:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/04 15:15:15 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,7 +226,6 @@ void Server::handleClientTimeouts()
 		if (it->second.hasTimedOut(CLIENT_KEEPALIVE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
 		{
 			int fd = it->first;
-			std::cout << "Client timeout (fd " << fd << ")" << std::endl;
 			++it;
 			for (size_t j = 0; j < _pollFds.size(); j++)
 			{
@@ -288,6 +287,12 @@ void Server::handleClientRead(size_t clientIndex)
 		{
 			client.buildErrorResponse(413);
 			client.markCloseAfterResponse();
+			// Log the oversized request early rejection
+			struct timeval end;
+			gettimeofday(&end, NULL);
+			double responseTime = 0.0; // Early guard happens during read; treat as immediate
+			if (earlyCfg)
+				Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, earlyCfg->getServerName(), earlyCfg->getPort());
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -345,7 +350,8 @@ void Server::handleClientRead(size_t clientIndex)
 			CGIProcess *cgiProc = cgi.startAsync(match, request);
 			if (cgiProc)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
-			else {
+			else
+			{
 				client.buildErrorResponse(500);
 				client.setState(STATE_KEEPALIVE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
@@ -404,11 +410,12 @@ void Server::handleClientWrite(size_t clientIndex)
 
 	// Update activity timestamp during progressive sending
 	client.updateActivity();
-	
+
 	// Send response (may be progressive for large responses)
 	bool sendComplete = client.sendResponse();
-	
-	if (!sendComplete) {
+
+	if (!sendComplete)
+	{
 		// Sending not complete (EAGAIN or large response)
 		// Keep POLLOUT active and retry later
 		return; // Don't close connection yet
@@ -463,8 +470,6 @@ void Server::handleCGITimeouts()
 			continue;
 		if (now - cgi->startTime > cgi->executionTimeout)
 		{
-			std::cerr << "[CGI] Timeout: killing process " << cgi->pid << std::endl;
-
 			// Kill the CGI process
 			kill(cgi->pid, SIGKILL);
 			waitpid(cgi->pid, NULL, 0);
@@ -489,6 +494,12 @@ void Server::handleCGITimeouts()
 
 			// Build 504 Gateway Timeout response
 			client.buildErrorResponse(504);
+
+			// Log the timeout event so it appears in server logs
+			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+			double responseTime = difftime(now, cgi->startTime) * 1000.0;
+			if (cfg)
+				Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
 
 			// Clean up CGI
 			delete cgi;
@@ -537,18 +548,31 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				int status;
 				waitpid(cgi->pid, &status, 0);
 
-				if ((WIFEXITED(status) && WEXITSTATUS(status)) // CGI exited with error code
-					|| WIFSIGNALED(status) // CGI was killed by signal
-					|| cgi->output.empty() // No output from CGI
-					|| cgi->output.find("Content-Type:") == std::string::npos) // Parse output if successful
+				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))				   // CGI exited with error code
+								|| WIFSIGNALED(status)									   // CGI was killed by signal
+								|| cgi->output.empty()									   // No output from CGI
+								|| cgi->output.find("Content-Type:") == std::string::npos; // Parse output if successful
+
+				if (cgiError)
 					client.buildErrorResponse(500);
-				else {
+				else
+				{
 					// Parse CGI output and build response
 					CGIResult result;
 					result.output = cgi->output;
 					CGI cgiParser;
 					cgiParser.parseHeaders(cgi->output, result);
 					client.buildResponseFromCGI(result); // Build response from CGI result
+				}
+
+				// Log CGI failures that fall back to 500 so they show in server logs
+				if (cgiError)
+				{
+					const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+					time_t now = time(NULL);
+					double responseTime = difftime(now, cgi->startTime) * 1000.0;
+					if (cfg)
+						Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
 				}
 
 				// CLEANUP
@@ -589,14 +613,17 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			{
 				const std::string &body = client.getRequest().getBody();
 				size_t remaining = body.size() - cgi->bytesWritten;
-				
-				if (remaining > 0) {
+
+				if (remaining > 0)
+				{
 					ssize_t written = write(pipeFd, body.c_str() + cgi->bytesWritten, remaining);
-					if (written > 0) {
+					if (written > 0)
+					{
 						cgi->bytesWritten += written;
-						
+
 						// Check if all data written
-						if (cgi->bytesWritten >= body.size()) {
+						if (cgi->bytesWritten >= body.size())
+						{
 							cgi->inputWritten = true;
 							close(cgi->pipeIn);
 
@@ -610,9 +637,13 @@ void Server::handleCGIPipe(size_t pipeIndex)
 								}
 							cgi->pipeIn = -1;
 						}
-					} else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK) {
+					}
+					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+					{
 						std::cerr << "[CGI] ❌ ASSERT: Write error to stdin: " << strerror(errno) << std::endl;
-					} else if (written < 0) {
+					}
+					else if (written < 0)
+					{
 						std::cout << "[CGI] Write would block (EAGAIN), will retry..." << std::endl;
 					}
 				}
