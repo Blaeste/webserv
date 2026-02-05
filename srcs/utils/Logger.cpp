@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 14:26:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 10:51:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,27 +87,55 @@ void Logger::flushGroupedRequests()
 	std::stringstream serverStr;
 	serverStr << _lastServerName << ":" << _lastServerPort;
 
-	// Format count suffix (after IP)
+	// Format count suffix (after URI)
 	std::stringstream countStr;
 	if (_requestCount > 1)
 		countStr << " " << GRAY << "(" << _requestCount << ")" << RESET;
+
+	// Format timing
+	std::stringstream timingStr;
+	if (_requestCount == 1) {
+		// Single request: show one time
+		if (_minTime < 1.0)
+			timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
+		else
+			timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
+	} else {
+		// Multiple requests: show min-max
+		if (_maxTime < 1.0) {
+			// Both in microseconds
+			timingStr << std::fixed << std::setprecision(0) 
+					  << (_minTime * 1000) << "-" << (_maxTime * 1000) << "µs";
+		} else if (_minTime >= 1.0) {
+			// Both in milliseconds
+			timingStr << std::fixed << std::setprecision(1) 
+					  << _minTime << "-" << _maxTime << "ms";
+		} else {
+			// Mixed: min in µs, max in ms
+			timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs-"
+					  << std::fixed << std::setprecision(1) << _maxTime << "ms";
+		}
+	}
 
 	std::cout << "\r"
 				<< std::setw(25) << std::left << serverStr.str() << " "
 				<< GRAY << "|" << RESET << " "
 				<< "[" << getCurrentTime() << "] "
 				<< GRAY << "|" << RESET << " "
+				<< _lastClientIP << " "
+				<< GRAY << "|" << RESET << " "
 				<< methodColor << BOLD << _lastMethod << RESET
 				<< std::string(methodPadding, ' ') << " "
 				<< displayUri
-				<< std::string(uriPadding, ' ') << " "
-				<< GRAY << "→" << RESET << " "
-				<< statusColor << BOLD << _lastStatus << RESET << " "
+				<< std::string(uriPadding, ' ')
+				<< countStr.str() << " "
 				<< GRAY << "|" << RESET << " "
 				<< std::setw(5) << std::right << formatSize(_lastSize) << " "
 				<< GRAY << "|" << RESET << " "
-				<< _lastClientIP
-				<< countStr.str();
+				<< GRAY << "→" << RESET << " "
+				<< statusColor << BOLD << _lastStatus << RESET << " "
+				<< GRAY << "|" << RESET << " "
+				<< std::setw(6) << std::right << timingStr.str();
 	std::cout.flush();
 }
 
