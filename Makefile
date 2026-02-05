@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/05 10:33:50 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/05 11:06:34 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -106,7 +106,7 @@ kill:
 
 test: re
 	-pkill webserv || true
-	gnome-terminal --geometry=120x37 -- bash -c './webserv config/default.conf; exec bash' &
+	gnome-terminal --geometry=160x50 -- bash -c './webserv config/default.conf; exec bash' &
 	sleep 1
 	@# Ensure the Python dependency "requests" is available for the tester
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
@@ -173,7 +173,7 @@ eval: re
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	gnome-terminal --geometry=120x37 -- bash -c './webserv config/eval.conf; exec bash' &
+	gnome-terminal --geometry=160x50 -- bash -c './webserv config/eval.conf; exec bash' &
 	@sleep 1
 	./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."

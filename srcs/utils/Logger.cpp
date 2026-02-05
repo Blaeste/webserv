@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 10:51:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 11:27:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,25 +72,43 @@ void Logger::flushGroupedRequests()
 	std::string statusColor = getStatusColor(_lastStatus);
 	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : CYAN;
 
+	int uriFieldWidth = 10;
+	
+	// Format count suffix and calculate its actual length
+	std::stringstream countStr;
+	int actualCountLen = 0;
+	if (_requestCount > 1) {
+		countStr << GRAY << "(" << _requestCount << ")" << RESET;
+		// Calculate actual count length (without color codes)
+		std::stringstream plainCount;
+		plainCount << "(" << _requestCount << ")";
+		actualCountLen = plainCount.str().length();
+	}
+	
+	// Calculate available space for URI (field width minus count and 1 space)
+	int maxUriLen = uriFieldWidth - actualCountLen;
+	if (actualCountLen > 0)
+		maxUriLen--; // Reserve 1 space between URI and count
+	
+	// Ensure minimum
+	if (maxUriLen < 2) maxUriLen = 2; // Minimum for ".."
+	
+	// Truncate URI if necessary
 	std::string displayUri = _lastUri;
-	if (displayUri.length() > 25)
-		displayUri = displayUri.substr(0, 23) + "..";
+	if ((int)displayUri.length() > maxUriLen) {
+		if (maxUriLen >= 2)
+			displayUri = displayUri.substr(0, maxUriLen - 2) + "..";
+		else
+			displayUri = ".."; // Fallback if really too small
+	}
 
-	// Calculate padding for method (8 chars) and URI (25 chars)
+	// Calculate padding for method (8 chars)
 	int methodPadding = 8 - _lastMethod.length();
 	if (methodPadding < 0) methodPadding = 0;
-	
-	int uriPadding = 25 - displayUri.length();
-	if (uriPadding < 0) uriPadding = 0;
 
 	// Format server:port with fixed width
 	std::stringstream serverStr;
 	serverStr << _lastServerName << ":" << _lastServerPort;
-
-	// Format count suffix (after URI)
-	std::stringstream countStr;
-	if (_requestCount > 1)
-		countStr << " " << GRAY << "(" << _requestCount << ")" << RESET;
 
 	// Format timing
 	std::stringstream timingStr;
@@ -116,6 +134,37 @@ void Logger::flushGroupedRequests()
 					  << std::fixed << std::setprecision(1) << _maxTime << "ms";
 		}
 	}
+	
+	// Build URI+count field with proper alignment (always exactly uriFieldWidth)
+	std::stringstream uriField;
+	uriField << displayUri;
+	if (_requestCount > 1) {
+		// Calculate actual combined length and padding needed
+		int combinedLen = displayUri.length() + 1 + actualCountLen; // URI + space + count
+		
+		// If it would overflow, we need to re-truncate URI further
+		if (combinedLen > uriFieldWidth && displayUri.length() > 2) {
+			int excess = combinedLen - uriFieldWidth;
+			int newUriLen = displayUri.length() - excess;
+			if (newUriLen >= 2) {
+				displayUri = displayUri.substr(0, newUriLen - 2) + "..";
+				uriField.str(""); // Clear
+				uriField << displayUri;
+			}
+		}
+		
+		// Now add padding and count
+		int padding = uriFieldWidth - displayUri.length() - actualCountLen;
+		if (padding > 0)
+			uriField << std::string(padding, ' ');
+		else
+			uriField << ' '; // At minimum 1 space
+		uriField << countStr.str();
+	} else {
+		int padding = uriFieldWidth - displayUri.length();
+		if (padding > 0)
+			uriField << std::string(padding, ' ');
+	}
 
 	std::cout << "\r"
 				<< std::setw(25) << std::left << serverStr.str() << " "
@@ -126,16 +175,15 @@ void Logger::flushGroupedRequests()
 				<< GRAY << "|" << RESET << " "
 				<< methodColor << BOLD << _lastMethod << RESET
 				<< std::string(methodPadding, ' ') << " "
-				<< displayUri
-				<< std::string(uriPadding, ' ')
-				<< countStr.str() << " "
+				<< uriField.str() << " "
 				<< GRAY << "|" << RESET << " "
 				<< std::setw(5) << std::right << formatSize(_lastSize) << " "
 				<< GRAY << "|" << RESET << " "
 				<< GRAY << "→" << RESET << " "
 				<< statusColor << BOLD << _lastStatus << RESET << " "
 				<< GRAY << "|" << RESET << " "
-				<< std::setw(6) << std::right << timingStr.str();
+				<< std::setw(6) << std::right << timingStr.str()
+				<< "\033[K"; // ANSI escape: clear to end of line
 	std::cout.flush();
 }
 
