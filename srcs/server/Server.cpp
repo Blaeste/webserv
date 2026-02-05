@@ -90,7 +90,7 @@ void Server::run()
             int fd = _pollFds[i].fd;
             SocketType type = _socketTypes[fd];
             
-            size_t oldSize = _pollFds.size();  // Mémoriser la taille
+size_t oldSize = _pollFds.size();  // Remember size
 
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN)
@@ -119,11 +119,11 @@ void Server::run()
             if (type == SOCKET_CGI)
                 handleCGIPipe(i);
             
-            // Si la taille a changé (élément supprimé), ne pas incrémenter i
-            if (_pollFds.size() < oldSize)
-                continue;  // L'élément actuel a été supprimé, i pointe déjà sur le suivant
+// If size changed (element removed), don't increment i
+			if (_pollFds.size() < oldSize)
+				continue;  // Element removed, i already points to next
             
-            i++;  // Sinon passer au suivant
+            i++;  // Otherwise move to next
         }
 	}
 }

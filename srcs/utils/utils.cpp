@@ -68,19 +68,19 @@ std::string getFileExtension(const std::string &path)
 	size_t pos = path.find_last_of('.');
 	size_t slash = path.find_last_of('/');
 
-	// Si pas de point ou le point est avant le dernier slash
+	// If no dot or dot is before the last slash
 	if (pos == std::string::npos || (slash != std::string::npos && pos < slash))
 		throw std::runtime_error("getFileExtension: invalid or missing extension in path: " + path);
 
-	// Si le point est juste après le slash (fichier caché)
+	// If dot is right after slash (hidden file)
 	if (slash != std::string::npos && pos == slash + 1)
 		throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-	// Si le point est le premier caractère (fichier caché sans extension)
+	// If dot is first character (hidden file without extension)
 	if (slash == std::string::npos && pos == 0)
 		throw std::runtime_error("getFileExtension: hidden file, no extension in path: " + path);
 
-	// Extension valide
+	// Valid extension
 	return path.substr(pos);
 }
 
@@ -166,7 +166,7 @@ std::string generateSessionId()
 	}
 	close(fd);
 
-	// Genrate session id base on urandom read
+	// Generate session id based on urandom read
 	std::string id;
 	for (size_t i = 0; i < idLength; i++)
 		id += charset[randomBytes[i] % charsetSize];

@@ -16,7 +16,7 @@
 #include <iomanip>
 #include <sstream>
 
-// Initialisation des variables statiques
+// Static variables initialization
 timeval Logger::_lastRequestTime = {0, 0};
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
