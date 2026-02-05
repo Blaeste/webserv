@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 12:56:17 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 13:12:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,17 +79,17 @@ void Server::run()
 			continue;
 
 		// Process events on each socket
-        for (size_t i = 0; i < _pollFds.size(); )  // Pas de i++ ici !
-        {
-            int revents = _pollFds[i].revents;
-            if (!revents)
-            {
-                i++;  // Seulement si pas d'événement
-                continue;
-            }
-            int fd = _pollFds[i].fd;
-            SocketType type = _socketTypes[fd];
-            
+		for (size_t i = 0; i < _pollFds.size(); )  // Pas de i++ ici !
+		{
+			int revents = _pollFds[i].revents;
+			if (!revents)
+			{
+				i++;  // Seulement si pas d'événement
+				continue;
+			}
+			int fd = _pollFds[i].fd;
+			SocketType type = _socketTypes[fd];
+			
 size_t oldSize = _pollFds.size();  // Remember size
 
 			// Handle POLLIN (incoming data to read)
@@ -112,19 +112,19 @@ size_t oldSize = _pollFds.size();  // Remember size
 					handleClientRead(i);
 			}
 
-            // Handle POLLOUT (socket ready to write)
-            if (revents & POLLOUT && type == SOCKET_CLIENT)
-                handleClientWrite(i);
+			// Handle POLLOUT (socket ready to write)
+			if (revents & POLLOUT && type == SOCKET_CLIENT)
+				handleClientWrite(i);
 
-            if (type == SOCKET_CGI)
-                handleCGIPipe(i);
-            
+			if (type == SOCKET_CGI)
+				handleCGIPipe(i);
+			
 // If size changed (element removed), don't increment i
 			if (_pollFds.size() < oldSize)
 				continue;  // Element removed, i already points to next
-            
-            i++;  // Otherwise move to next
-        }
+			
+			i++;  // Otherwise move to next
+		}
 	}
 }
 
@@ -552,164 +552,164 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			continue;
 
 		// Handle pipeErr (reading CGI stderr)
-        if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
-        {
-            char buffer[4096];
-            ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
+		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
+		{
+			char buffer[4096];
+			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
-            if (bytes > 0)
-                cgi->errorOutput.append(buffer, bytes);
-            else
-            {
-                // EOF or error on stderr - remove from poll THEN close
-                _pollFds.erase(_pollFds.begin() + pipeIndex);
-                _socketTypes.erase(pipeFd);
-                safeClose(cgi->pipeErr);
-                cgi->pipeErr = -1;
-            }
-            return;
-        }
+			if (bytes > 0)
+				cgi->errorOutput.append(buffer, bytes);
+			else
+			{
+				// EOF or error on stderr - remove from poll THEN close
+				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				_socketTypes.erase(pipeFd);
+				safeClose(cgi->pipeErr);
+				cgi->pipeErr = -1;
+			}
+			return;
+		}
 
-        // Handle pipeOut (reading CGI output or detecting closure)
-        if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
-        {
-            char buffer[4096];
-            ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
+		// Handle pipeOut (reading CGI output or detecting closure)
+		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
+		{
+			char buffer[4096];
+			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
-            if (bytes > 0)
-                cgi->output.append(buffer, bytes);
-            else
-            {
-                // EOF - CGI finished
-                // FIRST: Remove all CGI pipes from poll
-                // Remove pipeOut (current pipe)
-                _pollFds.erase(_pollFds.begin() + pipeIndex);
-                _socketTypes.erase(pipeFd);
-                
-                // Remove pipeIn from poll if it exists
-                if (cgi->pipeIn != -1)
-                {
-                    for (size_t i = 0; i < _pollFds.size(); ++i)
-                    {
-                        if (_pollFds[i].fd == cgi->pipeIn)
-                        {
-                            _pollFds.erase(_pollFds.begin() + i);
-                            _socketTypes.erase(cgi->pipeIn);
-                            break;
-                        }
-                    }
-                }
-                
-                // Remove pipeErr from poll if it exists
-                if (cgi->pipeErr != -1)
-                {
-                    for (size_t i = 0; i < _pollFds.size(); ++i)
-                    {
-                        if (_pollFds[i].fd == cgi->pipeErr)
-                        {
-                            _pollFds.erase(_pollFds.begin() + i);
-                            _socketTypes.erase(cgi->pipeErr);
-                            break;
-                        }
-                    }
-                }
-                
-                // THEN: Close the pipes
-                safeClose(cgi->pipeOut);
-                cgi->pipeOut = -1;
-                
-                if (cgi->pipeIn != -1)
-                {
-                    safeClose(cgi->pipeIn);
-                    cgi->pipeIn = -1;
-                }
-                
-                if (cgi->pipeErr != -1)
-                {
-                    safeClose(cgi->pipeErr);
-                    cgi->pipeErr = -1;
-                }
+			if (bytes > 0)
+				cgi->output.append(buffer, bytes);
+			else
+			{
+				// EOF - CGI finished
+				// FIRST: Remove all CGI pipes from poll
+				// Remove pipeOut (current pipe)
+				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				_socketTypes.erase(pipeFd);
+				
+				// Remove pipeIn from poll if it exists
+				if (cgi->pipeIn != -1)
+				{
+					for (size_t i = 0; i < _pollFds.size(); ++i)
+					{
+						if (_pollFds[i].fd == cgi->pipeIn)
+						{
+							_pollFds.erase(_pollFds.begin() + i);
+							_socketTypes.erase(cgi->pipeIn);
+							break;
+						}
+					}
+				}
+				
+				// Remove pipeErr from poll if it exists
+				if (cgi->pipeErr != -1)
+				{
+					for (size_t i = 0; i < _pollFds.size(); ++i)
+					{
+						if (_pollFds[i].fd == cgi->pipeErr)
+						{
+							_pollFds.erase(_pollFds.begin() + i);
+							_socketTypes.erase(cgi->pipeErr);
+							break;
+						}
+					}
+				}
+				
+				// THEN: Close the pipes
+				safeClose(cgi->pipeOut);
+				cgi->pipeOut = -1;
+				
+				if (cgi->pipeIn != -1)
+				{
+					safeClose(cgi->pipeIn);
+					cgi->pipeIn = -1;
+				}
+				
+				if (cgi->pipeErr != -1)
+				{
+					safeClose(cgi->pipeErr);
+					cgi->pipeErr = -1;
+				}
 
-                int status;
-                waitpid(cgi->pid, &status, 0);
+				int status;
+				waitpid(cgi->pid, &status, 0);
 
-                bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))
-                                || WIFSIGNALED(status)
-                                || cgi->output.empty()
-                                || cgi->output.find("Content-Type:") == std::string::npos;
+				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))
+								|| WIFSIGNALED(status)
+								|| cgi->output.empty()
+								|| cgi->output.find("Content-Type:") == std::string::npos;
 
-                if (cgiError)
-                    client.buildErrorResponse(500);
-                else
-                {
-                    CGIResult result;
-                    result.output = cgi->output;
-                    CGI cgiParser;
-                    cgiParser.parseHeaders(cgi->output, result);
-                    client.buildResponseFromCGI(result);
-                }
+				if (cgiError)
+					client.buildErrorResponse(500);
+				else
+				{
+					CGIResult result;
+					result.output = cgi->output;
+					CGI cgiParser;
+					cgiParser.parseHeaders(cgi->output, result);
+					client.buildResponseFromCGI(result);
+				}
 
-                if (cgiError)
-                {
-                    const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
-                    time_t now = time(NULL);
-                    double responseTime = difftime(now, cgi->startTime) * 1000.0;
-                    if (cfg)
-                    {
-                        Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
-                        if (!cgi->errorOutput.empty())
-                            Logger::logStderr(cgi->errorOutput);
-                    }
-                }
-                
-                delete cgi;
-                client.setCGIProcess(NULL);
-                client.setState(STATE_KEEPALIVE);
-                
-                for (size_t i = 0; i < _pollFds.size(); ++i)
-                    if (_pollFds[i].fd == it->first)
-                    {
-                        _pollFds[i].events |= POLLOUT;
-                        break;
-                    }
-                return;
-            }
-        }
+				if (cgiError)
+				{
+					const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+					time_t now = time(NULL);
+					double responseTime = difftime(now, cgi->startTime) * 1000.0;
+					if (cfg)
+					{
+						Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
+						if (!cgi->errorOutput.empty())
+							Logger::logStderr(cgi->errorOutput);
+					}
+				}
+				
+				delete cgi;
+				client.setCGIProcess(NULL);
+				client.setState(STATE_KEEPALIVE);
+				
+				for (size_t i = 0; i < _pollFds.size(); ++i)
+					if (_pollFds[i].fd == it->first)
+					{
+						_pollFds[i].events |= POLLOUT;
+						break;
+					}
+				return;
+			}
+		}
 
-        // Handle pipeIn (writing POST body to CGI)
-        if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT))
-        {
-            if (!cgi->inputWritten)
-            {
-                const std::string &body = client.getRequest().getBody();
-                size_t remaining = body.size() - cgi->bytesWritten;
+		// Handle pipeIn (writing POST body to CGI)
+		if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT))
+		{
+			if (!cgi->inputWritten)
+			{
+				const std::string &body = client.getRequest().getBody();
+				size_t remaining = body.size() - cgi->bytesWritten;
 
-                if (remaining > 0)
-                {
-                    ssize_t written = write(pipeFd, body.c_str() + cgi->bytesWritten, remaining);
-                    if (written > 0)
-                    {
-                        cgi->bytesWritten += written;
+				if (remaining > 0)
+				{
+					ssize_t written = write(pipeFd, body.c_str() + cgi->bytesWritten, remaining);
+					if (written > 0)
+					{
+						cgi->bytesWritten += written;
 
-                        if (cgi->bytesWritten >= body.size())
-                        {
-                            cgi->inputWritten = true;
-                            
-                            // Remove from poll THEN close
-                            for (size_t i = 0; i < _pollFds.size(); ++i)
-                            {
-                                if (_pollFds[i].fd == cgi->pipeIn)
-                                {
-                                    _pollFds.erase(_pollFds.begin() + i);
-                                    _socketTypes.erase(cgi->pipeIn);
-                                    break;
-                                }
-                            }
-                            safeClose(cgi->pipeIn);
-                            cgi->pipeIn = -1;
-                        }
-                    }
-                    else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+						if (cgi->bytesWritten >= body.size())
+						{
+							cgi->inputWritten = true;
+							
+							// Remove from poll THEN close
+							for (size_t i = 0; i < _pollFds.size(); ++i)
+							{
+								if (_pollFds[i].fd == cgi->pipeIn)
+								{
+									_pollFds.erase(_pollFds.begin() + i);
+									_socketTypes.erase(cgi->pipeIn);
+									break;
+								}
+							}
+							safeClose(cgi->pipeIn);
+							cgi->pipeIn = -1;
+						}
+					}
+					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
 					{
 						std::cerr << "[CGI] ❌ ASSERT: Write error to stdin: " << strerror(errno) << std::endl;
 					}
@@ -717,11 +717,11 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					{
 						std::cout << "[CGI] Write would block (EAGAIN), will retry..." << std::endl;
 					}
-                }
-            }
-        }
-        return;
-    }
+				}
+			}
+		}
+		return;
+	}
 }
 
 void Server::handleSessionTimeouts()

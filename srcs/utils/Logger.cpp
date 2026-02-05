@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 11:51:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 13:12:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -209,7 +209,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 
 	// Check if this request is identical to the previous one
 	bool isSameRequest = (_lastMethod == method && _lastUri == uri && 
-	                      _lastStatus == statusCode && _lastSize == responseSize);
+						  _lastStatus == statusCode && _lastSize == responseSize);
 
 	// Check for inactivity (separator between bursts)
 	bool isInactive = false;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/20 09:59:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/05 13:13:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,9 +15,6 @@
 #include "config/Config.hpp"
 #include <cstdlib>
 #include <iostream>
-// #include <string>			// Parsing test
-// #include "utils/utils.hpp"	// Parsing test
-// #include <iomanip>			// Parsing test
 
 // Define(s)
 #define MAGENTA	"\033[35m"

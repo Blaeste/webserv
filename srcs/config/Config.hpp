@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/01/15 14:01:57 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/05 13:10:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,9 +19,9 @@
 
 // Structure
 struct BlockInfo {
-    std::string content;
-    size_t startPos;
-    size_t endPos;
+	std::string content;
+	size_t startPos;
+	size_t endPos;
 };
 
 // Class
