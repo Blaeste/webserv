@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 13:55:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 11:51:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,8 +175,9 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	// Create pipes for CGI communication
 	int pipeOut[2];  // CGI stdout
 	int pipeIn[2];   // CGI stdin
+	int pipeErr[2];  // CGI stderr
 
-	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1) {
+	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1) {
 		std::cerr << "[CGI] ASSERT: Failed to create pipes" << std::endl;
 		delete cgi;
 		return NULL;
@@ -189,6 +190,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		std::cerr << "[CGI] ASSERT: Failed to fork" << std::endl;
 		close(pipeOut[0]); close(pipeOut[1]);
 		close(pipeIn[0]); close(pipeIn[1]);
+		close(pipeErr[0]); close(pipeErr[1]);
 		delete cgi;
 		return NULL;
 	}
@@ -197,13 +199,16 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		// Child process - execute CGI script
 		close(pipeOut[0]);  // Close read end
 		close(pipeIn[1]);   // Close write end
+		close(pipeErr[0]);  // Close read end
 
-		// Redirect stdin/stdout
+		// Redirect stdin/stdout/stderr
 		dup2(pipeIn[0], STDIN_FILENO);
 		dup2(pipeOut[1], STDOUT_FILENO);
+		dup2(pipeErr[1], STDERR_FILENO);
 
 		close(pipeIn[0]);
 		close(pipeOut[1]);
+		close(pipeErr[1]);
 
 		// Get CGI interpreter path and convert to absolute BEFORE chdir
 		std::string interpreter = match.location->getCgiPath();
@@ -250,14 +255,17 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	// Parent process
 	close(pipeOut[1]);  // Close write end
 	close(pipeIn[0]);   // Close read end
+	close(pipeErr[1]);  // Close write end
 
 	cgi->pid = pid;
 	cgi->pipeOut = pipeOut[0];
 	cgi->pipeIn = pipeIn[1];
+	cgi->pipeErr = pipeErr[0];
 
 	// Set pipes to non-blocking mode
 	fcntl(cgi->pipeOut, F_SETFL, O_NONBLOCK);
 	fcntl(cgi->pipeIn, F_SETFL, O_NONBLOCK);
+	fcntl(cgi->pipeErr, F_SETFL, O_NONBLOCK);
 
 	// If POST request, mark that we need to write body
 	if (request.getMethod() == "POST" && !request.getBody().empty()) {

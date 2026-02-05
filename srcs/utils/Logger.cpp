@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 11:27:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 11:51:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -72,7 +72,7 @@ void Logger::flushGroupedRequests()
 	std::string statusColor = getStatusColor(_lastStatus);
 	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : CYAN;
 
-	int uriFieldWidth = 10;
+	int uriFieldWidth = 50;
 	
 	// Format count suffix and calculate its actual length
 	std::stringstream countStr;
@@ -260,6 +260,28 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 void Logger::logError(const std::string &message)
 {
 	std::cout << RED << "❌ Error: " << RESET << message << std::endl;
+}
+
+void Logger::logStderr(const std::string &stderrOutput)
+{
+	if (stderrOutput.empty())
+		return;
+	
+	// Force finalization to ensure log line is complete
+	if (_requestCount > 0)
+	{
+		std::cout << std::endl;
+		_requestCount = 0;
+		_totalTime = 0.0;
+		_minTime = 0.0;
+		_maxTime = 0.0;
+	}
+	
+	// Display stderr output
+	std::cout << stderrOutput;
+	if (stderrOutput[stderrOutput.length() - 1] != '\n')
+		std::cout << std::endl;
+	std::cout.flush();
 }
 
 

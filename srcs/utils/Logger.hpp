@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/03 14:26:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/05 12:04:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,35 +27,31 @@
 #define BOLD    "\033[1m"
 
 class Logger {
+private:
+    static timeval _lastRequestTime;
+    static std::string _lastMethod;
+    static std::string _lastUri;
+    static std::string _lastClientIP;
+    static int _lastStatus;
+    static size_t _lastSize;
+    static int _requestCount;
+    static double _totalTime;
+    static double _minTime;
+    static double _maxTime;
+    static std::string _lastServerName;
+    static int _lastServerPort;
 
-	private:
-		static timeval _lastRequestTime;
-		static std::string _lastMethod;
-static std::string _lastUri;
-	static std::string _lastClientIP;
-	static int _lastStatus;
-	static size_t _lastSize;
-	static int _requestCount;
-	static double _totalTime;
-	static double _minTime;
-	static double _maxTime;
-	static std::string _lastServerName;
-	static int _lastServerPort;
-
-	static void flushGroupedRequests();
-	static void finalizeGroupedRequests();
+    static std::string getCurrentTime();
+    static std::string formatSize(size_t bytes);
+    static std::string getStatusColor(int statusCode);
+    static void flushGroupedRequests();
+    static void finalizeGroupedRequests();
 
 public:
-		static void logRequest(const std::string &method, const std::string &uri,
-								const std::string &clientIP, int statusCode,
-								size_t responseSize, double responseTime,
-								std::string serverName, int port);
-
-		static void logError(const std::string &message);
-
-		static std::string getCurrentTime();
-
-		static std::string formatSize(size_t bytes);
-
-		static std::string getStatusColor(int statusCode);
+    static void logRequest(const std::string &method, const std::string &uri,
+                            const std::string &clientIP, int statusCode,
+                            size_t responseSize, double responseTime,
+                            std::string serverName, int port);
+    static void logError(const std::string &message);
+    static void logStderr(const std::string &stderrOutput);
 };
