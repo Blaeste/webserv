@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/02/08 10:56:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 11:40:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -78,7 +78,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 		std::string method = request.getMethod();
 
 		// Check if method is implemented
-		if (method != "GET" && method != "POST" && method != "DELETE")
+		if (method != "GET" && method != "POST" && method != "DELETE" && method != "HEAD")
 			match.statusCode = 501;
 
 		// Check if HTTP method is allowed

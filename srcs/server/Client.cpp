@@ -341,7 +341,7 @@ bool Client::sendResponse()
 	// Build response only once and cache it
 	if (_cachedResponse.empty())
 	{
-		_cachedResponse = _response.build();
+		_cachedResponse = _response.build(_request.getMethod());
 		_bytesSent = 0;
 	}
 

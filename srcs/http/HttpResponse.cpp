@@ -92,7 +92,7 @@ std::string HttpResponse::getStatusMessage(int code) const
 }
 
 // Public Method(s)
-std::string HttpResponse::build() const
+std::string HttpResponse::build(const std::string &method) const
 {
 	std::string response;
 
@@ -117,8 +117,9 @@ std::string HttpResponse::build() const
 	// Separate headers from body
 	response += "\r\n";
 
-	// Body
-	response += _body;
+	// Body (skip for HEAD method)
+	if (method != "HEAD")
+		response += _body;
 
 	return response;
 }

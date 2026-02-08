@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:11:17 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 11:39:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,10 +65,10 @@ class HttpResponse
 			void setBody(const std::string &body);
 
 			/**
-			 * @brief Builds the complete HTTP response as a raw string.
+			 * @param method The HTTP method (to skip body for HEAD)
 			 * @return The raw HTTP response string.
 			 */
-			std::string build() const;
+			std::string build(const std::string &method = "GET") const;
 
 			/**
 			 * @brief Serves a static file as the HTTP response body.
