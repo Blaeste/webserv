@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/08 17:46:42 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/08 17:52:29 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -105,7 +105,7 @@ kill:
 	fi
 
 test: re
-# 	-pkill webserv || true
+	-pkill webserv || true
 	gnome-terminal --geometry=160x50 -- bash -c './webserv config/default.conf; exec bash' &
 	sleep 1
 	@# Ensure the Python dependency "requests" is available for the tester
