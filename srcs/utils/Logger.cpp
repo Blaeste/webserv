@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 11:26:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 13:50:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,7 @@ void Logger::flushGroupedRequests()
 		return;
 
 	std::string statusColor = getStatusColor(_lastStatus);
-	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : (_lastMethod == "DELETE") ? CYAN : RED;
+	std::string methodColor = (_lastMethod == "GET") ? GREEN : (_lastMethod == "HEAD") ? CYAN : (_lastMethod == "POST") ? YELLOW : (_lastMethod == "DELETE") ? RED : GREY;
 
 	int uriFieldWidth = 50;
 	
@@ -84,7 +84,7 @@ void Logger::flushGroupedRequests()
 	std::stringstream countStr;
 	int actualCountLen = 0;
 	if (_requestCount > 1) {
-		countStr << GRAY << "(" << _requestCount << ")" << RESET;
+		countStr << GREY << "(" << _requestCount << ")" << RESET;
 		// Calculate actual count length (without color codes)
 		std::stringstream plainCount;
 		plainCount << "(" << _requestCount << ")";
@@ -195,19 +195,19 @@ void Logger::flushGroupedRequests()
 
 	std::cout << "\r"
 				<< std::setw(20) << std::left << serverPortStr << " "
-				<< GRAY << "|" << RESET << " "
+				<< GREY << "|" << RESET << " "
 				<< "[" << getCurrentTime() << "] "
-				<< GRAY << "|" << RESET << " "
+				<< GREY << "|" << RESET << " "
 				<< centeredIP << " "
-				<< GRAY << "|" << RESET << " "
+				<< GREY << "|" << RESET << " "
 				<< methodColor << BOLD << std::setw(7) << std::right << _lastMethod << RESET << " "
 				<< uriField.str() << " "
-				<< GRAY << "|" << RESET << " "
+				<< GREY << "|" << RESET << " "
 				<< std::setw(4) << std::right << formatSize(_lastSize) << " "
-				<< GRAY << "|" << RESET << " "
-				<< GRAY << "→" << RESET << " "
+				<< GREY << "|" << RESET << " "
+				<< GREY << "→" << RESET << " "
 				<< statusColor << BOLD << _lastStatus << RESET << " "
-				<< GRAY << "|" << RESET << " "
+				<< GREY << "|" << RESET << " "
 				<< std::setw(6) << std::right << timingStr.str()
 				<< "\033[K"; // ANSI escape: clear to end of line
 	std::cout.flush();
@@ -314,5 +314,5 @@ void Logger::logStderr(const std::string &stderrOutput)
 
 void Logger::printSeparator()
 {
-    std::cout << GRAY << std::string(139, '-') << RESET << std::endl;
+    std::cout << GREY << std::string(139, '-') << RESET << std::endl;
 }
