@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 15:10:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,10 +44,6 @@ void Location::setRoot(const std::string &root)
 void Location::addAllowedMethod(const std::string &method)
 {
 	std::string m = toUpperString(method);
-
-	// Checking
-	if (m != "GET" && m != "POST" && m != "DELETE")
-		return;
 
 	// Anti double
 	if (isMethodAllowed(m))
