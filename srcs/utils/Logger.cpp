@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:12:17 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 10:14:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,9 +106,24 @@ void Logger::flushGroupedRequests()
 	int methodPadding = 8 - _lastMethod.length();
 	if (methodPadding < 0) methodPadding = 0;
 
-	// Format server:port with fixed width
-	std::stringstream serverStr;
-	serverStr << _lastServerName << ":" << _lastServerPort;
+	// Format server:port with fixed width (20 chars max)
+	int serverFieldWidth = 20;
+	std::stringstream portStr;
+	portStr << ":" << _lastServerPort;
+	std::string portPart = portStr.str();
+	
+	// Calculate max space for server name
+	int maxServerNameLen = serverFieldWidth - portPart.length();
+	std::string serverName = _lastServerName;
+	
+	// Truncate server name if needed
+	if ((int)serverName.length() > maxServerNameLen && maxServerNameLen >= 2) {
+		serverName = serverName.substr(0, maxServerNameLen - 2) + "..";
+	} else if ((int)serverName.length() > maxServerNameLen) {
+		serverName = serverName.substr(0, maxServerNameLen);
+	}
+	
+	std::string serverPortStr = serverName + portPart;
 
 	// Format timing
 	std::stringstream timingStr;
@@ -167,7 +182,7 @@ void Logger::flushGroupedRequests()
 	}
 
 	std::cout << "\r"
-				<< std::setw(25) << std::left << serverStr.str() << " "
+				<< std::setw(20) << std::left << serverPortStr << " "
 				<< GRAY << "|" << RESET << " "
 				<< "[" << getCurrentTime() << "] "
 				<< GRAY << "|" << RESET << " "
@@ -222,10 +237,10 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 	// If different request or inactive period, finalize and start new group
 	if (!isSameRequest || isInactive) {
 		finalizeGroupedRequests();
-		
-		if (isInactive && _lastRequestTime.tv_sec != 0)
-			std::cout << GRAY << std::string(91, '-') << RESET << std::endl;
-		
+
+		if (isInactive && _lastRequestTime.tv_sec)
+			std::cout << GRAY << std::string(135, '-') << RESET << std::endl;
+
 		// Start new group
 		_lastMethod = method;
 		_lastUri = uri;
@@ -266,7 +281,7 @@ void Logger::logStderr(const std::string &stderrOutput)
 {
 	if (stderrOutput.empty())
 		return;
-	
+
 	// Force finalization to ensure log line is complete
 	if (_requestCount > 0)
 	{
@@ -276,7 +291,7 @@ void Logger::logStderr(const std::string &stderrOutput)
 		_minTime = 0.0;
 		_maxTime = 0.0;
 	}
-	
+
 	// Display stderr output
 	std::cout << stderrOutput;
 	if (stderrOutput[stderrOutput.length() - 1] != '\n')
