@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 10:14:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 10:39:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,16 +42,22 @@ std::string Logger::getCurrentTime()
 
 std::string Logger::formatSize(size_t bytes)
 {
+	const size_t KB = 1024;
+	const size_t MB = KB * 1024;
+	const size_t GB = MB * 1024;
+	const size_t TB = GB * 1024;
+
 	std::stringstream ss;
-
-	if (bytes < 1024) {
+	if (bytes < KB)
 		ss << std::setw(4) << std::right << bytes << "B";
-	} else if (bytes < 1024 * 1024) {
-		ss << std::setw(4) << std::right << (bytes / 1024) << "K";
-	} else {
-		ss << std::setw(4) << std::right << (bytes / (1024 * 1024)) << "M";
-	}
-
+	else if (bytes < MB)
+		ss << std::setw(4) << std::right << (bytes / KB) << "K";
+	else if (bytes < GB)
+		ss << std::setw(4) << std::right << (bytes / MB) << "M";
+	else if (bytes < TB)
+		ss << std::setw(4) << std::right << (bytes / GB) << "G";
+	else
+		ss << std::setw(4) << std::right << (bytes / TB) << "T";
 	return ss.str();
 }
 
@@ -70,7 +76,7 @@ void Logger::flushGroupedRequests()
 		return;
 
 	std::string statusColor = getStatusColor(_lastStatus);
-	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : CYAN;
+	std::string methodColor = (_lastMethod == "GET") ? BLUE : (_lastMethod == "POST") ? MAGENTA : (_lastMethod == "DELETE") ? CYAN : RED;
 
 	int uriFieldWidth = 50;
 	
@@ -92,6 +98,12 @@ void Logger::flushGroupedRequests()
 	
 	// Ensure minimum
 	if (maxUriLen < 2) maxUriLen = 2; // Minimum for ".."
+	
+	// Center-align client IP
+	int ipFieldWidth = 15;
+	int ipLen = _lastClientIP.length();
+	int ipPadding = (ipFieldWidth - ipLen) / 2;
+	std::string centeredIP = std::string(ipPadding, ' ') + _lastClientIP + std::string(ipFieldWidth - ipLen - ipPadding, ' ');
 	
 	// Truncate URI if necessary
 	std::string displayUri = _lastUri;
@@ -186,13 +198,12 @@ void Logger::flushGroupedRequests()
 				<< GRAY << "|" << RESET << " "
 				<< "[" << getCurrentTime() << "] "
 				<< GRAY << "|" << RESET << " "
-				<< _lastClientIP << " "
+				<< centeredIP << " "
 				<< GRAY << "|" << RESET << " "
-				<< methodColor << BOLD << _lastMethod << RESET
-				<< std::string(methodPadding, ' ') << " "
+				<< methodColor << BOLD << std::setw(7) << std::right << _lastMethod << RESET << " "
 				<< uriField.str() << " "
 				<< GRAY << "|" << RESET << " "
-				<< std::setw(5) << std::right << formatSize(_lastSize) << " "
+				<< std::setw(4) << std::right << formatSize(_lastSize) << " "
 				<< GRAY << "|" << RESET << " "
 				<< GRAY << "→" << RESET << " "
 				<< statusColor << BOLD << _lastStatus << RESET << " "
@@ -239,7 +250,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		finalizeGroupedRequests();
 
 		if (isInactive && _lastRequestTime.tv_sec)
-			std::cout << GRAY << std::string(135, '-') << RESET << std::endl;
+			std::cout << GRAY << std::string(137, '-') << RESET << std::endl;
 
 		// Start new group
 		_lastMethod = method;
