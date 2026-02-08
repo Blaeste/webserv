@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 11:39:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 18:57:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 // Include(s)
 #include <string>
 #include <map>
-
+#include <vector>
 
 // Forward declaration(s)
 class HttpRequest;
@@ -81,8 +81,9 @@ class HttpResponse
 			 * @brief Serves an error page for the given HTTP status code.
 			 * @param code The HTTP status code.
 			 * @param errorPagePath The path to a custom error page file (optional).
-			 */
-			void serveError(int code, const std::string &errorPagePath);
+			 * @param allowedMethods List of allowed methods (for 405 responses).
+			*/
+			void serveError(int code, const std::string &errorPagePath, const std::vector<std::string> &allowedMethods = std::vector<std::string>());
 
 			/**
 			 * @brief Serves a directory listing for the given path.
@@ -103,6 +104,12 @@ class HttpResponse
 			 * @param uploadDir The directory where files should be saved.
 			 */
 			void handleUpload(const HttpRequest &request, const std::string &uploadDir);
+
+			/**
+			 * @brief Serves an OPTIONS response with allowed HTTP methods.
+			 * @param allowedMethods A vector of allowed HTTP methods for this location.
+			 */
+			void serveOptions(const std::vector<std::string> &allowedMethods);
 
 	private:
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:11:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 18:57:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,9 +124,22 @@ std::string HttpResponse::build(const std::string &method) const
 	return response;
 }
 
-void HttpResponse::serveError(int code, const std::string &errorPagePath)
+void HttpResponse::serveError(int code, const std::string &errorPagePath, const std::vector<std::string> &allowedMethods)
 {
 	setStatus(code);
+
+	// Add Allow header for 405 Method Not Allowed
+	if (code == 405 && !allowedMethods.empty())
+	{
+		std::string allow;
+		for (size_t i = 0; i < allowedMethods.size(); ++i)
+		{
+			if (i > 0)
+				allow += ", ";
+			allow += allowedMethods[i];
+		}
+		setHeader("Allow", allow);
+	}
 
 	try
 	{
@@ -407,4 +420,21 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 	setStatus(201);
 	setHeader("Content-Type", "text/html");
 	setBody("<html><body><h1>Upload successful!</h1></body></html>");
+}
+
+void HttpResponse::serveOptions(const std::vector<std::string> &allowedMethods)
+{
+	// Build the Allow header with comma-separated methods
+	std::string allow;
+	for (size_t i = 0; i < allowedMethods.size(); ++i)
+	{
+		if (i > 0)
+			allow += ", ";
+		allow += allowedMethods[i];
+	}
+
+	setStatus(200);
+	setHeader("Allow", allow);
+	setHeader("Content-Type", "text/plain");
+	setBody("");
 }

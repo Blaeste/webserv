@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:11:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 18:56:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -261,7 +261,17 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	// Handle errors (e.g., 403 traversal attempts) before dereferencing location data
 	else if (match.statusCode != 200)
-		_response.serveError(match.statusCode, "");
+	{
+		// For 405 errors, include allowed methods in the response
+		if (match.statusCode == 405 && match.location)
+			_response.serveError(match.statusCode, "", match.location->getAllowedMethods());
+		else
+			_response.serveError(match.statusCode, "");
+	}
+
+	// Handle OPTIONS request
+	else if (_request.getMethod() == "OPTIONS")
+		_response.serveOptions(match.location->getAllowedMethods());
 
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
