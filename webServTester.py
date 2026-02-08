@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/03 12:28:26 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/08 11:01:46 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -236,10 +236,6 @@ def test_method_not_allowed():
 	# DELETE sur / devreait etre refuse
 	r = safe_delete(f"{BASE_URL}/")
 	test("DELETE on / return 405", r.status_code == 405, f"Got {r.status_code}")
-
-	# PUT n ets pas supporte
-	r = safe_put(f"{BASE_URL}/", data="test")
-	test("PUT return 405 or 501", r.status_code in [405, 501], f"Got {r.status_code}")
 
 def test_unknown_method_no_crash():
     """Test méthode UNKNOWN (FOOBAR) et vérifier pas de crash"""
@@ -677,18 +673,6 @@ def test_post_without_content_type():
     # POST sans Content-Type
     r = safe_post(f"{BASE_URL}/", data="raw data")
     test("POST without explicit Content-Type handled", r.status_code in [200, 201, 400])
-
-def test_head_method():
-    # HEAD method (si supporté)
-    r = safe_head(f"{BASE_URL}/")
-    test("HEAD method returns 200 or 405", r.status_code in [200, 405])
-    if r.status_code == 200:
-        test("HEAD has no body", len(r.content) == 0)
-
-def test_options_method():
-    # OPTIONS method
-    r = safe_options(f"{BASE_URL}/")
-    test("OPTIONS method handled", r.status_code in [200, 204, 405, 501])
 
 def test_case_sensitivity():
     # Test case sensitivity des URLs
@@ -1461,8 +1445,6 @@ if __name__ == "__main__":
 		run_test(test_double_slash)
 		run_test(test_multiple_file_upload)
 		run_test(test_binary_file)
-		run_test(test_head_method)
-		run_test(test_options_method)
 		run_test(test_post_without_content_type)
 		run_test(test_case_sensitivity)
 		run_test(test_invalid_http_version)

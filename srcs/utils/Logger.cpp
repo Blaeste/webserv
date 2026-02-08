@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 10:39:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 11:26:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -250,7 +250,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		finalizeGroupedRequests();
 
 		if (isInactive && _lastRequestTime.tv_sec)
-			std::cout << GRAY << std::string(137, '-') << RESET << std::endl;
+			Logger::printSeparator();
 
 		// Start new group
 		_lastMethod = method;
@@ -304,10 +304,15 @@ void Logger::logStderr(const std::string &stderrOutput)
 	}
 
 	// Display stderr output
+	Logger::printSeparator();
 	std::cout << stderrOutput;
 	if (stderrOutput[stderrOutput.length() - 1] != '\n')
 		std::cout << std::endl;
+	Logger::printSeparator();
 	std::cout.flush();
 }
 
-
+void Logger::printSeparator()
+{
+    std::cout << GRAY << std::string(139, '-') << RESET << std::endl;
+}
