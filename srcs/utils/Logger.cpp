@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 13:50:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 19:39:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 #include <sstream>
 
 // Static variables initialization
-timeval Logger::_lastRequestTime = {0, 0};
+// timeval Logger::_lastRequestTime = {0, 0};
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
 std::string Logger::_lastClientIP = "";
@@ -49,15 +49,15 @@ std::string Logger::formatSize(size_t bytes)
 
 	std::stringstream ss;
 	if (bytes < KB)
-		ss << std::setw(4) << std::right << bytes << "B";
+		ss << std::setw(3) << std::right << bytes << "B";
 	else if (bytes < MB)
-		ss << std::setw(4) << std::right << (bytes / KB) << "K";
+		ss << std::setw(3) << std::right << (bytes / KB) << "K";
 	else if (bytes < GB)
-		ss << std::setw(4) << std::right << (bytes / MB) << "M";
+		ss << std::setw(3) << std::right << (bytes / MB) << "M";
 	else if (bytes < TB)
-		ss << std::setw(4) << std::right << (bytes / GB) << "G";
+		ss << std::setw(3) << std::right << (bytes / GB) << "G";
 	else
-		ss << std::setw(4) << std::right << (bytes / TB) << "T";
+		ss << std::setw(3) << std::right << (bytes / TB) << "T";
 	return ss.str();
 }
 
@@ -78,7 +78,7 @@ void Logger::flushGroupedRequests()
 	std::string statusColor = getStatusColor(_lastStatus);
 	std::string methodColor = (_lastMethod == "GET") ? GREEN : (_lastMethod == "HEAD") ? CYAN : (_lastMethod == "POST") ? YELLOW : (_lastMethod == "DELETE") ? RED : GREY;
 
-	int uriFieldWidth = 50;
+	int uriFieldWidth = 42;
 	
 	// Format count suffix and calculate its actual length
 	std::stringstream countStr;
@@ -203,7 +203,7 @@ void Logger::flushGroupedRequests()
 				<< methodColor << BOLD << std::setw(7) << std::right << _lastMethod << RESET << " "
 				<< uriField.str() << " "
 				<< GREY << "|" << RESET << " "
-				<< std::setw(4) << std::right << formatSize(_lastSize) << " "
+			<< formatSize(_lastSize) << " "
 				<< GREY << "|" << RESET << " "
 				<< GREY << "→" << RESET << " "
 				<< statusColor << BOLD << _lastStatus << RESET << " "
@@ -230,27 +230,27 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 								 std::string serverName, int port)
 {
 	// Get time
-	timeval now;
-	gettimeofday(&now, NULL);
+	// timeval now;
+	// gettimeofday(&now, NULL);
 
 	// Check if this request is identical to the previous one
 	bool isSameRequest = (_lastMethod == method && _lastUri == uri && 
 						  _lastStatus == statusCode && _lastSize == responseSize);
 
 	// Check for inactivity (separator between bursts)
-	bool isInactive = false;
-	if (_lastRequestTime.tv_sec != 0) {
-		long timeDiff = (now.tv_sec - _lastRequestTime.tv_sec) * 1000 +
-						(now.tv_usec - _lastRequestTime.tv_usec) / 1000;
-		isInactive = (timeDiff > 100);
-	}
+	// bool isInactive = false;
+	// if (_lastRequestTime.tv_sec != 0) {
+	// 	long timeDiff = (now.tv_sec - _lastRequestTime.tv_sec) * 1000 +
+	// 					(now.tv_usec - _lastRequestTime.tv_usec) / 1000;
+	// 	isInactive = (timeDiff > 100);
+	// }
 
 	// If different request or inactive period, finalize and start new group
-	if (!isSameRequest || isInactive) {
+	if (!isSameRequest/* || isInactive*/) {
 		finalizeGroupedRequests();
 
-		if (isInactive && _lastRequestTime.tv_sec)
-			Logger::printSeparator();
+		// if (isInactive && _lastRequestTime.tv_sec)
+		// 	Logger::printSeparator();
 
 		// Start new group
 		_lastMethod = method;
@@ -280,7 +280,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		flushGroupedRequests();
 	}
 	
-	_lastRequestTime = now;
+	// _lastRequestTime = now;
 }
 
 void Logger::logError(const std::string &message)
@@ -314,5 +314,5 @@ void Logger::logStderr(const std::string &stderrOutput)
 
 void Logger::printSeparator()
 {
-    std::cout << GREY << std::string(139, '-') << RESET << std::endl;
+    std::cout << GREY << std::string(132, '-') << RESET << std::endl;
 }

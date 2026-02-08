@@ -6,19 +6,14 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/08 18:55:46 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/08 19:44:00 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 MK_DIR := mk
 
-#include ${MK_DIR}/config.mk
-#include ${MK_DIR}/dev.mk
 include ${MK_DIR}/format.mk
 include ${MK_DIR}/git.mk
-#include ${MK_DIR}/libs.mk
-#include ${MK_DIR}/sources.mk
-#include ${MK_DIR}/targets.mk
 
 .DEFAULT_GOAL := all
 

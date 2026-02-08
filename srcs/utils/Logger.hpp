@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 13:47:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/08 19:38:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@
 
 class Logger {
 private:
-	static timeval _lastRequestTime;
+	// static timeval _lastRequestTime;
 	static std::string _lastMethod;
 	static std::string _lastUri;
 	static std::string _lastClientIP;
