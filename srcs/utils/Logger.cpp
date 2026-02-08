@@ -29,6 +29,7 @@ double Logger::_minTime = 0.0;
 double Logger::_maxTime = 0.0;
 std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
+bool Logger::_firstLog = true;
 
 std::string Logger::getCurrentTime()
 {
@@ -229,6 +230,13 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 								size_t responseSize, double responseTime,
 								 std::string serverName, int port)
 {
+    // Display separator before first log
+    if (_firstLog)
+    {
+        printSeparator();
+        _firstLog = false;
+    }
+
 	// Get time
 	// timeval now;
 	// gettimeofday(&now, NULL);
@@ -283,16 +291,8 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 	// _lastRequestTime = now;
 }
 
-void Logger::logError(const std::string &message)
+void Logger::logMessage(const std::string &message)
 {
-	std::cout << RED << "❌ Error: " << RESET << message << std::endl;
-}
-
-void Logger::logStderr(const std::string &stderrOutput)
-{
-	if (stderrOutput.empty())
-		return;
-
 	// Force finalization to ensure log line is complete
 	if (_requestCount > 0)
 	{
@@ -303,12 +303,12 @@ void Logger::logStderr(const std::string &stderrOutput)
 		_maxTime = 0.0;
 	}
 
-	// Display stderr output
 	Logger::printSeparator();
-	std::cout << stderrOutput;
-	if (stderrOutput[stderrOutput.length() - 1] != '\n')
+	std::cout << message;
+	if (message.empty() || message[message.length() - 1] != '\n')
 		std::cout << std::endl;
 	Logger::printSeparator();
+	
 	std::cout.flush();
 }
 

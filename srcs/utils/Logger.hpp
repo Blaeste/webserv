@@ -42,6 +42,7 @@ private:
 	static double _maxTime;
 	static std::string _lastServerName;
 	static int _lastServerPort;
+	static bool _firstLog;
 
 	static std::string getCurrentTime();
 	static std::string formatSize(size_t bytes);
@@ -55,6 +56,5 @@ public:
 							const std::string &clientIP, int statusCode,
 							size_t responseSize, double responseTime,
 							std::string serverName, int port);
-	static void logError(const std::string &message);
-	static void logStderr(const std::string &stderrOutput);
+	static void logMessage(const std::string &message);
 };

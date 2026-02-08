@@ -15,6 +15,7 @@
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
+#include "../utils/Logger.hpp"
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -35,7 +36,7 @@ std::string CGI::readFromPipe(int fd) {
 	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
 		result.append(buffer, bytesRead);
 	if (bytesRead < 0)
-		std::cerr << "[CGI] readFromPipe: read failed" << std::endl;
+		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "readFromPipe: read failed");
 	return result;
 }
 
@@ -161,12 +162,12 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		interpreter = std::string(absoluteInterpreter);
 
 	if (access(interpreter.c_str(), X_OK) != 0) {
-		std::cerr << "[CGI] Interpreter not executable: " << interpreter << std::endl;
+		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Interpreter not executable: " + interpreter);
 		return NULL;
 	}
 
 	if (access(match.filePath.c_str(), R_OK) != 0) {
-		std::cerr << "[CGI] Script not readable: " << match.filePath << std::endl;
+		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Script not readable: " + match.filePath);
 		return NULL;
 	}
 
@@ -178,7 +179,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	int pipeErr[2];  // CGI stderr
 
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1) {
-		std::cerr << "[CGI] ASSERT: Failed to create pipes" << std::endl;
+		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Error: pipe failed");
 		delete cgi;
 		return NULL;
 	}
@@ -187,7 +188,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 	pid_t pid = fork();
 
 	if (pid == -1) {
-		std::cerr << "[CGI] ASSERT: Failed to fork" << std::endl;
+		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Fork failed");
 		close(pipeOut[0]); close(pipeOut[1]);
 		close(pipeIn[0]); close(pipeIn[1]);
 		close(pipeErr[0]); close(pipeErr[1]);

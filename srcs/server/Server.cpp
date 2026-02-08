@@ -57,7 +57,7 @@ Server::~Server()
 		safeClose(_s_sigpipe[0]);
 	if (_s_sigpipe[1] >= 0)
 		safeClose(_s_sigpipe[1]);
-	std::cout << "\nServer was closed" << std::endl;
+	Logger::logMessage("Server was closed");
 }
 
 // Public method(s)
@@ -658,7 +658,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					{
 						Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
 						if (!cgi->errorOutput.empty())
-							Logger::logStderr(cgi->errorOutput);
+							Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
 					}
 				}
 				
