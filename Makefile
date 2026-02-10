@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/08 19:44:00 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/10 10:38:51 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -99,7 +99,7 @@ kill:
 
 test: re
 	-pkill webserv || true
-	gnome-terminal --geometry=160x50 -- bash -c './webserv config/default.conf; exec bash' &
+	gnome-terminal --geometry=160x50 -- bash -c './webserv config/webServTester.conf; exec bash' &
 	sleep 1
 	@# Ensure the Python dependency "requests" is available for the tester
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
@@ -131,7 +131,7 @@ eval: re
 	@cat > config/eval.conf <<-'EOF'
 	server {
 	    listen 8080;
-	    server_name localhost;
+	    server_name 42tester;
 	    error_page 400 /error_pages/400.html;
 	    error_page 403 /error_pages/403.html;
 	    error_page 404 /error_pages/404.html;

@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/08 14:18:17 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/10 10:32:57 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ import shutil
 import http.client
 from datetime import datetime
 
-BASE_URL = "http://localhost:8082"
+BASE_URL = "http://localhost:8080"
 TIMEOUT = 5
 PASSED = 0
 FAILED = 0
