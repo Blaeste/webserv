@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/10 11:23:52 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/10 11:45:07 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ include ${MK_DIR}/git.mk
 
 .SILENT:
 .ONESHELL:
-.PHONY: all clean fclean re kill
+.PHONY: all clean fclean re kill test eval clear_eval
 
 # Executable name
 NAME = webserv
@@ -32,6 +32,9 @@ NAME = webserv
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -O3 -std=c++98
 INCLUDES = -I includes
+
+# Compile multi-cpu (linux only comment it on other system)
+MAKEFLAGS += -j$(shell nproc)
 
 # ============================================================================ #
 #                               SOURCE FILES                                   #
@@ -57,6 +60,23 @@ SRCS = srcs/main.cpp $(CGI) $(CONFIG) $(HTTP) $(SERVER) $(UTILS)
 # Object files (mirror source structure in obj/ directory)
 OBJS = $(SRCS:srcs/%.cpp=obj/%.o)
 
+# Header files by category
+CGI_HEADERS = CGI.hpp
+CONFIG_HEADERS = Config.hpp Location.hpp ServerConfig.hpp
+HTTP_HEADERS = HttpRequest.hpp HttpResponse.hpp
+SERVER_HEADERS = Client.hpp Router.hpp Server.hpp
+UTILS_HEADERS = Logger.hpp MimeTypes.hpp utils.hpp
+
+# add directory prefixes to header files
+CGI_H = $(addprefix srcs/cgi/, $(CGI_HEADERS))
+CONFIG_H = $(addprefix srcs/config/, $(CONFIG_HEADERS))
+HTTP_H = $(addprefix srcs/http/, $(HTTP_HEADERS))
+SERVER_H = $(addprefix srcs/server/, $(SERVER_HEADERS))
+UTILS_H = $(addprefix srcs/utils/, $(UTILS_HEADERS))
+
+# All header file
+HEADERS = includes/webserv.hpp $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)
+
 # ============================================================================ #
 #                                  RULES                                       #
 # ============================================================================ #
@@ -70,7 +90,7 @@ $(NAME): $(OBJS)
 	echo "✓ $(NAME) compiled successfully"
 
 # Compile source files into object files
-obj/%.o: srcs/%.cpp
+obj/%.o: srcs/%.cpp $(HEADERS)
 	mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
@@ -97,7 +117,7 @@ kill:
 		echo "No running $(NAME) found"; \
 	fi
 
-test: re
+test: $(NAME)
 	-pkill webserv || true
 	gnome-terminal --geometry=160x50 -- bash -c './webserv config/webServTester.conf; exec bash' 2>/dev/null &
 	sleep 1
@@ -108,7 +128,7 @@ test: re
 	)
 	python3 webServTester.py
 
-eval: re
+eval: $(NAME)
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
 	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
 	@chmod +x tester cgi_tester
@@ -165,7 +185,7 @@ eval: re
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	gnome-terminal --geometry=160x50 -- bash -c './webserv config/eval.conf; exec bash' &
+	gnome-terminal --geometry=160x50 -- bash -c './webserv config/eval.conf; exec bash' 2>/dev/null &
 	@sleep 1
 	./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
