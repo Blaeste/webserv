@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/10 10:32:57 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/10 11:19:21 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -37,6 +37,30 @@ RESET = '\033[0m'
 
 # Dictionnaire pour stocker les resultats des tests
 test_results = {}
+
+def check_and_install_dependencies():
+	"""Check dependencies and install it"""
+	tools = {
+		'netstat': 'net-tools',
+		'siege': 'siege',
+		'php-cgi': 'php-cgi'
+	}
+
+	missing = []
+	for cmd, package in tools.items():
+		if subprocess.run(['which', cmd], capture_output=True).returncode != 0:
+			missing.append((cmd, package))
+
+	if missing:
+		print(f"{YELLOW}Installing missing dependencies...{RESET}")
+		for cmd, package in missing:
+			print(f"  • Installing {package}...")
+			result = subprocess.run(['sudo', 'apt', 'install', '-y', package], capture_output=True)
+			if result.returncode == 0:
+				print(f"    {GREEN}✓{RESET} {package} installed")
+			else:
+				print(f"    {RED}✗{RESET} Failed to install {package}")
+		print()
 
 def test(name, condition, details=""):
 	global PASSED, FAILED, test_results
@@ -1379,6 +1403,8 @@ def stop_server():
 
 if __name__ == "__main__":
 	try:
+		check_and_install_dependencies()
+
 		if not check_server_running():
 			sys.exit(1)
 

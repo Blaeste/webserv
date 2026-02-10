@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/10 10:38:51 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/10 11:23:52 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -99,28 +99,12 @@ kill:
 
 test: re
 	-pkill webserv || true
-	gnome-terminal --geometry=160x50 -- bash -c './webserv config/webServTester.conf; exec bash' &
+	gnome-terminal --geometry=160x50 -- bash -c './webserv config/webServTester.conf; exec bash' 2>/dev/null &
 	sleep 1
-	@# Ensure the Python dependency "requests" is available for the tester
+	@# Ensure requests is available (critical dependency)
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
-		echo "Installing missing Python package: requests"; \
-		python3 -m pip --version >/dev/null 2>&1 || python3 -m ensurepip --upgrade >/dev/null 2>&1; \
+		echo "Installing Python package: requests"; \
 		python3 -m pip install --user -q requests \
-	)
-	@# Ensure net-tools (netstat) is available for the tester
-	@command -v netstat >/dev/null 2>&1 || ( \
-		echo "Installing missing package: net-tools"; \
-		sudo apt update && sudo apt install -y net-tools \
-	)
-	@# Ensure siege is available for the tester
-	@command -v siege >/dev/null 2>&1 || ( \
-		echo "Installing missing package: siege"; \
-		sudo apt update && sudo apt install -y siege \
-	)
-	@# Ensure php-cgi is available for the tester
-	@command -v php-cgi >/dev/null 2>&1 || ( \
-		echo "Installing missing package: php-cgi"; \
-		sudo apt update && sudo apt install -y php-cgi \
 	)
 	python3 webServTester.py
 
