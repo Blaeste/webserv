@@ -3,20 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 19:39:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 13:45:24 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "Logger.hpp"
 #include <iostream>
 #include <iomanip>
 #include <sstream>
 
-// Static variables initialization
+// Static variables initialization ---------------------------------------------
 // timeval Logger::_lastRequestTime = {0, 0};
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
@@ -31,6 +31,7 @@ std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
 bool Logger::_firstLog = true;
 
+// Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
 {
 	time_t now = time(NULL);
@@ -80,7 +81,7 @@ void Logger::flushGroupedRequests()
 	std::string methodColor = (_lastMethod == "GET") ? GREEN : (_lastMethod == "HEAD") ? CYAN : (_lastMethod == "POST") ? YELLOW : (_lastMethod == "DELETE") ? RED : GREY;
 
 	int uriFieldWidth = 42;
-	
+
 	// Format count suffix and calculate its actual length
 	std::stringstream countStr;
 	int actualCountLen = 0;
@@ -91,21 +92,21 @@ void Logger::flushGroupedRequests()
 		plainCount << "(" << _requestCount << ")";
 		actualCountLen = plainCount.str().length();
 	}
-	
+
 	// Calculate available space for URI (field width minus count and 1 space)
 	int maxUriLen = uriFieldWidth - actualCountLen;
 	if (actualCountLen > 0)
 		maxUriLen--; // Reserve 1 space between URI and count
-	
+
 	// Ensure minimum
 	if (maxUriLen < 2) maxUriLen = 2; // Minimum for ".."
-	
+
 	// Center-align client IP
 	int ipFieldWidth = 15;
 	int ipLen = _lastClientIP.length();
 	int ipPadding = (ipFieldWidth - ipLen) / 2;
 	std::string centeredIP = std::string(ipPadding, ' ') + _lastClientIP + std::string(ipFieldWidth - ipLen - ipPadding, ' ');
-	
+
 	// Truncate URI if necessary
 	std::string displayUri = _lastUri;
 	if ((int)displayUri.length() > maxUriLen) {
@@ -124,18 +125,18 @@ void Logger::flushGroupedRequests()
 	std::stringstream portStr;
 	portStr << ":" << _lastServerPort;
 	std::string portPart = portStr.str();
-	
+
 	// Calculate max space for server name
 	int maxServerNameLen = serverFieldWidth - portPart.length();
 	std::string serverName = _lastServerName;
-	
+
 	// Truncate server name if needed
 	if ((int)serverName.length() > maxServerNameLen && maxServerNameLen >= 2) {
 		serverName = serverName.substr(0, maxServerNameLen - 2) + "..";
 	} else if ((int)serverName.length() > maxServerNameLen) {
 		serverName = serverName.substr(0, maxServerNameLen);
 	}
-	
+
 	std::string serverPortStr = serverName + portPart;
 
 	// Format timing
@@ -150,11 +151,11 @@ void Logger::flushGroupedRequests()
 		// Multiple requests: show min-max
 		if (_maxTime < 1.0) {
 			// Both in microseconds
-			timingStr << std::fixed << std::setprecision(0) 
+			timingStr << std::fixed << std::setprecision(0)
 					  << (_minTime * 1000) << "-" << (_maxTime * 1000) << "µs";
 		} else if (_minTime >= 1.0) {
 			// Both in milliseconds
-			timingStr << std::fixed << std::setprecision(1) 
+			timingStr << std::fixed << std::setprecision(1)
 					  << _minTime << "-" << _maxTime << "ms";
 		} else {
 			// Mixed: min in µs, max in ms
@@ -162,14 +163,14 @@ void Logger::flushGroupedRequests()
 					  << std::fixed << std::setprecision(1) << _maxTime << "ms";
 		}
 	}
-	
+
 	// Build URI+count field with proper alignment (always exactly uriFieldWidth)
 	std::stringstream uriField;
 	uriField << displayUri;
 	if (_requestCount > 1) {
 		// Calculate actual combined length and padding needed
 		int combinedLen = displayUri.length() + 1 + actualCountLen; // URI + space + count
-		
+
 		// If it would overflow, we need to re-truncate URI further
 		if (combinedLen > uriFieldWidth && displayUri.length() > 2) {
 			int excess = combinedLen - uriFieldWidth;
@@ -180,7 +181,7 @@ void Logger::flushGroupedRequests()
 				uriField << displayUri;
 			}
 		}
-		
+
 		// Now add padding and count
 		int padding = uriFieldWidth - displayUri.length() - actualCountLen;
 		if (padding > 0)
@@ -218,13 +219,14 @@ void Logger::finalizeGroupedRequests()
 {
 	if (_requestCount > 0)
 		std::cout << std::endl;
-	
+
 	_requestCount = 0;
 	_totalTime = 0.0;
 	_minTime = 0.0;
 	_maxTime = 0.0;
 }
 
+// Public method(s) ------------------------------------------------------------
 void Logger::logRequest(const std::string &method, const std::string &uri,
 								const std::string &clientIP, int statusCode,
 								size_t responseSize, double responseTime,
@@ -242,7 +244,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 	// gettimeofday(&now, NULL);
 
 	// Check if this request is identical to the previous one
-	bool isSameRequest = (_lastMethod == method && _lastUri == uri && 
+	bool isSameRequest = (_lastMethod == method && _lastUri == uri &&
 						  _lastStatus == statusCode && _lastSize == responseSize);
 
 	// Check for inactivity (separator between bursts)
@@ -272,7 +274,7 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 		_maxTime = responseTime;
 		_lastServerName = serverName;
 		_lastServerPort = port;
-		
+
 		// Display immediately
 		flushGroupedRequests();
 	} else {
@@ -283,11 +285,11 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 			_minTime = responseTime;
 		if (responseTime > _maxTime)
 			_maxTime = responseTime;
-		
+
 		// Update display in place
 		flushGroupedRequests();
 	}
-	
+
 	// _lastRequestTime = now;
 }
 
@@ -308,7 +310,7 @@ void Logger::logMessage(const std::string &message)
 	if (message.empty() || message[message.length() - 1] != '\n')
 		std::cout << std::endl;
 	Logger::printSeparator();
-	
+
 	std::cout.flush();
 }
 

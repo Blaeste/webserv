@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "utils.hpp"
 #include <cerrno>
 #include <cstdlib> // for strtol
@@ -27,7 +27,7 @@
 #include <limits.h>
 #include <cstdio> //snprintf
 
-// Function(s)
+// Function(s) -----------------------------------------------------------------
 std::string trim(const std::string &str)
 {
 	const std::string whitespace = " \t\n\r\f\v";

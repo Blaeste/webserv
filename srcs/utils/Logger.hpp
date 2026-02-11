@@ -3,19 +3,20 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 19:38:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 13:45:13 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
+// Include(s) ******************************************************************
 #include <string>
 #include <sys/time.h>
 
-// Colors
+// Defines *********************************************************************
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
 #define GREEN   "\033[32m"
@@ -24,12 +25,12 @@
 #define MAGENTA "\033[35m"
 #define CYAN    "\033[36m"
 #define GREY    "\033[90m"
+#define BOLD    "\033[1m"
 
-// Styles
-#define BOLD      "\033[1m"
-
+// Class ***********************************************************************
 class Logger {
 private:
+	// Attribute(s) ------------------------------------------------------------
 	// static timeval _lastRequestTime;
 	static std::string _lastMethod;
 	static std::string _lastUri;
@@ -44,6 +45,7 @@ private:
 	static int _lastServerPort;
 	static bool _firstLog;
 
+	// Private method(s) -------------------------------------------------------
 	static std::string getCurrentTime();
 	static std::string formatSize(size_t bytes);
 	static std::string getStatusColor(int statusCode);
@@ -52,6 +54,7 @@ private:
 	static void printSeparator();
 
 public:
+	// Public method(s) --------------------------------------------------------
 	static void logRequest(const std::string &method, const std::string &uri,
 							const std::string &clientIP, int statusCode,
 							size_t responseSize, double responseTime,

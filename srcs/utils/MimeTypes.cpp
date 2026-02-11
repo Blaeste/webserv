@@ -10,10 +10,10 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "MimeTypes.hpp"
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
 std::map<std::string, std::string> MimeTypes::createMap() {
 	std::map<std::string, std::string> map;
 
@@ -43,9 +43,10 @@ std::map<std::string, std::string> MimeTypes::createMap() {
 	return map;
 }
 
+// Static variable initialization ----------------------------------------------
 const std::map<std::string, std::string> MimeTypes::_types = MimeTypes::createMap();
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 const std::string& MimeTypes::get(const std::string& extension) {
 	std::map<std::string, std::string>::const_iterator it = _types.find(extension);
 	if (it != _types.end())

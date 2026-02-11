@@ -12,12 +12,12 @@
 
 #pragma once
 
-// Include(s)
+// Include(s) ******************************************************************
 #include <string>
 #include <vector>
 #include <set>
 
-// Function prototype(s)
+// Function prototype(s) *******************************************************
 
 /**
  * @brief Utility functions for string manipulation, file handling, and date formatting.
