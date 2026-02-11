@@ -3,41 +3,41 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 12:48:48 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// Include(s)
+// Include(s) ******************************************************************
 #include "ServerConfig.hpp"
 #include <string>
 #include <vector>
 
-// Structure
+/**
+ * @brief Represents a configuration block with its content and position.
+ * Used during parsing to track block locations in the config file.
+ */
 struct BlockInfo {
-	std::string content;
-	size_t startPos;
-	size_t endPos;
+	std::string content; ///< Block content without braces
+	size_t startPos; ///< Start position in original file
+	size_t endPos; ///< End position in original file
 };
 
-// Class
+// Class ***********************************************************************
 class Config
 {
-
 	private:
+		// Attribute(s) --------------------------------------------------------
 
-		// Attribute(s)
-
-		std::vector<ServerConfig> _servers;
-		std::string _filePath;
+		std::vector<ServerConfig> _servers; ///< List of parsed server configurations
+		std::string _filePath; ///< Path to the configuration file
 
 	public:
-
-		// Public Method(s)
+		// Public Method(s) ----------------------------------------------------
 
 		/**
 		 * @brief Parses the configuration file at the given path.
@@ -46,8 +46,7 @@ class Config
 		 */
 		bool parse(const std::string &filePath);
 
-		// Getter(s)
-
+		// Getter(s) -----------------------------------------------------------
 		/**
 		 * @brief Gets the list of configured servers.
 		 * @return A constant reference to a vector of ServerConfig objects.
@@ -55,8 +54,7 @@ class Config
 		const std::vector<ServerConfig> &getServers() const;
 
 	private:
-
-		// Private Method(s)
+		// Private Method(s) ---------------------------------------------------
 
 		/**
 		 * @brief Removes comments (lines starting with #) from content.
@@ -64,7 +62,6 @@ class Config
 		 * @return Content without comments.
 		 */
 		std::string removeComments(const std::string &content);
-
 		/**
 		 * @brief Extracts blocks of configuration from the content based on the given keyword.
 		 * @param content The full configuration content as a string.
@@ -72,27 +69,23 @@ class Config
 		 * @return A vector of strings, each representing a configuration block.
 		 */
 		std::vector<BlockInfo> extractBlocks(const std::string &content, const std::string &keyword);
-
 		/**
 		 * @brief Parses a server configuration block and populates the ServerConfig object.
 		 * @param block The server configuration block as a string.
 		 * @param server The ServerConfig object to populate.
 		 */
 		void parseServerBlock(const std::string &block, ServerConfig &server, size_t serverIndex);
-
 		/**
 		 * @brief Parses a location configuration block and populates the Location object.
 		 * @param block The location configuration block as a string.
 		 * @param location The Location object to populate.
 		 */
 		void parseLocationBlock(const std::string &block, Location &location);
-
 		/**
 		 * @brief Validates the parsed configuration for correctness.
 		 * @return true if the configuration is valid, false otherwise.
 		 */
 		bool validate() const;
-
 		/**
 		 * @brief Parses a size string with optional units (e.g., "10M", "500K") into bytes.
 		 * @param sizeStr The size string to parse.

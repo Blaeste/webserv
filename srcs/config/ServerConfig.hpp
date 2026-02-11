@@ -3,124 +3,109 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 12:51:41 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// Includes
+// Includes ********************************************************************
 #include "Location.hpp"
 #include <map>
 #include <string>
 #include <vector>
 
-// Class
+// Class ***********************************************************************
 class ServerConfig
 {
 
 	private:
+		// Attribute(s) --------------------------------------------------------
 
-		// Attribute(s)
-
-			int _port; // 8080
-			std::string _serverName; // "localhost"
-			std::map<int, std::string> _errorPages; // {404: "/error_pages/404.html", 500: ...}
-			size_t _maxBodySize; // 10485760 (10M en bytes)
-			std::vector<Location> _locations; // Location list
-			size_t _cgiTimeout;
+		int _port; ///< Server port (e.g., 8080)
+		std::string _serverName; ///< Server name (e.g., "localhost")
+		std::map<int, std::string> _errorPages; ///< Error pages by status code
+		size_t _maxBodySize; ///< Max request body size in bytes
+		std::vector<Location> _locations; ///< Location configurations
+		size_t _cgiTimeout; ///< CGI execution timeout in seconds
 
 	public:
+		// Default constructor -------------------------------------------------
 
-		// Default constructor
+		ServerConfig();
 
-			ServerConfig();
+		// Setters -------------------------------------------------------------
+		/**
+		 * @brief Sets the port number the server listens on.
+		 * @param port The port number.
+		 */
+		void setPort(int port);
+		/**
+		 * @brief Sets the server name.
+		 * @param name The server name.
+		 */
+		void setServerName(const std::string &name);
+		/**
+		 * @brief Adds an error page for a specific HTTP status code.
+		 * @param code The HTTP status code.
+		 * @param path The path to the error page.
+		 */
+		void addErrorPage(int code, const std::string &path);
+		/**
+		 * @brief Sets the maximum allowed body size for requests.
+		 * @param size The maximum body size in bytes.
+		 */
+		void setMaxBodySize(size_t size);
+		/**
+		 * @brief Adds a Location to the server configuration.
+		 * @param location The Location object to add.
+		 */
+		void addLocation(const Location &location);
+		/**
+		 * @brief Sets the CGI execution timeout in seconds.
+		 * @param timeout The timeout duration in seconds.
+		 */
+		void setCgiTimeout(size_t timeout);
 
-		// Setters => set replace val, add add val
-
-			/**
-			 * @brief Sets the port number the server listens on.
-			 * @param port The port number.
-			 */
-			void setPort(int port);
-
-			/**
-			 * @brief Sets the server name.
-			 * @param name The server name.
-			 */
-			void setServerName(const std::string &name);
-
-			/**
-			 * @brief Adds an error page for a specific HTTP status code.
-			 * @param code The HTTP status code.
-			 * @param path The path to the error page.
-			 */
-			void addErrorPage(int code, const std::string &path);
-
-			/**
-			 * @brief Sets the maximum allowed body size for requests.
-			 * @param size The maximum body size in bytes.
-			 */
-			void setMaxBodySize(size_t size);
-
-			/**
-			 * @brief Adds a Location to the server configuration.
-			 * @param location The Location object to add.
-			 */
-			void addLocation(const Location &location);
-
-			/**
-			 * @brief Sets the CGI execution timeout in seconds.
-			 * @param timeout The timeout duration in seconds.
-			 */
-			void setCgiTimeout(size_t timeout);
-
-		// Getters
-
-			/**
-			 * @brief Gets the port number the server listens on.
-			 * @return The port number.
-			 */
-			int getPort() const;
-
-			/**
-			 * @brief Gets the server name.
-			 * @return The server name as a string.
-			 */
-			const std::string &getServerName() const;
-
-			/**
-			 * @brief Gets the map of error pages.
-			 * @return A constant reference to the map of error pages.
-			 */
-			const std::map<int, std::string> &getErrorPages() const;
-
-			/**
-			 * @brief Gets the error page path for a specific HTTP status code.
-			 * @param code The HTTP status code.
-			 * @return The path to the error page, or an empty string if not found.
-			 */
-			std::string getErrorPage(int code) const;
-
-			/**
-			 * @brief Gets the maximum allowed body size for requests.
-			 * @return The maximum body size in bytes.
-			 */
-			size_t getMaxBodySize() const;
-
-			/**
-			 * @brief Gets the list of configured locations.
-			 * @return A constant reference to a vector of Location objects.
-			 */
-			const std::vector<Location> &getLocations() const;
-
-			/**
-			 * @brief Gets the CGI execution timeout.
-			 * @return The timeout duration in seconds.
-			 */
-			size_t getCgiTimeout() const;
+		// Getters -------------------------------------------------------------
+		/**
+		 * @brief Gets the port number the server listens on.
+		 * @return The port number.
+		 */
+		int getPort() const;
+		/**
+		 * @brief Gets the server name.
+		 * @return The server name as a string.
+		 */
+		const std::string &getServerName() const;
+		/**
+		 * @brief Gets the map of error pages.
+		 * @return A constant reference to the map of error pages.
+		 */
+		const std::map<int, std::string> &getErrorPages() const;
+		/**
+		 * @brief Gets the error page path for a specific HTTP status code.
+		 * @param code The HTTP status code.
+		 * @return The path to the error page, or an empty string if not found.
+		 */
+		std::string getErrorPage(int code) const;
+		/**
+		 * @brief Gets the maximum allowed body size for requests.
+		 * @return The maximum body size in bytes.
+		 */
+		size_t getMaxBodySize() const;
+		/**
+		 * @brief Gets the list of configured locations.
+		 * @return A constant reference to a vector of Location objects.
+		 */
+		const std::vector<Location> &getLocations() const;
+		/**
+		 * @brief Gets the CGI execution timeout.
+		 * @return The timeout duration in seconds.
+		 */
+		size_t getCgiTimeout() const;
 
 };

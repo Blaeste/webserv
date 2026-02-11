@@ -3,176 +3,149 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 12:55:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// Include(s)
+// Include(s) ******************************************************************
 #include <string>
 #include <vector>
 
-// Class
+// Class ***********************************************************************
 class Location
 {
-
 	private:
+		// Attribute(s) --------------------------------------------------------
 
-		// Attribute(s)
+		std::string _path; ///< Location path prefix
+		std::string _root; ///< Root directory for file serving
+		std::vector<std::string> _allowedMethods; ///< Allowed HTTP methods
+		std::vector<std::string> _index; ///< Default index file names
+		bool _autoIndex; ///< Enable directory listing
+		std::string _uploadPath; ///< Directory for file uploads
+		std::string _redirect; ///< URL redirection target
+		std::string _cgiExtension; ///< CGI file extension
+		std::string _cgiPath; ///< CGI interpreter path
+		size_t _maxBodySize; ///< Max body size (0 = use server default)
 
-			std::string _path; // "/", "/uploads", etc.
-			std::string _root; // "./wwww"
-			std::vector<std::string> _allowedMethods; // ["GET", "POST"]
-			std::vector<std::string> _index; // ["index.html"]
-			bool _autoIndex; // true/false
-			std::string _uploadPath; // "./uploads"
-			std::string _redirect; // "" or URL redirection
-			std::string _cgiExtension; // ".php"
-			std::string _cgiPath; // "usr/bin/php-cgi"
-		size_t _maxBodySize; // 0 = use server default
-
-public:
-
-	// Default constructor
-
+	public:
+		// Default constructor -------------------------------------------------
 		Location();
 
-	// Setter(s) => set replace val, add add val
-
+		// Setters -------------------------------------------------------------
 		/**
 		 * @brief Sets the path of the location.
 		 * @param path The path to set (e.g., "/uploads").
 		 */
 		void setPath(const std::string &path);
-
-			/**
-			 * @brief Sets the root directory for this location.
-			 * @param root The root directory path.
-			 */
-			void setRoot(const std::string &root);
-
-			/**
-			 * @brief Adds an allowed HTTP method to the location.
-			 * @param method The HTTP method to allow (e.g., "GET", "POST").
-			 */
-			void addAllowedMethod(const std::string &method);
-
-			/**
-			 * @brief Adds an index file to the location.
-			 * @param index The name of the index file to add.
-			 */
-			void addIndex(const std::string &index);
-
-			/**
-			 * @brief Sets the auto-indexing option.
-			 * @param autoIndex true to enable auto-indexing, false to disable.
-			 */
-			void setAutoIndex(bool autoIndex);
-
-			/**
-			 * @brief Sets the upload path.
-			 * @param path The upload path.
-			 */
-			void setUploadPath(const std::string &path);
-
-			/**
-			 * @brief Sets the redirection URL.
-			 * @param redirect The redirection URL.
-			 */
-			void setRedirect(const std::string &redirect);
-
-			/**
-			 * @brief Sets the CGI file extension.
-			 * @param ext The CGI file extension (e.g., ".php").
-			 */
-			void setCgiExtension(const std::string &ext);
-
-			/**
-			 * @brief Sets the CGI executable path.
-			 * @param path The path to the CGI executable.
-			 */
-			void setCgiPath(const std::string &path);
-
+		/**
+		 * @brief Sets the root directory for this location.
+		 * @param root The root directory path.
+		 */
+		void setRoot(const std::string &root);
+		/**
+		 * @brief Adds an allowed HTTP method to the location.
+		 * @param method The HTTP method to allow (e.g., "GET", "POST").
+		 */
+		void addAllowedMethod(const std::string &method);
+		/**
+		 * @brief Adds an index file to the location.
+		 * @param index The name of the index file to add.
+		 */
+		void addIndex(const std::string &index);
+		/**
+		 * @brief Sets the auto-indexing option.
+		 * @param autoIndex true to enable auto-indexing, false to disable.
+		 */
+		void setAutoIndex(bool autoIndex);
+		/**
+		 * @brief Sets the upload path.
+		 * @param path The upload path.
+		 */
+		void setUploadPath(const std::string &path);
+		/**
+		 * @brief Sets the redirection URL.
+		 * @param redirect The redirection URL.
+		 */
+		void setRedirect(const std::string &redirect);
+		/**
+		 * @brief Sets the CGI file extension.
+		 * @param ext The CGI file extension (e.g., ".php").
+		 */
+		void setCgiExtension(const std::string &ext);
+		/**
+		 * @brief Sets the CGI executable path.
+		 * @param path The path to the CGI executable.
+		 */
+		void setCgiPath(const std::string &path);
 		/**
 		 * @brief Sets the maximum body size for this location.
 		 * @param size Maximum body size in bytes (0 = use server default).
 		 */
 		void setMaxBodySize(size_t size);
 
-	// Getter(s)
-
+		// Getter(s) -----------------------------------------------------------
 		/**
 		 * @brief Gets the path of the location.
 		 * @return The path as a string.
 		 */
 		const std::string &getPath() const;
-
 		/**
 		 * @brief Gets the root directory.
 		 * @return The root directory as a string.
 		 */
 		const std::string &getRoot() const;
-
 		/**
 		 * @brief Gets the list of allowed HTTP methods.
 		 * @return A constant reference to a vector of allowed methods.
 		 */
 		const std::vector<std::string> &getAllowedMethods() const;
+		/**
+		 * @brief Gets the list of index files.
+		 * @return A constant reference to a vector of index file names.
+		 */
+		const std::vector<std::string> &getIndex() const;
+		/**
+		 * @brief Gets the auto-indexing setting.
+		 * @return true if auto-indexing is enabled, false otherwise.
+		 */
+		bool getAutoIndex() const;
+		/**
+		 * @brief Gets the upload path.
+		 * @return The upload path as a string.
+		 */
+		const std::string &getUploadPath() const;
+		/**
+		 * @brief Gets the redirection URL.
+		 * @return The redirection URL as a string.
+		 */
+		const std::string &getRedirect() const;
+		/**
+		 * @brief Gets the CGI file extension.
+		 * @return The CGI file extension as a string.
+		 */
+		const std::string &getCgiExtension() const;
+		/**
+		 * @brief Gets the CGI executable path.
+		 * @return The CGI executable path as a string.
+		 */
+		const std::string &getCgiPath() const;
+		/**
+		 * @brief Gets the maximum body size for this location.
+		 * @return Maximum body size in bytes (0 = use server default).
+		 */
+		size_t getMaxBodySize() const;
 
-			/**
-			 * @brief Gets the list of index files.
-			 * @return A constant reference to a vector of index file names.
-			 */
-			const std::vector<std::string> &getIndex() const;
-
-			/**
-			 * @brief Gets the auto-indexing setting.
-			 * @return true if auto-indexing is enabled, false otherwise.
-			 */
-			bool getAutoIndex() const;
-
-			/**
-			 * @brief Gets the upload path.
-			 * @return The upload path as a string.
-			 */
-			const std::string &getUploadPath() const;
-
-			/**
-			 * @brief Gets the redirection URL.
-			 * @return The redirection URL as a string.
-			 */
-			const std::string &getRedirect() const;
-
-			/**
-			 * @brief Gets the CGI file extension.
-			 * @return The CGI file extension as a string.
-			 */
-			const std::string &getCgiExtension() const;
-
-			/**
-			 * @brief Gets the CGI executable path.
-			 * @return The CGI executable path as a string.
-			 */
-			const std::string &getCgiPath() const;
-
-			/**
-			 * @brief Gets the maximum body size for this location.
-			 * @return Maximum body size in bytes (0 = use server default).
-			 */
-			size_t getMaxBodySize() const;
-
-	// Public method(s)
-
+		// Public method(s) ----------------------------------------------------
 		/**
 		 * @brief Checks if a given HTTP method is allowed in this location.
 		 * @param method The HTTP method to check (e.g., "GET", "POST").
 		 * @return true if the method is allowed, false otherwise.
 		 */
 		bool isMethodAllowed(const std::string &method) const;
-
 };
-

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:09:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 12:39:27 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ std::string Config::removeComments(const std::string &content) {
 
 		if (commentPos != std::string::npos) {
 
-			// Keep only part befor #
+			// Keep only part before #
 			line = line.substr(0, commentPos);
 		}
 
@@ -63,7 +63,7 @@ std::vector<BlockInfo> Config::extractBlocks(const std::string &content, const s
 		if (openBracePos == std::string::npos)
 			break; // Syntax error
 
-		// Check if only whitspace between keyword and "{"
+		// Check if only whitespace between keyword and "{"
 		// For "location", we accept any path (location /api, location /uploads, etc.)
 		// For "server", only whitespace is allowed
 		if (keyword != "location") {
