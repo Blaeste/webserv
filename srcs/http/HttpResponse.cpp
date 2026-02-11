@@ -3,59 +3,38 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 18:57:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 13:34:37 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "HttpResponse.hpp"
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
-#include <cstdio>  // remove()
-#include <fcntl.h> // open()
+#include <cstdio>
+#include <fcntl.h>
 #include <iostream>
-#include <unistd.h> // write(), close()
+#include <unistd.h>
 #include <cerrno>
 
-// Default constructor
-HttpResponse::HttpResponse() : _statusCode(200),
-							   _statusMessage("OK")
-{
-}
+// Default constructor ---------------------------------------------------------
+HttpResponse::HttpResponse()
+	: _statusCode(200)
+	, _statusMessage("OK")
+{}
 
-// Setter(s)
+// Setter(s) -------------------------------------------------------------------
 void HttpResponse::setStatus(int code)
 {
 	_statusCode = code;
 	_statusMessage = getStatusMessage(code);
 }
 
-void HttpResponse::setHeader(const std::string &key, const std::string &value)
-{
-	_headers[key] = value;
-}
-
-void HttpResponse::setBody(const std::string &body)
-{
-	_body = body;
-}
-
-// Getters(s)
-int HttpResponse::getStatus()
-{
-	return _statusCode;
-}
-
-const std::string &HttpResponse::getBody() const
-{
-	return _body;
-}
-
-// Private Method(s)
+// Private Method(s) -----------------------------------------------------------
 std::string HttpResponse::getStatusMessage(int code) const
 {
 	switch (code)
@@ -91,7 +70,7 @@ std::string HttpResponse::getStatusMessage(int code) const
 	}
 }
 
-// Public Method(s)
+// Public Method(s) ------------------------------------------------------------
 std::string HttpResponse::build(const std::string &method) const
 {
 	std::string response;

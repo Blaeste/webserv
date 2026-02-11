@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 13:39:17 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// Include(s)
+// Include(s) ******************************************************************
 #include <string>
 #include <vector>
 #include <map>
@@ -22,40 +22,39 @@
 #define O_NOFOLLOW 0
 #endif
 
-// Structure(s)
+// Structure(s) ****************************************************************
 struct UploadedFile
 {
-
-	std::string filename;
-	std::string contentType;
-	std::string content;
+	std::string filename; ///< Original filename from client
+	std::string contentType; ///< MIME type (e.g., "image/png")
+	std::string content; ///< Raw file content
 };
 
-// Class
+// Class ***********************************************************************
 class HttpRequest
 {
 
 private:
-	// Attribute(s)
+	// Attribute(s) ------------------------------------------------------------
 
-	std::string _method;						 // Method (GET, POST, etc.)
-	std::string _uri;							 // URI (/index.html, /api/data, etc.)
-	std::string _version;						 // HTTP version (HTTP/1.1)
-	std::map<std::string, std::string> _headers; // Headers
-	std::string _body;							 // Body
-	std::string _rawData;						 // Raw request data
-	bool _isComplete;							 // Is the request complete
-	int _errorCode;								 // HTTP error code
-	std::vector<UploadedFile> _uploadedFiles;	 // Uploaded files (for multipart/form-data)
-	bool _headersParsed;						 // Have we already parsed the headers
-	size_t _bodyStart;							 // Offset to body start inside _rawData
-	bool _isChunked;							 // Transfer-Encoding: chunked detected
-	size_t _contentLength;						 // Parsed Content-Length when present
-	size_t _chunkParsePos;						 // Cursor while parsing chunked body
-	size_t _chunkTotalSize;						 // Accumulated chunk payload size
-	bool _chunkDone;							 // Final chunk parsed
+	std::string _method; ///< Method (GET, POST, etc.)
+	std::string _uri; ///< URI (/index.html, /api/data, etc.)
+	std::string _version; ///< HTTP version (HTTP/1.1)
+	std::map<std::string, std::string> _headers; ///< Headers
+	std::string _body; ///< Body
+	std::string _rawData; ///< Raw request data
+	bool _isComplete; ///< Is the request complete
+	int _errorCode; ///< HTTP error code
+	std::vector<UploadedFile> _uploadedFiles; ///< Uploaded files (for multipart/form-data)
+	bool _headersParsed; ///< Have we already parsed the headers
+	size_t _bodyStart; ///< Offset to body start inside _rawData
+	bool _isChunked; ///< Transfer-Encoding: chunked detected
+	size_t _contentLength;  ///< Parsed Content-Length when present
+	size_t _chunkParsePos; ///< Cursor while parsing chunked body
+	size_t _chunkTotalSize; ///< Accumulated chunk payload size
+	bool _chunkDone; ///< Final chunk parsed
 
-	// Security limits
+	// Security limits ---------------------------------------------------------
 	static const size_t MAX_REQUEST_SIZE = 110 * 1024 * 1024; // 100Mb
 	static const size_t MAX_URI_LENGTH = 8192;
 	static const size_t MAX_HEADER_COUNT = 100;
@@ -66,12 +65,10 @@ private:
 	static const size_t MAX_BODY_SIZE = 110 * 1024 * 1024; // 100Mb
 
 public:
-	// Default constructor
-
+	// Default constructor -----------------------------------------------------
 	HttpRequest();
 
-	// Public method(s)
-
+	// Public method(s) --------------------------------------------------------
 	/**
 	 * @brief Appends raw data to the HTTP request and attempts to parse it.
 	 * @param data The raw data to append.
@@ -92,20 +89,18 @@ public:
 	 */
 	std::string getHeader(const std::string &key) const;
 
-	// Getters
-
+	// Getters -----------------------------------------------------------------
 	const std::string &getMethod() const { return _method; }
 	const std::string &getUri() const { return _uri; }
 	const std::string &getVersion() const { return _version; }
 	const std::string &getBody() const { return _body; }
 	const std::map<std::string, std::string> &getHeaders() const { return _headers; }
 	const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
-	int getErrorCode() const;
+	int getErrorCode() const { return _errorCode; }
 	std::map<std::string, std::string> getCookies() const;
 
 private:
 	// Private method(s)
-
 	/**
 	 * @brief Parses the request line from the header block.
 	 * @param headerBlock The header block containing the request line.
@@ -141,5 +136,10 @@ private:
 	 */
 	bool parseMultipart(const std::string &boundary);
 
+	/**
+	 * @brief Sets an HTTP error code and marks the request as complete.
+	 * @param code The HTTP error code to set (e.g., 400, 413).
+	 * @return true if the error code was set successfully, false otherwise.
+	 */
 	bool setError(int code);
 };

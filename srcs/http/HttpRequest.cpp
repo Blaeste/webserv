@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:10:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/11 13:35:19 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include <cstdlib>
@@ -19,18 +19,20 @@
 #include <sstream>
 #include <cerrno>
 
-// Default constructor
+// Default constructor ---------------------------------------------------------
 HttpRequest::HttpRequest()
-	: _isComplete(false), _errorCode(0), _headersParsed(false), _bodyStart(0), _isChunked(false), _contentLength(0), _chunkParsePos(0), _chunkTotalSize(0), _chunkDone(false)
-{
-}
+	: _isComplete(false)
+	, _errorCode(0)
+	, _headersParsed(false)
+	, _bodyStart(0)
+	, _isChunked(false)
+	, _contentLength(0)
+	, _chunkParsePos(0)
+	, _chunkTotalSize(0)
+	, _chunkDone(false)
+{}
 
-// Public method(s)
-int HttpRequest::getErrorCode() const
-{
-	return _errorCode;
-}
-
+// Public method(s) ------------------------------------------------------------
 bool HttpRequest::setError(int code)
 {
 	_errorCode = code;
@@ -99,7 +101,7 @@ std::string HttpRequest::getHeader(const std::string &key) const
 	return "";
 }
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
 bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 {
 	// Search the first line
