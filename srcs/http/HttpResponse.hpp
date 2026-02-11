@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:39:39 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/11 13:50:34 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,5 +104,4 @@ class HttpResponse
 		 * @return The corresponding status message as a string.
 		 */
 		std::string getStatusMessage(int code) const;
-
 };
