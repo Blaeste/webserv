@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 12:39:27 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/11 13:04:52 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -397,9 +397,4 @@ bool Config::parse(const std::string &filePath) {
 		std::cerr << "Config::parse error: " << e.what() << std::endl;
 		return false;
 	}
-}
-
-// Getter(s)
-const std::vector<ServerConfig> &Config::getServers() const {
-	return _servers;
 }
