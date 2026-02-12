@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 12:18:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 13:10:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -256,6 +256,9 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
 	{
 		std::cout << std::endl;
 		_requestCount = 0;
+		_minTime = 0.0;
+		_maxTime = 0.0;
+		_totalTime = 0.0;
 	}
 
 	// If same request, increment counter and use \r to update same line
@@ -387,6 +390,9 @@ void Logger::logRequestEnd(int statusCode, size_t responseSize, double responseT
 	if (!_pendingRequest)
 		return;
 
+	// Use the responseTime calculated in buildResponse/buildResponseFromCGI
+	// (calculated correctly from start to end of each individual request)
+	
 	// Update timing stats
 	if (_requestCount == 1 || _minTime == 0.0)
 	{
