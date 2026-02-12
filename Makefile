@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/12 10:28:09 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/12 10:44:02 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -187,7 +187,7 @@ eval: $(NAME)
 	@-pkill webserv 2>/dev/null || true
 	gnome-terminal --geometry=160x50 -- bash -c './webserv config/eval.conf; exec bash' 2>/dev/null &
 	@sleep 1
-	./tester http://localhost:8080
+	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
 	@-pkill webserv 2>/dev/null || true
 
