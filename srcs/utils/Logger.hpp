@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 11:05:17 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,7 +44,8 @@ private:
 	static std::string _lastServerName; ///< Last logged server name
 	static int _lastServerPort; ///< Last logged server port
 	static bool _firstLog; ///< Indicates if this is the first log entry
-
+	static bool _pendingRequest; ///< Request started but not completed
+	static bool _currentIsSameAsPrevious; ///< Current request identical to previous
 
 		// Private method(s) ---------------------------------------------------
 		static std::string getCurrentTime();
@@ -56,6 +57,9 @@ private:
 
 	public:
 		// Public method(s) ----------------------------------------------------
+		static void logRequestStart(const std::string &method, const std::string &uri,
+								const std::string &clientIP, std::string serverName, int port);
+		static void logRequestEnd(int statusCode, size_t responseSize, double responseTime);
 		static void logRequest(const std::string &method, const std::string &uri,
 							const std::string &clientIP, int statusCode,
 							size_t responseSize, double responseTime,

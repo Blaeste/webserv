@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:51:29 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 11:59:28 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,29 +94,24 @@ class HttpRequest
 		const std::map<std::string, std::string> &getHeaders() const { return _headers; }
 		const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
 		int getErrorCode() const { return _errorCode; }
-		std::map<std::string, std::string> getCookies() const;
+	bool headersParsed() const { return _headersParsed; }
+	std::map<std::string, std::string> getCookies() const;
 
-	private:
-		// Private method(s) ---------------------------------------------------
-		/**
-		* @brief Parses the request line from the header block.
-		* @param headerBlock The header block containing the request line.
-		* @return true if parsing was successful, false otherwise.
-		*/
-		bool parse();
+private:
+	// Private method(s) ---------------------------------------------------
+	/**
+	* @brief Parses the request line from the header block.
+	* @param headerBlock The header block containing the request line.
+	* @return true if parsing was successful, false otherwise.
+	*/
+	bool parse();
 
-		/**
-		 * @brief Parses the request line from the header block.
-		 * @param headerBlock The header block containing the request line.
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parseRequestLine(const std::string &headerBlock);
-
-		/**
-		 * @brief Parses the headers from the header block.
-		 * @param headerBlock The header block containing the headers.
-		 * @return true if parsing was successful, false otherwise.
-		 */
+	/**
+	 * @brief Parses the request line from the header block.
+	 * @param headerBlock The header block containing the request line.
+	 * @return true if parsing was successful, false otherwise.
+	 */
+	bool parseRequestLine(const std::string &headerBlock);
 		bool parseHeaders(const std::string &headerBlock);
 
 		/**

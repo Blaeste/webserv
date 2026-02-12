@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 10:22:08 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ Client::Client(int socket, const std::string &clientIp)
 	, _requestComplete(false)
 	, _responseReady(false)
 	, _closeAfterResponse(false)
+	, _requestLogged(false)
 	, _state(STATE_KEEPALIVE)
 	, _cgiProcess(NULL)
 	, _bytesSent(0)
@@ -64,7 +65,7 @@ void Client::setCGITiming(const ServerConfig &config)
 }
 
 // Public method(s) ------------------------------------------------------------
-bool Client::readData()
+bool Client::readData(const ServerConfig *config)
 {
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
@@ -73,7 +74,17 @@ bool Client::readData()
 		return false;
 	// Append only the new data to the request
 	std::string newData(buffer, bytesRead);
+	bool wasHeadersParsed = _request.headersParsed();
 	_request.appendData(newData);
+	
+	// Log request start as soon as headers are parsed
+	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
+	{
+		Logger::logRequestStart(_request.getMethod(), _request.getUri(), _clientIp,
+								config->getServerName(), config->getPort());
+		_requestLogged = true;
+	}
+	
 	if (_request.isComplete())
 	{
 		_requestComplete = true;
@@ -184,15 +195,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	gettimeofday(&end, NULL);
 	double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
 
-	Logger::logRequest(
-		_request.getMethod(),
-		_request.getUri(),
-		_clientIp,
-		_response.getStatus(),
-		_response.getBody().size(),
-		responseTime,
-		config.getServerName(),
-		config.getPort());
+	Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 	_responseReady = true;
 }
 
@@ -215,15 +218,7 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 +
 							  (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
 
-		Logger::logRequest(
-			_request.getMethod(),
-			_request.getUri(),
-			_clientIp,
-			_response.getStatus(),
-			_response.getBody().size(),
-			responseTime,
-			_serverConfig->getServerName(),
-			_serverConfig->getPort());
+		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 	}
 
 	_responseReady = true;

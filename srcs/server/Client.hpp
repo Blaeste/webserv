@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 10:20:09 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,6 +45,7 @@ class Client
 		bool _requestComplete;  ///< Indicates if the HTTP request is fully received
 		bool _responseReady;  ///< Indicates if the HTTP response is ready to send
 		bool _closeAfterResponse;  ///< Flag to close connection after sending response
+		bool _requestLogged;  ///< Flag to track if request start was logged
 		std::string _sessionId; ///< Session identifier for this client
 		ClientState _state;  ///< Current state (keepalive or processing)
 		CGIProcess *_cgiProcess; ///< Active CGI process (NULL if none)
@@ -97,7 +98,7 @@ class Client
 		 * @brief Reads incoming data from the client socket and parses the HTTP request
 		 * @return true if data was successfully read and more data can be processed, false on error or connection closure
 		 */
-		bool readData();
+		bool readData(const ServerConfig *config = NULL);
 
 		/**
 		 * @brief Builds the HTTP response for the client request

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 17:10:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -267,8 +267,11 @@ void Server::handleClientRead(size_t clientIndex)
 	}
 	Client &client = it->second;
 
+	// Get config early for logging
+	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+
 	// Read data from socket
-	if (!client.readData())
+	if (!client.readData(config))
 	{
 		removeClient(clientFd, clientIndex);
 		return;
