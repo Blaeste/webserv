@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 12:05:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 12:18:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -376,7 +376,8 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
 				<< centeredIP << " "
 				<< GREY << "|" << RESET << " "
 				<< methodColor << BOLD << std::setw(7) << std::right << _lastMethod << RESET << " "
-				<< uriField.str()
+				<< uriField.str() << " "
+				<< GREY << "|" << RESET
 				<< "\033[K"; // Clear to end of line
 	std::cout << std::flush;
 }
