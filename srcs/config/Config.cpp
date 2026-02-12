@@ -10,15 +10,14 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "Config.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
 
-// Private method(s)
-
+// Private method(s) -----------------------------------------------------------
 std::string Config::removeComments(const std::string &content) {
 
 	std::string result;
@@ -375,7 +374,7 @@ bool Config::validate() const {
 	return true;
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 bool Config::parse(const std::string &filePath) {
 	try {
 
