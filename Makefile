@@ -23,7 +23,7 @@ include ${MK_DIR}/git.mk
 
 .SILENT:
 .ONESHELL:
-.PHONY: all clean fclean re kill test eval clear_eval $(NAME)
+.PHONY: all clean fclean re kill test eval clear_eval
 
 # Executable name
 NAME = webserv
