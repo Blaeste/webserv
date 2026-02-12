@@ -1,56 +1,216 @@
-# Webserv - HTTP/1.1 Server
+*This project has been created as part of the 42 curriculum by eschwart, gdosch and lmarck.*
 
-A lightweight, RFC-compliant HTTP/1.1 web server written in C++98, capable of handling static files, CGI execution, file uploads, and more.
+# Webserv - HTTP Server
 
----
-
-## 📋 Table of Contents
-
-- [Features](#features)
-- [Project Structure](#project-structure)
-- [Quick Start](#quick-start)
-- [Configuration](#configuration)
-- [Architecture](#architecture)
-- [HTTP Status Codes](#http-status-codes)
-- [CGI Implementation](#cgi-implementation)
-- [File Upload](#file-upload)
-- [Security](#security)
-- [Testing](#testing)
-- [Limitations](#limitations)
+A lightweight HTTP/1.1 web server implemented in C++98, designed to handle static files, CGI execution, file uploads, and multiple ports (with optional virtual host support).
 
 ---
 
-## ✨ Features
+## Description
 
-### Core HTTP/1.1 Support
-- **Multiple HTTP Methods**: GET, POST, DELETE
-- **Request Parsing**: Full HTTP/1.1 request parsing with headers and body
-- **Response Building**: Automatic status codes, headers, and body generation
-- **Chunked Transfer Encoding**: Support for chunked request bodies
-- **Keep-Alive**: Persistent connections with timeout management
-- **MIME Types**: Automatic content-type detection based on file extensions
+**Webserv** is a custom HTTP server built from scratch in C++98 as part of the 42 School curriculum. The project implements HTTP/1.1 protocol features (with HTTP/1.0 compatibility as suggested by the subject) and demonstrates deep understanding of network programming, socket I/O, non-blocking I/O, and event-driven architecture.
 
-### Advanced Features
-- **CGI Support**: Execute PHP and Python scripts with full environment setup
-- **File Upload**: Handle multipart/form-data file uploads
-- **Directory Listing**: Auto-index for browsing directories
-- **Redirections**: HTTP 301/302 redirects
-- **Custom Error Pages**: Customizable error pages per status code
-- **Body Size Limiting**: Configurable maximum request body size (prevents DoS)
-- **Virtual Hosts**: Multiple server blocks with different server names
-- **Location Routing**: URL path-based routing with method restrictions
+The server implements core HTTP/1.1 features including:
+- Full HTTP request parsing (request line, headers, body)
+- Support for GET, POST, DELETE, HEAD, and OPTIONS methods
+- Static file serving with automatic MIME type detection
+- CGI script execution (PHP, Python) with proper environment setup
+- File upload handling (multipart/form-data)
+- Multiple server blocks listening on different ports
+- Virtual host support (optional feature: server_name matching)
+- Location-based routing with method restrictions
+- Custom error pages and HTTP redirections
+- Non-blocking I/O multiplexing using `poll()`
+
+The configuration system uses an Nginx-like syntax, allowing flexible server and location block definitions with method restrictions, body size limits, and CGI configuration.
+
+---
+
+## Instructions
+
+### Prerequisites
+
+- **Operating System**: Linux (tested on Ubuntu 20.04+)
+- **Compiler**: g++ or clang++ with C++98 support
+- **Make**: GNU Make
+- **Optional**: PHP-CGI and Python for CGI script execution
+
+### Compilation
+
+```bash
+# Clone the repository
+git clone <repository_url>
+cd webserv
+
+# Build the server
+make
+
+# Clean build artifacts
+make clean
+
+# Full rebuild
+make re
+```
+
+### Execution
+
+```bash
+# Run with default configuration
+./webserv
+
+# Run with custom configuration file
+./webserv config/custom.conf
+```
+
+The server will start listening on the ports specified in the configuration file (default: 8080).
 
 ### Configuration
-- **Nginx-like Syntax**: Familiar configuration file format
-- **Multiple Servers**: Run multiple virtual hosts on different ports
-- **Location Blocks**: Fine-grained control over different URL paths
-- **Method Restrictions**: Allow/deny specific HTTP methods per location
-- **Upload Directories**: Configurable upload paths
-- **CGI Configuration**: Per-location CGI interpreter setup
+
+Create a configuration file following this syntax:
+
+```nginx
+server {
+    listen 8080;
+    server_name localhost;
+    client_max_body_size 10M;
+    error_page 404 /error_pages/404.html;
+
+    location / {
+        root ./www;
+        index index.html;
+        allowed_methods GET POST;
+        autoindex on;
+    }
+
+    location /cgi-bin {
+        root ./cgi-bin;
+        allowed_methods GET POST;
+        cgi_extension .php;
+        cgi_path /usr/bin/php-cgi;
+    }
+}
+```
+
+**Key Directives:**
+- `listen`: Port number (1-65535)
+- `server_name`: Virtual host identifier
+- `client_max_body_size`: Maximum request body size (e.g., 10M, 1G)
+- `root`: Document root directory
+- `index`: Default index files
+- `allowed_methods`: Whitelist of HTTP methods (GET, POST, DELETE, HEAD, OPTIONS)
+- `autoindex`: Enable directory listing (on/off)
+- `cgi_extension`: File extension for CGI scripts
+- `cgi_path`: Path to CGI interpreter
+- `return`: HTTP redirection URL
+
+### Testing
+
+```bash
+# Run automated test suite
+make test
+
+# Run evaluation test suite (downloads official 42 tester)
+make eval
+
+# Clean evaluation artifacts
+make clear_eval
+
+# Manual testing with curl
+curl http://localhost:8080/
+curl -X POST -F "file=@test.txt" http://localhost:8080/uploads
+curl http://localhost:8080/cgi-bin/php/script.php?name=World
+```
+
+### Stopping the Server
+
+Press `Ctrl+C` or use:
+```bash
+make kill
+```
 
 ---
 
-## 📁 Project Structure
+## Resources
+
+### HTTP Protocol Documentation
+- [RFC 7230 - HTTP/1.1: Message Syntax and Routing](https://datatracker.ietf.org/doc/html/rfc7230)
+- [RFC 7231 - HTTP/1.1: Semantics and Content](https://datatracker.ietf.org/doc/html/rfc7231)
+- [RFC 3875 - The Common Gateway Interface (CGI) Version 1.1](https://datatracker.ietf.org/doc/html/rfc3875)
+- [MDN Web Docs - HTTP](https://developer.mozilla.org/en-US/docs/Web/HTTP)
+
+### Implementation References
+- [Beej's Guide to Network Programming](https://beej.us/guide/bgnet/)
+- [NGINX Configuration Reference](https://nginx.org/en/docs/)
+- [HTTP Made Really Easy - A Practical Guide to HTTP](https://www.jmarshall.com/easy/http/)
+
+### Technical Articles
+- [Understanding Non-blocking I/O with poll()](https://man7.org/linux/man-pages/man2/poll.2.html)
+- [How to Parse HTTP Requests](https://www.w3.org/Protocols/rfc2616/rfc2616-sec5.html)
+- [Multipart/Form-Data Format](https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4)
+
+### AI Usage
+
+**AI tools (GitHub Copilot, Claude, ChatGPT) were used for the following tasks:**
+
+1. **Documentation and Comments**
+   - Generated Doxygen-style documentation blocks for class methods
+   - Improved inline comments for complex algorithms
+   - Formatted README sections and configuration examples
+
+2. **Code Review and Debugging**
+   - Identified potential edge cases in HTTP parsing logic
+   - Suggested improvements for error handling patterns
+   - Helped debug CGI pipe management and timeout handling
+
+3. **Research and Learning**
+   - Clarified RFC specifications and HTTP protocol details
+   - Explained POSIX system call behavior (poll, fork, exec, pipes)
+   - Provided examples of multipart/form-data parsing algorithms
+
+4. **Configuration and Testing**
+   - Assisted in creating Makefile rules for automated testing
+   - Generated test configuration files for various scenarios
+   - Helped design test cases for edge conditions
+
+**Core implementation** (HTTP parsing, routing logic, CGI execution, socket management, configuration parsing) was **written by the team** with manual design and implementation. AI was used as a **reference tool** and **documentation assistant**, not as a code generator for the main logic.
+
+---
+
+## Features
+
+### Core HTTP/1.1 Support
+- ✅ Multiple HTTP methods: GET, POST, DELETE, HEAD, OPTIONS
+- ✅ Full request parsing: request line, headers, body (chunked and content-length)
+- ✅ Chunked request un-chunking for CGI (CGI receives plain body)
+- ✅ Response building with proper status codes and headers
+- ✅ MIME type detection based on file extensions
+
+### Advanced Features
+- ✅ **CGI Execution**: Fork/exec PHP and Python scripts with RFC 3875 environment
+- ✅ **File Upload**: Multipart/form-data parsing and file storage
+- ✅ **Directory Listing**: Automatic HTML directory index generation
+- ✅ **HTTP Redirections**: 301 Moved Permanently and 302 Found
+- ✅ **Custom Error Pages**: Per-status-code error page configuration
+- ✅ **Body Size Limiting**: Configurable max request body size (DoS protection)
+- ✅ **Multiple Ports**: Server blocks listening on different ports
+- ✅ **Virtual Hosts** (Bonus): Optional server_name matching via Host header
+- ✅ **Location Routing**: URL path-based routing with method restrictions
+
+### Configuration System
+- ✅ Nginx-like configuration syntax
+- ✅ Multiple server blocks on different ports
+- ✅ Optional virtual host support (server_name matching)
+- ✅ Location blocks with path-based routing
+- ✅ Per-location method whitelisting
+- ✅ Configurable CGI interpreters per location
+- ✅ Upload directory configuration
+- ✅ Error page customization
+
+---
+
+## Architecture
+
+### Project Structure
 
 ```
 webserv/
@@ -64,124 +224,21 @@ webserv/
 │   │   ├── HttpRequest.cpp/hpp     # Request parsing
 │   │   └── HttpResponse.cpp/hpp    # Response building
 │   ├── server/                     # Server core
-│   │   ├── Server.cpp/hpp          # Main server loop (poll, accept, read/write)
+│   │   ├── Server.cpp/hpp          # Main server loop (poll, accept, I/O)
 │   │   ├── Client.cpp/hpp          # Client connection management
 │   │   └── Router.cpp/hpp          # Request routing logic
 │   ├── cgi/                        # CGI execution
-│   │   └── CGI.cpp/hpp             # Fork/exec CGI with environment setup
+│   │   └── CGI.cpp/hpp             # Fork/exec with environment setup
 │   └── utils/                      # Utilities
 │       ├── utils.cpp/hpp           # File I/O, string manipulation
-│       └── MimeTypes.cpp/hpp       # MIME type mappings
+│       ├── MimeTypes.cpp/hpp       # MIME type mappings
+│       └── Logger.cpp/hpp          # Logging system
 ├── config/
-│   └── default.conf                # Default configuration file
+│   └── default.conf                # Default configuration
 ├── www/                            # Static web content
-│   ├── index.html
-│   ├── css/
-│   └── error_pages/
 ├── cgi-bin/                        # CGI scripts
-│   ├── php/
-│   └── py/
 └── uploads/                        # Upload directory
 ```
-
----
-
-## 🚀 Quick Start
-
-### Build
-
-```bash
-make
-```
-
-### Run
-
-```bash
-./webserv [config_file]
-```
-
-Default config file: `config/default.conf`
-
-### Test
-
-```bash
-# Simple GET request
-curl http://localhost:8080/
-
-# Upload file
-curl -X POST -F "file=@test.txt" http://localhost:8080/upload
-
-# CGI script
-curl http://localhost:8080/cgi-bin/script.php?name=World
-```
-
----
-
-## ⚙️ Configuration
-
-### Basic Structure
-
-```nginx
-server {
-    listen 8080;
-    server_name localhost;
-    client_max_body_size 10M;
-    
-    error_page 404 /error_pages/404.html;
-    
-    location / {
-        root ./www;
-        index index.html;
-        allowed_methods GET POST;
-        autoindex on;
-    }
-    
-    location /upload {
-        root ./www;
-        allowed_methods POST DELETE;
-        upload_path ./uploads;
-    }
-    
-    location /cgi-bin {
-        root ./cgi-bin;
-        allowed_methods GET POST;
-        cgi_extension .php;
-        cgi_path /usr/bin/php-cgi;
-    }
-    
-    location /redirect {
-        return https://www.example.com;
-    }
-}
-```
-
-### Directives Reference
-
-#### Server Block
-
-| Directive | Description | Example |
-|-----------|-------------|---------|
-| `listen` | Port number (1-65535) | `listen 8080;` |
-| `server_name` | Virtual host name | `server_name localhost;` |
-| `client_max_body_size` | Maximum request body size | `client_max_body_size 10M;` |
-| `error_page` | Custom error page | `error_page 404 /404.html;` |
-
-#### Location Block
-
-| Directive | Description | Example |
-|-----------|-------------|---------|
-| `root` | Root directory | `root ./www;` |
-| `index` | Default index files | `index index.html index.htm;` |
-| `allowed_methods` | Allowed HTTP methods | `allowed_methods GET POST;` |
-| `autoindex` | Enable directory listing | `autoindex on;` |
-| `upload_path` | Directory for uploads | `upload_path ./uploads;` |
-| `return` | HTTP redirection | `return https://example.com;` |
-| `cgi_extension` | CGI file extension | `cgi_extension .php;` |
-| `cgi_path` | CGI interpreter path | `cgi_path /usr/bin/php-cgi;` |
-
----
-
-## 🏗️ Architecture
 
 ### Request Flow
 
@@ -203,47 +260,19 @@ Client → Server (poll) → accept() → Client
                 write() → Client
 ```
 
-### Key Classes
+### Key Components
 
-#### **Server**
-- Creates listening sockets for each server configuration
-- Uses `poll()` for non-blocking I/O multiplexing
-- Accepts new clients and manages connections
-- Routes requests to appropriate handlers
-
-#### **Client**
-- Represents a single client connection
-- Manages request buffering and parsing
-- Builds and sends HTTP responses
-- Tracks connection timeouts
-
-#### **HttpRequest**
-- Parses HTTP request line, headers, and body
-- Handles chunked transfer encoding
-- Parses multipart/form-data for file uploads
-- Validates request completeness
-
-#### **HttpResponse**
-- Builds HTTP responses with proper status codes
-- Serves static files with correct MIME types
-- Generates directory listings
-- Handles error pages
-
-#### **Router**
-- Matches incoming URIs to configured locations
-- Validates HTTP methods
-- Resolves file paths
-- Detects CGI scripts
-
-#### **CGI**
-- Forks child process for script execution
-- Sets up CGI environment variables (RFC 3875)
-- Manages stdin/stdout pipes
-- Enforces execution timeouts
+- **Server**: Manages listening sockets, accepts connections, multiplexes I/O with `poll()`
+- **Client**: Represents a single connection, buffers requests, builds responses
+- **HttpRequest**: Parses HTTP requests, handles chunked encoding, validates completeness
+- **HttpResponse**: Builds responses, serves static files, generates directory listings
+- **Router**: Matches URIs to locations, validates methods, resolves file paths
+- **CGI**: Forks child processes, sets environment variables, enforces timeouts
+- **Config**: Parses configuration files, validates directives, stores server settings
 
 ---
 
-## 📊 HTTP Status Codes
+## HTTP Status Codes
 
 | Code | Message | Usage |
 |------|---------|-------|
@@ -258,133 +287,46 @@ Client → Server (poll) → accept() → Client
 | 405 | Method Not Allowed | HTTP method not allowed |
 | 413 | Payload Too Large | Request body exceeds limit |
 | 500 | Internal Server Error | Server-side error |
-| 504 | Gateway Timeout | CGI script timeout (5 seconds) |
+| 501 | Not Implemented | Feature not supported |
+| 504 | Gateway Timeout | CGI script timeout (90 seconds) |
 
 ---
 
-## 🔧 CGI Implementation
-
-### Environment Variables (RFC 3875)
-
-```bash
-REQUEST_METHOD      # HTTP method (GET, POST, etc.)
-SCRIPT_FILENAME     # Absolute path to the script
-SCRIPT_NAME         # URI path to the script
-QUERY_STRING        # Query string from URL
-SERVER_NAME         # Server hostname
-SERVER_PORT         # Server port
-SERVER_PROTOCOL     # HTTP version (HTTP/1.1)
-GATEWAY_INTERFACE   # CGI version (CGI/1.1)
-CONTENT_TYPE        # Request Content-Type header
-CONTENT_LENGTH      # Request body length
-HTTP_*              # All HTTP headers (e.g., HTTP_USER_AGENT)
-REDIRECT_STATUS     # Required by PHP-CGI (security)
-```
-
-### Execution Flow
-
-1. Fork child process
-2. Setup pipes for stdin/stdout
-3. Set environment variables
-4. Execute CGI interpreter with script path
-5. Write request body to stdin (for POST)
-6. Read response from stdout
-7. Parse CGI headers (Status, Content-Type)
-8. Kill process if timeout exceeded (5 seconds)
-
-### Example CGI Script (PHP)
-
-```php
-#!/usr/bin/php-cgi
-<?php
-header("Content-Type: text/html");
-echo "<h1>Hello, " . htmlspecialchars($_GET['name'] ?? 'World') . "!</h1>";
-?>
-```
-
----
-
-## 📤 File Upload
-
-### Multipart Form Data Parsing
-
-1. Extract boundary from `Content-Type` header
-2. Parse each part with headers and content
-3. Extract filename from `Content-Disposition` header
-4. Save files to configured upload directory
-5. Return `201 Created` on success
-
-### Example Upload Form
-
-```html
-<form action="/upload" method="POST" enctype="multipart/form-data">
-    <input type="file" name="file">
-    <button type="submit">Upload</button>
-</form>
-```
-
----
-
-## 🔒 Security
+## Security Features
 
 - **Body Size Limit**: Prevents memory exhaustion attacks
-- **CGI Timeout**: Prevents infinite loops in scripts (5 seconds)
+- **CGI Timeout**: 90-second timeout prevents infinite loops
 - **Method Restrictions**: Per-location HTTP method whitelisting
 - **Path Validation**: Prevents directory traversal attacks
-- **REDIRECT_STATUS**: Required for PHP-CGI to prevent unauthorized execution
+- **REDIRECT_STATUS**: Required for PHP-CGI security
+- **Non-blocking I/O**: Prevents server blocking on slow clients
 
 ---
 
-## ✅ Testing Checklist
+## Limitations (By Design / Subject Scope)
 
-- [ ] GET static file
-- [ ] GET non-existent file (404)
-- [ ] GET directory with autoindex
-- [ ] GET directory without autoindex (403)
-- [ ] POST file upload
-- [ ] POST with body exceeding max size (413)
-- [ ] DELETE existing file
-- [ ] DELETE non-existent file (404)
-- [ ] CGI with GET (query string)
-- [ ] CGI with POST (body)
-- [ ] CGI timeout (504)
-- [ ] HTTP redirection (301)
-- [ ] Method not allowed (405)
-- [ ] Multiple virtual hosts
-- [ ] Chunked transfer encoding
-- [ ] Large file download
-- [ ] Custom error pages
+- HTTP/1.1 implementation (no HTTP/2 or HTTP/3)
+- No HTTPS/TLS support (plain HTTP only)
+- No compression (gzip, deflate, brotli)
+- No range requests (partial content / HTTP 206)
+- No caching headers (Cache-Control, ETag)
+- Single-threaded event loop (non-blocking I/O with poll())
+- CGI execution only (no FastCGI, WSGI, ASGI)
+- No persistent connections (Connection: close after each response)
 
 ---
 
-## ⚡ Performance
+## Authors
 
-- **Non-blocking I/O**: Uses `poll()` for efficient connection handling
-- **Persistent Connections**: Supports HTTP keep-alive
-- **Single-threaded**: Simple, predictable behavior
-- **Low Memory Footprint**: Minimal resource usage
-
----
-
-## 🚫 Limitations (by design)
-
-- HTTP/1.1 only (no HTTP/2)
-- No HTTPS/TLS support
-- No compression (gzip, deflate)
-- No range requests (partial content)
-- No caching headers
-- Single-threaded (no parallel request processing)
-- CGI only (no FastCGI, WSGI, etc.)
+- **eschwart** - [42 Mulhouse]
+- **gdosch** - [42 Mulhouse]
+- **lmarck** - [42 Mulhouse]
 
 ---
 
-## 👥 Authors
+## License
 
-Built as part of the **42 School** curriculum.
-
-## 📄 License
-
-This is an educational project.
+This is an educational project created for the 42 School curriculum.
 
 ---
 
