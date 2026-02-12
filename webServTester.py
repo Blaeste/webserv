@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/10 11:19:21 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/12 10:18:07 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -143,13 +143,34 @@ def test_code_poll_read_write():
 
 def test_code_compilation():
 	"""Test compilation sans re-link"""
+	import os
+	# Clean first to ensure we actually compile
+	subprocess.run(['make', 'fclean'], capture_output=True, text=True, cwd='.')
+	
 	# Première compilation
 	result1 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
+	
+	# Get timestamp of executable after first compilation
+	if os.path.exists('webserv'):
+		mtime_after_first = os.path.getmtime('webserv')
+	else:
+		test("Compilation without re-link", False, "webserv not created after first make")
+		return
+	
+	# Wait a bit to ensure timestamp would change if relinked
+	time.sleep(0.1)
+	
 	# Deuxième make (ne devrait rien faire)
 	result2 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
-	no_relink = 'up to date' in result2.stdout or 'Nothing to be done' in result2.stdout or len(result2.stdout) < 50
-	test("Compilation without re-link", result1.returncode == 0 and no_relink,
-		 "Makefile properly handles dependencies")
+	
+	# Get timestamp after second make
+	mtime_after_second = os.path.getmtime('webserv')
+	
+	# Check if executable was NOT relinked (timestamp unchanged)
+	no_relink = (mtime_after_first == mtime_after_second)
+	
+	details = f"1st make: rc={result1.returncode} | 2nd make: rc={result2.returncode} | timestamps: {mtime_after_first == mtime_after_second}"
+	test("Compilation without re-link", result1.returncode == 0 and no_relink, details)
 
 # ============================================================================
 # PARTIE 2: CONFIGURATION
