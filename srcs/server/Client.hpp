@@ -52,7 +52,7 @@ class Client
 		std::string _cachedResponse; ///< Cached response for progressive sending
 		size_t _bytesSent; ///< Bytes already sent from cached response
 		timeval _cgiStartTime; ///< Start time for CGI timeout tracking
-		timeval _requestStartTime; ///< Start time for request processing
+		timeval _requestStartTime; ///< Start time for request timing (from first data)
 		const ServerConfig *_serverConfig;  ///< Server configuration for logging
 
 	public:
@@ -69,7 +69,7 @@ class Client
 		bool isResponseReady() const { return _responseReady; }
 		bool shouldCloseAfterResponse() const { return _closeAfterResponse; }
 		CGIProcess *getCGIProcess() const { return _cgiProcess; }
-		struct timeval getStartTime() const { return _requestStartTime; }
+		const timeval &getRequestStartTime() const { return _requestStartTime; }
 
 		// Setter(s) -----------------------------------------------------------
 		void updateActivity() { _lastActivity = time(NULL); }

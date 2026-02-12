@@ -41,7 +41,11 @@ Client::Client(int socket, const std::string &clientIp)
 	, _requestStartTime()
 	, _serverConfig(NULL)
 {
-	gettimeofday(&_requestStartTime, NULL);
+	// Explicitly zero-initialize timing structs
+	_cgiStartTime.tv_sec = 0;
+	_cgiStartTime.tv_usec = 0;
+	_requestStartTime.tv_sec = 0;
+	_requestStartTime.tv_usec = 0;
 }
 
 // Accessor(s) -----------------------------------------------------------------
@@ -71,6 +75,10 @@ void Client::setCGITiming(const ServerConfig &config)
 // Public method(s) ------------------------------------------------------------
 bool Client::readData(const ServerConfig *config)
 {
+	// Set start time on very first read (before any parsing)
+	if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
+		gettimeofday(&_requestStartTime, NULL);
+	
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
@@ -105,9 +113,9 @@ bool Client::readData(const ServerConfig *config)
 
 void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
 {
-	// Timer
-	struct timeval start, end;
-	gettimeofday(&start, NULL);
+	// Timer - use request start time if available, otherwise start now
+	struct timeval end;
+	gettimeofday(&end, NULL);
 
 	// Match route to get location-specific settings
 	RouteMatch match = router.matchRoute(config, _request);
@@ -123,8 +131,8 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		markCloseAfterResponse();
 		// log + return
 		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(), _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
+		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
+		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 		_responseReady = true;
 		return;
 	}
@@ -142,9 +150,8 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 		// log and return
 		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
-		Logger::logRequest(_request.getMethod(), _request.getUri(), _clientIp, _response.getStatus(),
-						   _response.getBody().size(), responseTime, config.getServerName(), config.getPort());
+		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
+		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 		_responseReady = true;
 		return;
 	}
@@ -197,7 +204,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	// Logging
 	gettimeofday(&end, NULL);
-	double responseTime = (end.tv_sec - start.tv_sec) * 1000.0 + (end.tv_usec - start.tv_usec) / 1000.0;
+	double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
 
 	Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 	_responseReady = true;
@@ -219,8 +226,8 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	{
 		struct timeval end;
 		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - _cgiStartTime.tv_sec) * 1000.0 +
-							  (end.tv_usec - _cgiStartTime.tv_usec) / 1000.0;
+		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 +
+							  (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
 
 		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 	}

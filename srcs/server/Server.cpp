@@ -329,9 +329,10 @@ void Server::handleClientRead(size_t clientIndex)
 			// Log the oversized request early rejection
 			struct timeval end;
 			gettimeofday(&end, NULL);
-			double responseTime = 0.0; // Early guard happens during read; treat as immediate
+			double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
+								  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 			if (earlyCfg)
-				Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, earlyCfg->getServerName(), earlyCfg->getPort());
+				Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -567,9 +568,12 @@ void Server::handleCGITimeouts()
 
 			// Log the timeout event so it appears in server logs
 			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
-			double responseTime = difftime(now, cgi->startTime) * 1000.0;
+			struct timeval endTime;
+			gettimeofday(&endTime, NULL);
+			double responseTime = (endTime.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
+								  (endTime.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 			if (cfg)
-				Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
+				Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 
 			// Clean up CGI
 			delete cgi;
@@ -699,15 +703,13 @@ void Server::handleCGIPipe(size_t pipeIndex)
 
 				if (cgiError)
 				{
-					const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
-					time_t now = time(NULL);
-					double responseTime = difftime(now, cgi->startTime) * 1000.0;
-					if (cfg)
-					{
-						Logger::logRequest(client.getRequest().getMethod(), client.getRequest().getUri(), client.getClientIp(), client.getResponseStatus(), client.getResponseBodySize(), responseTime, cfg->getServerName(), cfg->getPort());
-						if (!cgi->errorOutput.empty())
-							Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
-					}
+					struct timeval endTime;
+					gettimeofday(&endTime, NULL);
+					double responseTime = (endTime.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
+										  (endTime.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
+					Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+					if (!cgi->errorOutput.empty())
+						Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
 				}
 
 				delete cgi;
