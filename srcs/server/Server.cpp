@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 13:05:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 14:55:42 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ void Server::run()
 			}
 			int fd = _pollFds[i].fd;
 			SocketType type = _socketTypes[fd];
-			
+
 size_t oldSize = _pollFds.size();  // Remember size
 
 			// Handle POLLIN (incoming data to read)
@@ -119,11 +119,11 @@ size_t oldSize = _pollFds.size();  // Remember size
 
 			if (type == SOCKET_CGI)
 				handleCGIPipe(i);
-			
+
 // If size changed (element removed), don't increment i
 			if (_pollFds.size() < oldSize)
 				continue;  // Element removed, i already points to next
-			
+
 			i++;  // Otherwise move to next
 		}
 	}
@@ -238,6 +238,10 @@ void Server::handleClientTimeouts()
 		if (it->second.hasTimedOut(CLIENT_KEEPALIVE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
 		{
 			int fd = it->first;
+
+			Client &client = it->second;
+			Server::logClientResponse(client); // AJOUT LOG ICI (POSSIBLE DOUBLONS)
+
 			++it;
 			for (size_t j = 0; j < _pollFds.size(); j++)
 			{
@@ -303,12 +307,8 @@ void Server::handleClientRead(size_t clientIndex)
 			client.buildErrorResponse(413);
 			client.markCloseAfterResponse();
 			// Log the oversized request early rejection
-			struct timeval end;
-			gettimeofday(&end, NULL);
-			double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
-								  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 			if (earlyCfg)
-				Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+				Server::logClientResponse(client);
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -447,6 +447,9 @@ void Server::handleClientWrite(size_t clientIndex)
 	}
 
 	// Response fully sent, close connection and cleanup
+
+	Server::logClientResponse(client); // ICI AJOUT LOG (POSSIBEL DOUBLONS)
+
 	removeClient(clientFd, clientIndex);
 }
 
@@ -524,12 +527,8 @@ void Server::handleCGITimeouts()
 
 			// Log the timeout event so it appears in server logs
 			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
-			struct timeval endTime;
-			gettimeofday(&endTime, NULL);
-			double responseTime = (endTime.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
-								  (endTime.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 			if (cfg)
-				Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+				Server::logClientResponse(client);
 
 			// Clean up CGI
 			delete cgi;
@@ -593,7 +592,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				// Remove pipeOut (current pipe)
 				_pollFds.erase(_pollFds.begin() + pipeIndex);
 				_socketTypes.erase(pipeFd);
-				
+
 				// Remove pipeIn from poll if it exists
 				if (cgi->pipeIn != -1)
 				{
@@ -607,7 +606,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						}
 					}
 				}
-				
+
 				// Remove pipeErr from poll if it exists
 				if (cgi->pipeErr != -1)
 				{
@@ -621,17 +620,17 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						}
 					}
 				}
-				
+
 				// THEN: Close the pipes
 				safeClose(cgi->pipeOut);
 				cgi->pipeOut = -1;
-				
+
 				if (cgi->pipeIn != -1)
 				{
 					safeClose(cgi->pipeIn);
 					cgi->pipeIn = -1;
 				}
-				
+
 				if (cgi->pipeErr != -1)
 				{
 					safeClose(cgi->pipeErr);
@@ -659,19 +658,15 @@ void Server::handleCGIPipe(size_t pipeIndex)
 
 				if (cgiError)
 				{
-					struct timeval endTime;
-					gettimeofday(&endTime, NULL);
-					double responseTime = (endTime.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 + 
-										  (endTime.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
-					Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+					Server::logClientResponse(client);
 					if (!cgi->errorOutput.empty())
 						Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
 				}
-				
+
 				delete cgi;
 				client.setCGIProcess(NULL);
 				client.setState(STATE_KEEPALIVE);
-				
+
 				for (size_t i = 0; i < _pollFds.size(); ++i)
 					if (_pollFds[i].fd == it->first)
 					{
@@ -700,7 +695,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						if (cgi->bytesWritten >= body.size())
 						{
 							cgi->inputWritten = true;
-							
+
 							// Remove from poll THEN close
 							for (size_t i = 0; i < _pollFds.size(); ++i)
 							{
@@ -800,4 +795,13 @@ void Server::installSignals()
 
 	// Ignore SIGPIPE to prevent termination on broken socket writes
 	signal(SIGPIPE, SIG_IGN);
+}
+
+void Server::logClientResponse(Client &client)
+{
+    struct timeval end;
+    gettimeofday(&end, NULL);
+    double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
+                          (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
+    Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 }

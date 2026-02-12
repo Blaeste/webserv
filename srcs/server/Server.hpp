@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 09:59:39 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 14:46:26 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,4 +98,7 @@ class Server {
 		void addSignalPipeToPoll();
 		static void signalHandler(int sig);
 		void installSignals();
+
+		// Logging
+		void logClientResponse(Client &client);
 };

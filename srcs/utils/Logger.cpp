@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 13:10:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 14:45:51 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -247,8 +247,8 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
 	}
 
 	// Check if this request is identical to the previous one
-	bool isSameRequest = (_lastMethod == method && _lastUri == uri && 
-						  _lastClientIP == clientIP && _lastServerName == serverName && 
+	bool isSameRequest = (_lastMethod == method && _lastUri == uri &&
+						  _lastClientIP == clientIP && _lastServerName == serverName &&
 						  _lastServerPort == port);
 
 	// If there's a pending request and it's not the same, finalize it first
@@ -392,7 +392,7 @@ void Logger::logRequestEnd(int statusCode, size_t responseSize, double responseT
 
 	// Use the responseTime calculated in buildResponse/buildResponseFromCGI
 	// (calculated correctly from start to end of each individual request)
-	
+
 	// Update timing stats
 	if (_requestCount == 1 || _minTime == 0.0)
 	{

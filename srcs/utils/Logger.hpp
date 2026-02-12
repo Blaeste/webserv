@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 12:46:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 14:45:56 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,23 +29,23 @@
 
 // Class ***********************************************************************
 class Logger {
-private:
-	// Attribute(s) ------------------------------------------------------------
-	// static timeval _lastRequestTime;
-	static std::string _lastMethod; ///< Last logged HTTP method
-	static std::string _lastUri; ///< Last logged URI
-	static std::string _lastClientIP; ///< Last logged client IP address
-	static int _lastStatus; ///< Last logged HTTP status code
-	static size_t _lastSize; ///< Last logged response size
-	static size_t _requestCount; ///< Number of grouped identical requests
-	static double _totalTime; ///< Total response time for grouped requests
-	static double _minTime; ///< Minimum response time in group
-	static double _maxTime; ///< Maximum response time in group
-	static std::string _lastServerName; ///< Last logged server name
-	static int _lastServerPort; ///< Last logged server port
-	static bool _firstLog; ///< Indicates if this is the first log entry
-	static bool _pendingRequest; ///< Request started but not completed
-	static bool _currentIsSameAsPrevious; ///< Current request identical to previous
+	private:
+		// Attribute(s) --------------------------------------------------------
+		// static timeval _lastRequestTime;
+		static std::string _lastMethod; ///< Last logged HTTP method
+		static std::string _lastUri; ///< Last logged URI
+		static std::string _lastClientIP; ///< Last logged client IP address
+		static int _lastStatus; ///< Last logged HTTP status code
+		static size_t _lastSize; ///< Last logged response size
+		static size_t _requestCount; ///< Number of grouped identical requests
+		static double _totalTime; ///< Total response time for grouped requests
+		static double _minTime; ///< Minimum response time in group
+		static double _maxTime; ///< Maximum response time in group
+		static std::string _lastServerName; ///< Last logged server name
+		static int _lastServerPort; ///< Last logged server port
+		static bool _firstLog; ///< Indicates if this is the first log entry
+		static bool _pendingRequest; ///< Request started but not completed
+		static bool _currentIsSameAsPrevious; ///< Current request identical to previous
 
 		// Private method(s) ---------------------------------------------------
 		static std::string getCurrentTime();
