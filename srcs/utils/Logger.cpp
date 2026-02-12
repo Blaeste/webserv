@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:45:24 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 11:06:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,7 +23,7 @@ std::string Logger::_lastUri = "";
 std::string Logger::_lastClientIP = "";
 int Logger::_lastStatus = 0;
 size_t Logger::_lastSize = 0;
-int Logger::_requestCount = 0;
+size_t Logger::_requestCount = 0;
 double Logger::_totalTime = 0.0;
 double Logger::_minTime = 0.0;
 double Logger::_maxTime = 0.0;
@@ -141,28 +141,35 @@ void Logger::flushGroupedRequests()
 
 	// Format timing
 	std::stringstream timingStr;
-	if (_requestCount == 1) {
-		// Single request: show one time
-		if (_minTime < 1.0)
-			timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
-		else
-			timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
-	} else {
-		// Multiple requests: show min-max
-		if (_maxTime < 1.0) {
-			// Both in microseconds
-			timingStr << std::fixed << std::setprecision(0)
-					  << (_minTime * 1000) << "-" << (_maxTime * 1000) << "µs";
-		} else if (_minTime >= 1.0) {
-			// Both in milliseconds
-			timingStr << std::fixed << std::setprecision(1)
-					  << _minTime << "-" << _maxTime << "ms";
+	if (_requestCount > 1) {
+		// Multiple requests: determine unit for min and max
+		enum Unit { US, MS, S };
+		Unit minUnit = (_minTime < 1.0) ? US : (_minTime < 1000.0) ? MS : S;
+		Unit maxUnit = (_maxTime < 1.0) ? US : (_maxTime < 1000.0) ? MS : S;
+		// Format based on unit combinations
+		if (minUnit == maxUnit) {
+			// Same unit: format together
+			if (minUnit == US)
+				timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000);
+			else if (minUnit == MS)
+				timingStr << std::fixed << std::setprecision(1) << _minTime;
+			else // S
+				timingStr << std::fixed << std::setprecision(2) << (_minTime / 1000.0);
 		} else {
-			// Mixed: min in µs, max in ms
-			timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs-"
-					  << std::fixed << std::setprecision(1) << _maxTime << "ms";
+			// Different units: format separately
+			if (minUnit == US)
+				timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
+			else
+				timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
 		}
+		timingStr << "-";
 	}
+	if (_maxTime < 1.0)
+		timingStr << std::fixed << std::setprecision(0) << (_maxTime * 1000) << "µs";
+	else if (_maxTime < 1000.0)
+		timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
+	else
+		timingStr << std::fixed << std::setprecision(2) << (_maxTime / 1000.0) << "s";
 
 	// Build URI+count field with proper alignment (always exactly uriFieldWidth)
 	std::stringstream uriField;
@@ -232,12 +239,12 @@ void Logger::logRequest(const std::string &method, const std::string &uri,
 								size_t responseSize, double responseTime,
 								 std::string serverName, int port)
 {
-    // Display separator before first log
-    if (_firstLog)
-    {
-        printSeparator();
-        _firstLog = false;
-    }
+	// Display separator before first log
+	if (_firstLog)
+	{
+		printSeparator();
+		_firstLog = false;
+	}
 
 	// Get time
 	// timeval now;
@@ -316,5 +323,5 @@ void Logger::logMessage(const std::string &message)
 
 void Logger::printSeparator()
 {
-    std::cout << GREY << std::string(132, '-') << RESET << std::endl;
+	std::cout << GREY << std::string(132, '-') << RESET << std::endl;
 }

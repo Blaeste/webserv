@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:45:13 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/12 11:05:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,7 +37,7 @@ private:
 	static std::string _lastClientIP;
 	static int _lastStatus;
 	static size_t _lastSize;
-	static int _requestCount;
+	static size_t _requestCount;
 	static double _totalTime;
 	static double _minTime;
 	static double _maxTime;
