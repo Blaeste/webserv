@@ -285,10 +285,13 @@ Client → Server (poll) → accept() → Client
 | 403 | Forbidden | Access denied (directory without autoindex) |
 | 404 | Not Found | Resource not found |
 | 405 | Method Not Allowed | HTTP method not allowed |
+| 408 | Request Timeout | Client didn't send complete request in time |
 | 413 | Payload Too Large | Request body exceeds limit |
+| 414 | URI Too Long | Request URI exceeds maximum length |
 | 500 | Internal Server Error | Server-side error |
 | 501 | Not Implemented | Feature not supported |
 | 504 | Gateway Timeout | CGI script timeout (90 seconds) |
+| 505 | HTTP Version Not Supported | HTTP version not HTTP/1.0 or HTTP/1.1 |
 
 ---
 

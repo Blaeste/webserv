@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/12 10:53:03 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/12 13:19:06 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -104,7 +104,8 @@ fclean: clean
 	echo "✓ Executable removed"
 
 # Rebuild everything from scratch
-re: fclean all
+re: fclean
+	@$(MAKE) --no-print-directory all 2>&1 | grep -v "warning: -j"
 
 # Kill any running instance of the local webserv binary
 kill:

@@ -175,10 +175,13 @@ grep -n "errno" srcs/server/Client.cpp
 - 403 Forbidden
 - 404 Not Found
 - 405 Method Not Allowed
+- 408 Request Timeout
 - 413 Payload Too Large
+- 414 URI Too Long
 - 500 Internal Server Error
 - 501 Not Implemented
 - 504 Gateway Timeout (CGI 90s)
+- 505 HTTP Version Not Supported
 
 **Test:**
 ```bash
@@ -188,8 +191,18 @@ curl -v http://localhost:8080/nonexistent
 # 405 Method Not Allowed (POST non autorisé sur /)
 curl -X POST http://localhost:8080/
 
+# 408 Request Timeout (requête incomplète)
+echo -n "GET / HTTP/1.1" | nc localhost 8080
+# Attendre ~76s → 408
+
 # 413 Payload Too Large
 dd if=/dev/zero bs=1M count=20 | curl -X POST --data-binary @- http://localhost:8080/uploads
+
+# 414 URI Too Long
+python3 -c "print('GET /' + 'A'*10000 + ' HTTP/1.1\r\n\r\n')" | nc localhost 8080
+
+# 505 HTTP Version Not Supported
+echo -e "GET / HTTP/2.0\r\n\r\n" | nc localhost 8080
 ```
 
 ### 2. ✅ Multiple Servers with Different Ports

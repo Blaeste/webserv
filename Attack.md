@@ -60,6 +60,32 @@ echo -e "GET\t/\tHTTP/1.1\r\n\r\n" | nc localhost 8080
 
 **Résultat attendu**: 400 Bad Request (pas de crash)
 
+**Résultats des tests** (12/02/2026 13:14):
+- ✅ Version HTTP 2.0, 1.2, 0.9 → **505 HTTP Version Not Supported** ✓ (45-121µs)
+- ✅ Méthode invalide (INVALID) → **400 Bad Request** ✓ (45µs)
+- ✅ URI trop longue (10000 chars) → **414 URI Too Long** ✓ (50.6ms de parsing)
+- ✅ Request line incomplète (`GET /` ou `GET`) → **400 Bad Request** ✓ (43-44µs)
+- ✅ Espaces multiples → **400 Bad Request** ✓ (46-54µs)
+- ✅ Tabs dans request line → **400 Bad Request** ✓
+- ✅ Request line sans CRLF → **408 Request Timeout** ✓ (76.08s - CLIENT_KEEPALIVE_TIMEOUT)
+- ✅ Headers avec LF seulement (sans CR) → **408 Request Timeout** ✓ (timeout attendu)
+
+**Logs serveur** :
+```
+webserv:8080 | [13:05:34] | 127.0.0.1 |     GET /                                      (2) | 521B | → 505 | 45-121µs
+webserv:8080 | [13:05:49] | 127.0.0.1 | INVALID /                                          | 529B | → 400 |  45µs
+webserv:8080 | [13:05:56] | 127.0.0.1 |     GET /                                      (3) | 521B | → 505 | 66-79µs
+webserv:8080 | [13:06:03] | 127.0.0.1 |     GET /AAAAAA[...]                               | 495B | → 414 | 50.6ms
+webserv:8080 | [13:14:19] | 127.0.0.1 |     ??? /                                          |   0B | → 408 | 76.08s
+```
+
+**Analyse** :
+- ✅ Tous les cas sont correctement gérés sans crash
+- ✅ Les codes HTTP sont conformes aux specs (400, 408, 414, 505)
+- ✅ Les timeouts (requêtes incomplètes) retournent **408 Request Timeout** après ~76s
+- ✅ Performance excellente : parsing < 100µs pour la plupart des cas
+- ✅ Logging fonctionnel avec temps de réponse détaillé (méthode `???` pour requêtes incomplètes)
+
 ---
 
 ### 1.2 Header Injection & Smuggling

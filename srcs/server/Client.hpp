@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 13:03:53 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,6 +52,7 @@ class Client
 		std::string _cachedResponse; ///< Cached response for progressive sending
 		size_t _bytesSent; ///< Bytes already sent from cached response
 		timeval _cgiStartTime; ///< Start time for CGI timeout tracking
+		timeval _requestStartTime; ///< Start time for request processing
 		const ServerConfig *_serverConfig;  ///< Server configuration for logging
 
 	public:
@@ -68,6 +69,7 @@ class Client
 		bool isResponseReady() const { return _responseReady; }
 		bool shouldCloseAfterResponse() const { return _closeAfterResponse; }
 		CGIProcess *getCGIProcess() const { return _cgiProcess; }
+		struct timeval getStartTime() const { return _requestStartTime; }
 
 		// Setter(s) -----------------------------------------------------------
 		void updateActivity() { _lastActivity = time(NULL); }

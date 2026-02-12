@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 11:58:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 13:03:53 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <cstring>
 #include <iostream>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 // Constructor -----------------------------------------------------------------
@@ -37,8 +38,11 @@ Client::Client(int socket, const std::string &clientIp)
 	, _cgiProcess(NULL)
 	, _bytesSent(0)
 	, _cgiStartTime()
+	, _requestStartTime()
 	, _serverConfig(NULL)
-{}
+{
+	gettimeofday(&_requestStartTime, NULL);
+}
 
 // Accessor(s) -----------------------------------------------------------------
 bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
@@ -76,7 +80,7 @@ bool Client::readData(const ServerConfig *config)
 	std::string newData(buffer, bytesRead);
 	bool wasHeadersParsed = _request.headersParsed();
 	_request.appendData(newData);
-	
+
 	// Log request start as soon as headers are parsed
 	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
 	{
@@ -84,7 +88,7 @@ bool Client::readData(const ServerConfig *config)
 								config->getServerName(), config->getPort());
 		_requestLogged = true;
 	}
-	
+
 	if (_request.isComplete())
 	{
 		_requestComplete = true;
