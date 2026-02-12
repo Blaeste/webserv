@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/12 10:44:02 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/12 10:53:03 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -31,7 +31,6 @@ NAME = webserv
 # Compiler and flags
 CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -O3 -std=c++98
-INCLUDES = -I includes
 
 # Compile multi-cpu (linux only comment it on other system)
 MAKEFLAGS += -j$(shell nproc)
@@ -75,7 +74,7 @@ SERVER_H = $(addprefix srcs/server/, $(SERVER_HEADERS))
 UTILS_H = $(addprefix srcs/utils/, $(UTILS_HEADERS))
 
 # All header file
-HEADERS = includes/webserv.hpp $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)
+HEADERS = $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)
 
 # ============================================================================ #
 #                                  RULES                                       #
@@ -92,7 +91,7 @@ $(NAME): $(OBJS)
 # Compile source files into object files
 obj/%.o: srcs/%.cpp $(HEADERS)
 	mkdir -p $(dir $@)
-	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Remove object files
 clean:
