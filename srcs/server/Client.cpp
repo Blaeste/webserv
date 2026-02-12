@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/08 18:56:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 10:22:08 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "Client.hpp"
 #include "Router.hpp"
 #include "Server.hpp"
@@ -23,69 +23,23 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-// Constructor: initialize socket and activity timestamp
+// Constructor -----------------------------------------------------------------
+// Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(), _serverConfig(NULL)
-{
-}
+	: _socket(socket)
+	, _clientIp(clientIp)
+	, _lastActivity(time(NULL))
+	, _requestComplete(false)
+	, _responseReady(false)
+	, _closeAfterResponse(false)
+	, _state(STATE_KEEPALIVE)
+	, _cgiProcess(NULL)
+	, _bytesSent(0)
+	, _cgiStartTime()
+	, _serverConfig(NULL)
+{}
 
-// Private method(s)
-void Client::handleSession(std::map<std::string, SessionData> &sessions)
-{
-	std::map<std::string, std::string> cookies = _request.getCookies();
-	std::string sessionId;
-
-	if (cookies.find("session_id") != cookies.end())
-	{
-		sessionId = cookies["session_id"];
-
-		// Update existing session or create new if expired
-		if (sessions.find(sessionId) != sessions.end())
-		{
-			sessions[sessionId].lastActive = time(NULL);
-
-			// Only count html request (for good count page visit)
-			std::string uri = _request.getUri();
-			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
-			bool isHtmlPage = (uri == "/" ||
-							   uri.find(".html") != std::string::npos ||
-							   (uri.find('.') == std::string::npos && uri != "/counter-api"));
-			if (isHtmlPage && !isInternalRequest)
-				sessions[sessionId].visitCount++;
-		}
-		else
-		{
-			// Invalid/expired session → create new
-			sessionId = generateSessionId();
-			sessions[sessionId].lastActive = time(NULL);
-			sessions[sessionId].visitCount = 1;
-			sessions[sessionId].username = "";
-			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-		}
-	}
-	else
-	{
-		// New session
-		sessionId = generateSessionId();
-		sessions[sessionId].lastActive = time(NULL);
-		sessions[sessionId].visitCount = 1;
-		sessions[sessionId].username = "";
-		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-	}
-	_sessionId = sessionId;
-}
-
-// Accessor(s)
-int Client::getSocket() const
-{
-	return _socket;
-}
-
-const std::string &Client::getClientIp() const
-{
-	return _clientIp;
-}
-
+// Accessor(s) -----------------------------------------------------------------
 bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 {
 	time_t timeout;
@@ -97,60 +51,10 @@ bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 	return time(NULL) - _lastActivity > timeout;
 }
 
-void Client::updateActivity()
-{
-	_lastActivity = time(NULL);
-}
-
-const HttpRequest &Client::getRequest() const
-{
-	return _request;
-}
-
-int Client::getResponseStatus()
-{
-	return _response.getStatus();
-}
-
-size_t Client::getResponseBodySize() const
-{
-	return _response.getBody().size();
-}
-
-bool Client::isRequestComplete() const
-{
-	return _requestComplete;
-}
-
-bool Client::isResponseReady() const
-{
-	return _responseReady;
-}
-
-bool Client::shouldCloseAfterResponse() const
-{
-	return _closeAfterResponse;
-}
-
 void Client::markCloseAfterResponse()
 {
 	_response.setHeader("Connection", "close");
 	_closeAfterResponse = true;
-}
-
-void Client::setState(ClientState state)
-{
-	_state = state;
-}
-
-CGIProcess *Client::getCGIProcess() const
-{
-	return _cgiProcess;
-}
-
-void Client::setCGIProcess(CGIProcess *cgi)
-{
-	_cgiProcess = cgi;
 }
 
 void Client::setCGITiming(const ServerConfig &config)
@@ -159,7 +63,7 @@ void Client::setCGITiming(const ServerConfig &config)
 	_serverConfig = &config;
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 bool Client::readData()
 {
 	// Read data from socket into buffer and parse request
@@ -182,27 +86,6 @@ bool Client::readData()
 	}
 	updateActivity();
 	return true;
-}
-
-void Client::buildErrorResponse(int statusCode)
-{
-	_response.setStatus(statusCode);
-	_response.setHeader("Content-Type", "text/html");
-	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
-	if (fileExists(errorPage))
-	{
-		try
-		{
-			_response.setBody(readFile(errorPage));
-		}
-		catch (const std::exception &e)
-		{
-			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
-			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
-		}
-	}
-	else
-		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 }
 
 void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
@@ -346,6 +229,27 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	_responseReady = true;
 }
 
+void Client::buildErrorResponse(int statusCode)
+{
+	_response.setStatus(statusCode);
+	_response.setHeader("Content-Type", "text/html");
+	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+	if (fileExists(errorPage))
+	{
+		try
+		{
+			_response.setBody(readFile(errorPage));
+		}
+		catch (const std::exception &e)
+		{
+			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
+			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+		}
+	}
+	else
+		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+}
+
 bool Client::sendResponse()
 {
 	// Build response only once and cache it
@@ -383,4 +287,50 @@ bool Client::sendResponse()
 	}
 
 	return false; // Not complete yet
+}
+
+// Private method(s) -----------------------------------------------------------
+void Client::handleSession(std::map<std::string, SessionData> &sessions)
+{
+	std::map<std::string, std::string> cookies = _request.getCookies();
+	std::string sessionId;
+
+	if (cookies.find("session_id") != cookies.end())
+	{
+		sessionId = cookies["session_id"];
+
+		// Update existing session or create new if expired
+		if (sessions.find(sessionId) != sessions.end())
+		{
+			sessions[sessionId].lastActive = time(NULL);
+
+			// Only count html request (for good count page visit)
+			std::string uri = _request.getUri();
+			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
+			bool isHtmlPage = (uri == "/" ||
+							   uri.find(".html") != std::string::npos ||
+							   (uri.find('.') == std::string::npos && uri != "/counter-api"));
+			if (isHtmlPage && !isInternalRequest)
+				sessions[sessionId].visitCount++;
+		}
+		else
+		{
+			// Invalid/expired session → create new
+			sessionId = generateSessionId();
+			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].visitCount = 1;
+			sessions[sessionId].username = "";
+			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+		}
+	}
+	else
+	{
+		// New session
+		sessionId = generateSessionId();
+		sessions[sessionId].lastActive = time(NULL);
+		sessions[sessionId].visitCount = 1;
+		sessions[sessionId].username = "";
+		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+	}
+	_sessionId = sessionId;
 }

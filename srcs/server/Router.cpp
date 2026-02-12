@@ -10,12 +10,12 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "Router.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
 // Find location with longest matching path prefix
 const Location *Router::findMatchingLocation(const ServerConfig &config, const std::string &uri) const
 {
@@ -42,7 +42,7 @@ const Location *Router::findMatchingLocation(const ServerConfig &config, const s
 	return bestMatch;
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 // Match request to appropriate route and determine response type
 RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &request) const
 {

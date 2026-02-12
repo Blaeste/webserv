@@ -32,30 +32,31 @@ class Logger {
 private:
 	// Attribute(s) ------------------------------------------------------------
 	// static timeval _lastRequestTime;
-	static std::string _lastMethod;
-	static std::string _lastUri;
-	static std::string _lastClientIP;
-	static int _lastStatus;
-	static size_t _lastSize;
-	static size_t _requestCount;
-	static double _totalTime;
-	static double _minTime;
-	static double _maxTime;
-	static std::string _lastServerName;
-	static int _lastServerPort;
-	static bool _firstLog;
+	static std::string _lastMethod; ///< Last logged HTTP method
+	static std::string _lastUri; ///< Last logged URI
+	static std::string _lastClientIP; ///< Last logged client IP address
+	static int _lastStatus; ///< Last logged HTTP status code
+	static size_t _lastSize; ///< Last logged response size
+	static size_t _requestCount; ///< Number of grouped identical requests
+	static double _totalTime; ///< Total response time for grouped requests
+	static double _minTime; ///< Minimum response time in group
+	static double _maxTime; ///< Maximum response time in group
+	static std::string _lastServerName; ///< Last logged server name
+	static int _lastServerPort; ///< Last logged server port
+	static bool _firstLog; ///< Indicates if this is the first log entry
 
-	// Private method(s) -------------------------------------------------------
-	static std::string getCurrentTime();
-	static std::string formatSize(size_t bytes);
-	static std::string getStatusColor(int statusCode);
-	static void flushGroupedRequests();
-	static void finalizeGroupedRequests();
-	static void printSeparator();
 
-public:
-	// Public method(s) --------------------------------------------------------
-	static void logRequest(const std::string &method, const std::string &uri,
+		// Private method(s) ---------------------------------------------------
+		static std::string getCurrentTime();
+		static std::string formatSize(size_t bytes);
+		static std::string getStatusColor(int statusCode);
+		static void flushGroupedRequests();
+		static void finalizeGroupedRequests();
+		static void printSeparator();
+
+	public:
+		// Public method(s) ----------------------------------------------------
+		static void logRequest(const std::string &method, const std::string &uri,
 							const std::string &clientIP, int statusCode,
 							size_t responseSize, double responseTime,
 							std::string serverName, int port);

@@ -10,7 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "Server.hpp"
 #include "../cgi/CGI.hpp"
 #include "../http/HttpRequest.hpp"
@@ -25,10 +25,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+// Static variable initialization ----------------------------------------------
 // Self-pipe for signal handling in poll()
 int Server::_s_sigpipe[2] = {-1, -1};
 
-// Special member function(s)
+// Special member function(s) --------------------------------------------------
 Server::Server(const Config &config)
 	: _configs(config.getServers()), _running(false), _lastSessionCleanup(0)
 {
@@ -60,7 +61,7 @@ Server::~Server()
 	Logger::logMessage("Server was closed");
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 void Server::run()
 {
 	_running = true;
@@ -133,7 +134,7 @@ void Server::stop()
 	_running = false;
 }
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
 void Server::setupListenSockets()
 {
 	// Create one listening socket per configuration (one per port)
