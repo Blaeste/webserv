@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:12:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 09:59:39 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
-// Include(s)
+// Include(s) ******************************************************************
 #include "Client.hpp"
 #include "Router.hpp"
 #include "../config/Config.hpp"
@@ -24,19 +24,17 @@
 #include <vector>
 #include <algorithm>
 
-// Forward declaration(s)
+// Forward declaration(s) ------------------------------------------------------
 class HttpRequest;
 
-// Structure(s)
+// Structure(s) ****************************************************************
 struct SessionData {
-
-	time_t lastActive;
-	std::string username;
-	int visitCount;
-
+	time_t lastActive; ///< Timestamp of last session activity
+	std::string username; ///< Username associated with the session
+	int visitCount; ///< Number of page visits for this session
 };
 
-// Enum(s)
+// Enum(s) *********************************************************************
 enum SocketType {
 	SOCKET_LISTEN,
 	SOCKET_CLIENT,
@@ -44,68 +42,60 @@ enum SocketType {
 	SOCKET_CGI
 };
 
-// Class
+// Class ***********************************************************************
 class Server {
-
 	private:
+		// Attribute(s) --------------------------------------------------------
+		enum {
+			SESSION_TIMEOUT = 1800, // 30 minutes
+			SESSION_CLEANUP_INTERVAL = 60, // 1 minute
+			CLIENT_KEEPALIVE_TIMEOUT = 75, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
+			CLIENT_PROCESSING_TIMEOUT = 180, // 3 minutes - request processing timeout, including CGI execution
+			DEFAULT_CGI_EXECUTION_TIMEOUT = 90 // 90 seconds - single CGI execution timeout (prevents hanging scripts)
+		};
 
-		// Attribute(s)
-
-			enum {
-				SESSION_TIMEOUT = 1800, // 30 minutes
-				SESSION_CLEANUP_INTERVAL = 60, // 1 minute
-				CLIENT_KEEPALIVE_TIMEOUT = 75, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
-				CLIENT_PROCESSING_TIMEOUT = 180, // 3 minutes - request processing timeout, including CGI execution
-				DEFAULT_CGI_EXECUTION_TIMEOUT = 90 // 90 seconds - single CGI execution timeout (prevents hanging scripts)
-			};
-			std::vector<ServerConfig> _configs;
-			std::vector<pollfd> _pollFds;
-			std::map<int, Client> _clients;
-			std::map<int, SocketType> _socketTypes;
-			bool _running;
-			Router _router;
-			std::map<std::string, SessionData> _sessions;
-			static int _s_sigpipe[2];
-			time_t _lastSessionCleanup;
+		std::vector<ServerConfig> _configs; ///< Server configurations
+		std::vector<pollfd> _pollFds; ///< Poll file descriptors for I/O multiplexing
+		std::map<int, Client> _clients; ///< Active client connections
+		std::map<int, SocketType> _socketTypes; ///< Socket type mapping
+		bool _running; ///< Server running state
+		Router _router; ///< Request router
+		std::map<std::string, SessionData> _sessions; ///< Active user sessions
+		static int _s_sigpipe[2]; ///< Self-pipe for signal handling
+		time_t _lastSessionCleanup; ///< Timestamp of last session cleanup
 
 	public:
+		// Special member function(s) ------------------------------------------
+		explicit Server(const Config& config);
+		~Server();
 
-		// Special member function(s)
-
-			explicit Server(const Config& config);
-			~Server();
-
-		// Public method(s)
-
-			void run();
-			void stop();
+		// Public method(s) ----------------------------------------------------
+		void run();
+		void stop();
 
 	private:
+		// Private method(s) ---------------------------------------------------
+		// Socket management
+		void setupListenSockets();
+		void acceptNewClient(int listenSocket);
 
-		// Private method(s)
+		// Client lifecycle
+		void handleClientTimeouts();
+		void handleClientRead(size_t clientIndex);
+		void handleClientWrite(size_t clientIndex);
+		void removeClient(int fd, size_t pollIndex);
+		const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
 
-			// Socket management
-			void setupListenSockets();
-			void acceptNewClient(int listenSocket);
+		// CGI handling
+		void handleCGITimeouts();
+		void handleCGIPipe(size_t pipeIndex);
 
-			// Client lifecycle
-			void handleClientTimeouts();
-			void handleClientRead(size_t clientIndex);
-			void handleClientWrite(size_t clientIndex);
-			void removeClient(int fd, size_t pollIndex);
-			const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
+		// Session management
+		void handleSessionTimeouts();
 
-			// CGI handling
-			void handleCGITimeouts();
-			void handleCGIPipe(size_t pipeIndex);
-
-			// Session management
-			void handleSessionTimeouts();
-
-			// Signal handling (self-pipe trick for async-signal-safety)
-			void handleSignalPipeReadable();
-			void addSignalPipeToPoll();
-			static void signalHandler(int sig);
-			void installSignals();
-
+		// Signal handling (self-pipe trick for async-signal-safety)
+		void handleSignalPipeReadable();
+		void addSignalPipeToPoll();
+		static void signalHandler(int sig);
+		void installSignals();
 };

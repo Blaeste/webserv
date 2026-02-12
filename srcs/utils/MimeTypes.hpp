@@ -20,7 +20,7 @@
 class MimeTypes {
 	private:
 		// Attribute(s) --------------------------------------------------------
-		static const std::map<std::string, std::string> _types;
+		static const std::map<std::string, std::string> _types; ///< MIME type mappings by file extension
 
 	public:
 		// Public method(s) ----------------------------------------------------

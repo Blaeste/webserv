@@ -3,14 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:09:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/12 09:45:52 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-// Include(s)
+// Include(s) ------------------------------------------------------------------
 #include "CGI.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
@@ -28,7 +28,7 @@
 #include <vector>
 #include <cerrno>
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
 std::string CGI::readFromPipe(int fd) {
 	char buffer[4096];
 	std::string result;
@@ -110,7 +110,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	}
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
 void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	// Truncate display for large outputs
 	std::string displayOutput = output;
