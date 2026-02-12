@@ -1,5 +1,11 @@
 # ✅ Checklist de Tests - Webserv
 
+> **Note** : Cette checklist a été mise à jour pour refléter l'implémentation réelle :
+> - ✅ Méthodes : GET, POST, DELETE, HEAD, OPTIONS
+> - ✅ Timeout CGI : 90 secondes
+> - ❌ Pas de keep-alive (Connection: close après chaque réponse)
+> - ✅ Virtual Hosts : Bonus optionnel implémenté
+
 ## 🎯 Tests à chaque itération
 
 ### ✔️ Compilation & Démarrage
@@ -19,7 +25,7 @@
 - [ ] `client_max_body_size` : avec unités (M, K)
 - [ ] `error_page` : mapping code → fichier
 - [ ] `root` et `index` : chemins relatifs/absolus
-- [ ] `allowed_methods` : GET, POST, DELETE
+- [ ] `allowed_methods` : GET, POST, DELETE, HEAD, OPTIONS
 - [ ] `autoindex` : on/off
 - [ ] `upload_path` : répertoire d'upload
 - [ ] `cgi_extension` et `cgi_path` : config CGI
@@ -54,13 +60,21 @@
 - [ ] DELETE sur location non autorisée → 405
 - [ ] DELETE sur un répertoire → comportement défini (404 ou 403)
 
+### ✔️ Méthode HEAD
+- [ ] HEAD sur page statique → headers seulement (pas de body)
+- [ ] HEAD sur CGI → headers seulement
+- [ ] HEAD sur 404 → status + headers, pas de body
+
+### ✔️ Méthode OPTIONS
+- [ ] OPTIONS sur location → retourne Allow header avec méthodes autorisées
+- [ ] OPTIONS affiche correctement GET, POST, DELETE selon config
+
 ### ✔️ Headers HTTP
 - [ ] Header `Host` correctement parsé
 - [ ] Header `Content-Type` correctement détecté (auto-mime)
 - [ ] Header `Content-Length` respecté
 - [ ] Header `Transfer-Encoding: chunked` géré
-- [ ] Header `Connection: keep-alive` maintient la connexion
-- [ ] Header `Connection: close` ferme après réponse
+- [ ] Header `Connection: close` toujours envoyé (pas de keep-alive implémenté)
 - [ ] Header `User-Agent` parsé (optionnel, informatif)
 - [ ] Headers multiples sur plusieurs lignes
 
@@ -105,8 +119,8 @@
   - [ ] `SERVER_PROTOCOL`
 - [ ] Script avec headers custom (`Content-Type`, etc.)
 - [ ] Script qui affiche `$_GET` et `$_POST` (Python)
-- [ ] Script avec timeout → 504
-- [ ] Script infini interrompu après timeout
+- [ ] Script avec timeout (90 secondes) → 504
+- [ ] Script infini interrompu après 90 secondes
 - [ ] Script qui plante (exit 1) → 500
 
 ### ✔️ CGI PHP
@@ -173,7 +187,7 @@
 
 ---
 
-## 🌍 Tests Multi-Serveurs (Virtual Hosts)
+## 🌍 Tests Multi-Serveurs (Virtual Hosts - Bonus Optionnel)
 
 ### ✔️ Plusieurs Ports
 - [ ] Serveur 1 sur port 8080
@@ -201,18 +215,17 @@
 - [ ] Chunked encoding malformé → 400
 
 ### ✔️ Concurrence & Charge
-- [ ] 10 clients simultanés (connexions keep-alive)
-- [ ] 100 requêtes successives sans fermer la connexion
+- [ ] 10 clients simultanés
+- [ ] 100 requêtes successives (nouvelles connexions pour chacune)
 - [ ] Plusieurs uploads simultanés
 - [ ] Plusieurs CGI simultanés
 - [ ] Serveur ne crash pas sous charge
 - [ ] Serveur répond toujours (pas de deadlock)
 
-### ✔️ Keep-Alive & Timeouts
-- [ ] Connexion keep-alive reste ouverte entre requêtes
-- [ ] Timeout après inactivité (configurable ou ~5s)
-- [ ] Connexion fermée proprement après timeout
-- [ ] `Connection: close` ferme immédiatement après réponse
+### ✔️ Timeouts
+- [ ] CGI timeout après 90 secondes → 504
+- [ ] Connexion fermée après chaque réponse (Connection: close)
+- [ ] Client timeout après inactivité (évite connexions zombies)
 
 ### ✔️ Gestion Mémoire
 - [ ] Pas de fuites mémoire après 1000 requêtes
@@ -241,7 +254,7 @@ curl -H "Host: localhost" http://localhost:8080/
 # POST avec données
 curl -X POST -d "key=value" http://localhost:8080/
 
-# POST avec fichier
+# POST avec fichier (note: /uploads avec 's')
 curl -X POST -F "file=@test.txt" http://localhost:8080/uploads
 
 # DELETE
