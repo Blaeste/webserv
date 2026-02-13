@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 14:55:42 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/13 10:28:03 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -803,5 +803,6 @@ void Server::logClientResponse(Client &client)
     gettimeofday(&end, NULL);
     double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
                           (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
+
     Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 }

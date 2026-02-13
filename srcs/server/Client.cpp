@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 13:05:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/13 10:27:43 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,7 +77,7 @@ bool Client::readData(const ServerConfig *config)
 	// Set start time on very first read (before any parsing)
 	if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
 		gettimeofday(&_requestStartTime, NULL);
-	
+
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
@@ -87,7 +87,7 @@ bool Client::readData(const ServerConfig *config)
 	std::string newData(buffer, bytesRead);
 	bool wasHeadersParsed = _request.headersParsed();
 	_request.appendData(newData);
-	
+
 	// Log request start as soon as headers are parsed
 	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
 	{
@@ -95,7 +95,7 @@ bool Client::readData(const ServerConfig *config)
 								config->getServerName(), config->getPort());
 		_requestLogged = true;
 	}
-	
+
 	if (_request.isComplete())
 	{
 		_requestComplete = true;
@@ -104,6 +104,16 @@ bool Client::readData(const ServerConfig *config)
 			buildErrorResponse(_request.getErrorCode());
 			markCloseAfterResponse();
 			_responseReady = true;
+
+			// Log failed request if headers weren't parsed
+			if (!_requestLogged && config)
+			{
+				std::string method = _request.getMethod().empty() ? "UNKNOWN" : _request.getMethod();
+				std::string uri = _request.getUri().empty() ? "/" : _request.getUri();
+				Logger::logRequestStart(method, uri, _clientIp,
+										config->getServerName(), config->getPort());
+				_requestLogged = true;
+			}
 		}
 	}
 	updateActivity();
@@ -128,10 +138,6 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	{
 		buildErrorResponse(413);
 		markCloseAfterResponse();
-		// log + return
-		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
-		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 		_responseReady = true;
 		return;
 	}
@@ -146,11 +152,6 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		_response.setStatus(200);
 		_response.setHeader("Content-Type", "application/json");
 		_response.setBody(json);
-
-		// log and return
-		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
-		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 		_responseReady = true;
 		return;
 	}
@@ -201,11 +202,6 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	else
 		_response.serveFile(match.filePath, match.location->getRoot());
 
-	// Logging
-	gettimeofday(&end, NULL);
-	double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 + (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
-
-	Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
 	_responseReady = true;
 }
 
@@ -219,17 +215,6 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	}
 	else
 		_response.serveError(result.statusCode, "");
-
-	// Log CGI requests
-	if (_serverConfig)
-	{
-		struct timeval end;
-		gettimeofday(&end, NULL);
-		double responseTime = (end.tv_sec - _requestStartTime.tv_sec) * 1000.0 +
-							  (end.tv_usec - _requestStartTime.tv_usec) / 1000.0;
-
-		Logger::logRequestEnd(_response.getStatus(), _response.getBody().size(), responseTime);
-	}
 
 	_responseReady = true;
 }
