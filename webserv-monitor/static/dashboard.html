@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Webserv Monitor</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #1e1e1e; color: #fff; }
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #2d2d2d; padding: 20px; border-radius: 8px; }
+        .stat-value { font-size: 32px; font-weight: bold; }
+        .stat-label { color: #888; }
+        table { width: 100%; border-collapse: collapse; background: #2d2d2d; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #444; }
+        th { background: #3d3d3d; }
+        .status-200 { color: #4caf50; }
+        .status-400 { color: #ff9800; }
+        .status-500 { color: #f44336; }
+        h1 { color: #64b5f6; }
+        .controls { margin: 20px 0; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; }
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-success { background: #4caf50; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .test-output { background: #1a1a1a; padding: 15px; border-radius: 5px; margin-top: 20px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; display: none; }
+    </style>
+</head>
+<body>
+    <h1>🚀 Webserv Monitor Dashboard</h1>
+
+    <div class="controls">
+        <button class="btn btn-primary" onclick="runTest()">🧪 Run Tests</button>
+        <button class="btn btn-success" onclick="runEval()">📊 Run Eval</button>
+        <button class="btn btn-danger" onclick="clearDb()">🗑️ Clear Database</button>
+        <span id="test-status" style="margin-left: 20px; line-height: 40px;"></span>
+    </div>
+
+    <div id="test-output" class="test-output"></div>
+
+    <div class="stats" id="stats"></div>
+
+    <h2>📋 Recent Requests</h2>
+    <table id="requests">
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>IP</th>
+                <th>Method</th>
+                <th>URI</th>
+                <th>Status</th>
+                <th>Size</th>
+                <th>Response Time</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // Fetch stats et requests toutes les 2 secondes
+        async function updateDashboard() {
+            // Fetch stats
+            const statsRes = await fetch('/api/stats');
+            const stats = await statsRes.json();
+
+            // Afficher stats
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${stats.total_requests}</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.avg_response_time.toFixed(1)}µs</div>
+                    <div class="stat-label">Avg Response Time</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.error_count}</div>
+                    <div class="stat-label">Errors</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${stats.success_rate.toFixed(1)}%</div>
+                    <div class="stat-label">Success Rate</div>
+                </div>
+            `;
+
+            // Fetch requests
+            const reqRes = await fetch('/api/requests');
+            const data = await reqRes.json();
+
+            // Afficher requests
+            const tbody = document.querySelector('#requests tbody');
+            tbody.innerHTML = data.requests.map(req => `
+                <tr>
+                    <td>${req.timestamp}</td>
+                    <td>${req.client_ip}</td>
+                    <td>${req.method}</td>
+                    <td>${req.uri}</td>
+                    <td class="status-${Math.floor(req.status/100)*100}">${req.status}</td>
+                    <td>${req.size_bytes}B</td>
+                    <td>${req.response_time_us.toFixed(1)}µs</td>
+                </tr>
+            `).join('');
+        }
+
+        // Fonctions pour les boutons
+        async function runTest() {
+            const btn = event.target;
+            btn.disabled = true;
+            document.getElementById('test-status').textContent = '⏳ Running tests...';
+            document.getElementById('test-output').style.display = 'none';
+
+            await fetch('/api/run_test', { method: 'POST' });
+            checkTestStatus();
+        }
+
+        async function runEval() {
+            const btn = event.target;
+            btn.disabled = true;
+            document.getElementById('test-status').textContent = '⏳ Running eval...';
+            document.getElementById('test-output').style.display = 'none';
+
+            await fetch('/api/run_eval', { method: 'POST' });
+            checkTestStatus();
+        }
+
+        async function clearDb() {
+            if (!confirm('Vider la base de données?')) return;
+            await fetch('/api/clear_db', { method: 'POST' });
+            updateDashboard();
+        }
+
+        async function checkTestStatus() {
+            const res = await fetch('/api/test_status');
+            const status = await res.json();
+
+            const statusEl = document.getElementById('test-status');
+            const outputEl = document.getElementById('test-output');
+
+            if (status.status === 'running') {
+                setTimeout(checkTestStatus, 1000);
+            } else if (status.status === 'success') {
+                statusEl.textContent = '✅ Tests terminés';
+                outputEl.textContent = status.output;
+                outputEl.style.display = 'block';
+                document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+            } else if (status.status === 'error') {
+                statusEl.textContent = '❌ Erreur';
+                outputEl.textContent = status.output;
+                outputEl.style.display = 'block';
+                document.querySelectorAll('.btn').forEach(b => b.disabled = false);
+            }
+        }
+
+        // Update au chargement et toutes les 2s
+        updateDashboard();
+        setInterval(updateDashboard, 2000);
+    </script>
+</body>
+</html>

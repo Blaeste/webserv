@@ -82,3 +82,8 @@ YoupiBanane/*
 tester
 cgi_tester
 config/eval.conf
+
+# Monitoring database
+*.db
+*.db-shm
+*.db-wal

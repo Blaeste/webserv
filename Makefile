@@ -6,7 +6,7 @@
 #    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/12 10:53:03 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/13 13:22:58 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ include ${MK_DIR}/git.mk
 
 .SILENT:
 .ONESHELL:
-.PHONY: all clean fclean re kill test eval clear_eval
+.PHONY: all clean fclean re kill test eval clear_eval monitor stop-monitor
 
 # Executable name
 NAME = webserv
@@ -133,41 +133,41 @@ eval: $(NAME)
 	@chmod +x tester cgi_tester
 	@cat > config/eval.conf <<-'EOF'
 	server {
-	    listen 8080;
-	    server_name 42tester;
-	    error_page 400 /error_pages/400.html;
-	    error_page 403 /error_pages/403.html;
-	    error_page 404 /error_pages/404.html;
-	    error_page 405 /error_pages/405.html;
-	    error_page 413 /error_pages/413.html;
-	    error_page 500 /error_pages/500.html;
-	    error_page 501 /error_pages/501.html;
-	    error_page 504 /error_pages/504.html;
+		listen 8080;
+		server_name 42tester;
+		error_page 400 /error_pages/400.html;
+		error_page 403 /error_pages/403.html;
+		error_page 404 /error_pages/404.html;
+		error_page 405 /error_pages/405.html;
+		error_page 413 /error_pages/413.html;
+		error_page 500 /error_pages/500.html;
+		error_page 501 /error_pages/501.html;
+		error_page 504 /error_pages/504.html;
 		client_max_body_size 105M;
 
-	    # / - GET requests ONLY
-	    location / {
-	        root ./www;
-	        index index.html index.htm;
-	        allowed_methods GET;
-	        autoindex on;
-	    }
+		# / - GET requests ONLY
+		location / {
+			root ./www;
+			index index.html index.htm;
+			allowed_methods GET;
+			autoindex on;
+		}
 
 		# /post_body - POST requests with maxBody of 100 bytes
 		location /post_body {
-		    root ./www;
-		    allowed_methods POST;
-		    client_max_body_size 100;
+			root ./www;
+			allowed_methods POST;
+			client_max_body_size 100;
 		}
 
 		# /directory/
 		location /directory {
-		    root ./YoupiBanane;
-		    index youpi.bad_extension;
-		    allowed_methods GET POST;
-		    autoindex off;
-		    cgi_extension .bla;
-		    cgi_path ./cgi_tester;
+			root ./YoupiBanane;
+			index youpi.bad_extension;
+			allowed_methods GET POST;
+			autoindex off;
+			cgi_extension .bla;
+			cgi_path ./cgi_tester;
 			client_max_body_size 105M;
 		}
 	}
@@ -194,3 +194,24 @@ clear_eval:
 	@rm -rf YoupiBanane
 	@rm -f tester cgi_tester
 	@rm -f config/eval.conf
+
+
+
+
+monitor: $(NAME)
+	@echo "🚀 Lancement du monitoring..."
+	@mkdir -p webserv-monitor/static
+	@rm -f /tmp/webserv_pipe
+	@mkfifo /tmp/webserv_pipe
+	@gnome-terminal --title="Monitor (Dashboard + Daemon)" -- bash -c "cd webserv-monitor && python3 -u monitor.py < /tmp/webserv_pipe; exec bash" &
+	@sleep 1
+	@gnome-terminal --title="Webserv" -- bash -c "stdbuf -o0 ./$(NAME) config/default.conf | tee /tmp/webserv_pipe; exec bash" &
+	@sleep 1
+	@echo "✓ Monitoring lancé (2 fenêtres)"
+	@echo "📊 Dashboard: http://localhost:5000"
+
+stop-monitor:
+	@pkill -f "python3 monitor.py" 2>/dev/null || true
+	@pkill -f "./$(NAME)" 2>/dev/null || true
+	@rm -f /tmp/webserv_pipe
+	@echo "🛑 Monitoring arrêté"
