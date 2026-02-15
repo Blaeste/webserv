@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 12:55:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 13:17:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -146,7 +146,7 @@ void Logger::formatRequestLine(std::stringstream &output, bool includeCompletion
                 else if (minUnit == MS)
                     timingStr << std::fixed << std::setprecision(1) << _minTime;
                 else
-                    timingStr << std::fixed << std::setprecision(2) << (_minTime / 1000.0);
+                    timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
             } else {
                 if (minUnit == US)
                     timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
@@ -161,7 +161,7 @@ void Logger::formatRequestLine(std::stringstream &output, bool includeCompletion
         else if (_maxTime < 1000.0)
             timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
         else
-            timingStr << std::fixed << std::setprecision(2) << (_maxTime / 1000.0) << "s";
+            timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
     }
 
     // Build URI+count field
@@ -208,7 +208,7 @@ void Logger::formatRequestLine(std::stringstream &output, bool includeCompletion
                << GREY << "→" << RESET << " "
                << statusColor << BOLD << _lastStatus << RESET << " "
                << GREY << "|" << RESET << " "
-               << std::setw(6) << std::right << timingStr.str();
+               << std::left << timingStr.str();
     }
     
     output << "\033[K";
