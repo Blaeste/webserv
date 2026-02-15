@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Logger.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 14:45:56 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/15 12:41:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,15 +54,16 @@ class Logger {
 		static void flushGroupedRequests();
 		static void finalizeGroupedRequests();
 		static void printSeparator();
+		static void formatRequestLine(std::stringstream &output, bool includeCompletion);
 
 	public:
 		// Public method(s) ----------------------------------------------------
 		static void logRequestStart(const std::string &method, const std::string &uri,
-								const std::string &clientIP, std::string serverName, int port);
+							const std::string &clientIP, std::string serverName, int port);
 		static void logRequestEnd(int statusCode, size_t responseSize, double responseTime);
 		static void logRequest(const std::string &method, const std::string &uri,
 							const std::string &clientIP, int statusCode,
 							size_t responseSize, double responseTime,
 							std::string serverName, int port);
-	static void logMessage(const std::string &message);
+		static void logMessage(const std::string &message);
 };
