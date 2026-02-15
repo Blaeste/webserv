@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 12:41:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 12:55:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ int Logger::_lastServerPort = 0;
 bool Logger::_firstLog = true;
 bool Logger::_pendingRequest = false;
 bool Logger::_currentIsSameAsPrevious = false;
+std::string Logger::_lastRequestStartTime = "";
 
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
@@ -193,7 +194,7 @@ void Logger::formatRequestLine(std::stringstream &output, bool includeCompletion
     output << "\r"
            << std::setw(20) << std::left << serverPortStr << " "
            << GREY << "|" << RESET << " "
-           << "[" << getCurrentTime() << "] "
+           << "[" << _lastRequestStartTime << "] "
            << GREY << "|" << RESET << " "
            << centeredIP << " "
            << GREY << "|" << RESET << " "
@@ -258,7 +259,7 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
 
     if (isSameRequest && _pendingRequest) {
         _requestCount++;
-        return;
+        return; // Don't update timestamp for grouped requests
     } else {
         _requestCount = 1;
         _lastMethod = method;
@@ -266,6 +267,7 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
         _lastClientIP = clientIP;
         _lastServerName = serverName;
         _lastServerPort = port;
+        _lastRequestStartTime = getCurrentTime();
     }
 
     _currentIsSameAsPrevious = isSameRequest && _pendingRequest;
