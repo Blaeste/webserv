@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 14:44:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 15:26:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,7 +38,6 @@ class Logger {
 		static int _lastStatus; // Last logged HTTP status code
 		static size_t _lastSize; // Last logged response size
 		static size_t _requestCount; // Number of grouped identical requests
-		static double _totalTime; // Total response time for grouped requests
 		static double _minTime; // Minimum response time in group
 		static double _maxTime; // Maximum response time in group
 		static std::string _lastServerName; // Last logged server name
@@ -59,9 +58,5 @@ class Logger {
 		static void logRequestStart(const std::string &method, const std::string &uri,
 							const std::string &clientIP, std::string serverName, int port);
 		static void logRequestEnd(int statusCode, size_t responseSize, double responseTime);
-		static void logRequest(const std::string &method, const std::string &uri,
-							const std::string &clientIP, int statusCode,
-							size_t responseSize, double responseTime,
-							std::string serverName, int port);
 		static void logMessage(const std::string &message);
 };

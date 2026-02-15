@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 14:45:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 15:27:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+#include <limits>
 
 // Static variables initialization ---------------------------------------------
 std::string Logger::_lastMethod = "";
@@ -23,8 +24,7 @@ std::string Logger::_lastClientIP = "";
 int Logger::_lastStatus = 0;
 size_t Logger::_lastSize = 0;
 size_t Logger::_requestCount = 0;
-double Logger::_totalTime = 0.0;
-double Logger::_minTime = 0.0;
+double Logger::_minTime = std::numeric_limits<double>::max();
 double Logger::_maxTime = 0.0;
 std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
@@ -233,8 +233,11 @@ void Logger::logRequestStart(const std::string &method, const std::string &uri,
                           _lastClientIP == clientIP && _lastServerName == serverName &&
                           _lastServerPort == port);
 
-    if (_pendingRequest && !isGroupableRequest)
+    if (_pendingRequest && !isGroupableRequest) {
         std::cout << std::endl;
+        _minTime = std::numeric_limits<double>::max();
+        _maxTime = 0.0;
+    }
 
     if (isGroupableRequest && _pendingRequest) {
         _requestCount++;
@@ -260,64 +263,14 @@ void Logger::logRequestEnd(int statusCode, size_t responseSize, double responseT
 	if (!_pendingRequest)
 		return;
 
-	if (_requestCount == 1 || _minTime == 0.0) {
+	if (responseTime < _minTime)
 		_minTime = responseTime;
+	if (responseTime > _maxTime)
 		_maxTime = responseTime;
-	} else {
-		if (responseTime < _minTime) _minTime = responseTime;
-		if (responseTime > _maxTime) _maxTime = responseTime;
-	}
-	_totalTime += responseTime;
 
 	_lastStatus = statusCode;
 	_lastSize = responseSize;
 
-	flushRequestLine(true);
-}
-
-void Logger::logRequest(const std::string &method, const std::string &uri,
-								const std::string &clientIP, int statusCode,
-								size_t responseSize, double responseTime,
-								 std::string serverName, int port)
-{
-	// Display separator before first log
-	if (_firstLog)
-	{
-		printSeparator();
-		_firstLog = false;
-	}
-
-	// Check if this request is identical to the previous one
-	bool isGroupableRequest = (_lastMethod == method && _lastUri == uri &&
-						  _lastStatus == statusCode && _lastSize == responseSize);
-
-	// If different request or inactive period, finalize and start new group
-	if (!isGroupableRequest) {
-		if (_requestCount)
-			std::cout << std::endl;
-		// Start new group
-		_lastMethod = method;
-		_lastUri = uri;
-		_lastClientIP = clientIP;
-		_lastStatus = statusCode;
-		_lastSize = responseSize;
-		_requestCount = 1;
-		_totalTime = responseTime;
-		_minTime = responseTime;
-		_maxTime = responseTime;
-		_lastServerName = serverName;
-		_lastServerPort = port;
-	} else {
-		// Add to current group and update display
-		_requestCount++;
-		_totalTime += responseTime;
-		if (responseTime < _minTime)
-			_minTime = responseTime;
-		if (responseTime > _maxTime)
-			_maxTime = responseTime;
-	}
-
-	// Update display
 	flushRequestLine(true);
 }
 
