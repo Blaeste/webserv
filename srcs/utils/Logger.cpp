@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 13:17:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 13:29:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -108,8 +108,14 @@ void Logger::formatRequestLine(std::stringstream &output, bool includeCompletion
     std::string centeredIP = std::string(ipPadding, ' ') + _lastClientIP + 
                              std::string(ipFieldWidth - ipLen - ipPadding, ' ');
 
-    // Truncate URI if necessary
+    // Clean URI: replace non-printable characters with '?'
     std::string displayUri = _lastUri;
+    for (size_t i = 0; i < displayUri.length(); i++) {
+        if (displayUri[i] < 32 || displayUri[i] == 127)
+            displayUri[i] = '?';
+    }
+    
+    // Truncate URI if necessary
     if ((int)displayUri.length() > maxUriLen) {
         if (maxUriLen >= 2)
             displayUri = displayUri.substr(0, maxUriLen - 2) + "..";
