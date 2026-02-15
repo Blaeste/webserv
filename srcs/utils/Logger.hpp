@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 12:53:14 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/15 14:44:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -45,17 +45,14 @@ class Logger {
 		static int _lastServerPort; // Last logged server port
 		static bool _firstLog; // Indicates if this is the first log entry
 		static bool _pendingRequest; // Request started but not completed
-		static bool _currentIsSameAsPrevious; // Current request identical to previous
 		static std::string _lastRequestStartTime; // Store timestamp from logRequestStart
 
 		// Private method(s) ---------------------------------------------------
 		static std::string getCurrentTime();
 		static std::string formatSize(size_t bytes);
 		static std::string getStatusColor(int statusCode);
-		static void flushGroupedRequests();
-		static void finalizeGroupedRequests();
 		static void printSeparator();
-		static void formatRequestLine(std::stringstream &output, bool includeCompletion);
+		static void flushRequestLine(bool includeCompletion);
 
 	public:
 		// Public method(s) ----------------------------------------------------
