@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/13 10:28:03 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/22 14:09:50 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,18 +80,18 @@ void Server::run()
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size(); )  // Pas de i++ ici !
+		for (size_t i = 0; i < _pollFds.size();) // Pas de i++ ici !
 		{
 			int revents = _pollFds[i].revents;
 			if (!revents)
 			{
-				i++;  // Seulement si pas d'événement
+				i++; // Seulement si pas d'événement
 				continue;
 			}
 			int fd = _pollFds[i].fd;
 			SocketType type = _socketTypes[fd];
 
-size_t oldSize = _pollFds.size();  // Remember size
+			size_t oldSize = _pollFds.size(); // Remember size
 
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN)
@@ -120,11 +120,11 @@ size_t oldSize = _pollFds.size();  // Remember size
 			if (type == SOCKET_CGI)
 				handleCGIPipe(i);
 
-// If size changed (element removed), don't increment i
+			// If size changed (element removed), don't increment i
 			if (_pollFds.size() < oldSize)
-				continue;  // Element removed, i already points to next
+				continue; // Element removed, i already points to next
 
-			i++;  // Otherwise move to next
+			i++; // Otherwise move to next
 		}
 	}
 }
@@ -318,6 +318,9 @@ void Server::handleClientRead(size_t clientIndex)
 	if (!client.isRequestComplete())
 		return;
 
+	// Conserve d'éventuelles requêtes déjà collées dans le même buffer
+	client.stashLeftoverFromRequest();
+
 	// Build response
 	if (!client.isResponseReady())
 	{
@@ -385,16 +388,16 @@ void Server::handleClientRead(size_t clientIndex)
 			pfd.revents = 0;
 			_pollFds.push_back(pfd);
 			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
-		// Add CGI stderr pipe to poll
-		if (cgiProc->pipeErr != -1)
-		{
-			pollfd pfdErr;
-			pfdErr.fd = cgiProc->pipeErr;
-			pfdErr.events = POLLIN;
-			pfdErr.revents = 0;
-			_pollFds.push_back(pfdErr);
-			_socketTypes[cgiProc->pipeErr] = SOCKET_CGI;
-		}
+			// Add CGI stderr pipe to poll
+			if (cgiProc->pipeErr != -1)
+			{
+				pollfd pfdErr;
+				pfdErr.fd = cgiProc->pipeErr;
+				pfdErr.events = POLLIN;
+				pfdErr.revents = 0;
+				_pollFds.push_back(pfdErr);
+				_socketTypes[cgiProc->pipeErr] = SOCKET_CGI;
+			}
 			// If POST with body, also monitor pipeIn for writing
 			if (cgiProc->pipeIn != -1)
 			{
@@ -446,11 +449,37 @@ void Server::handleClientWrite(size_t clientIndex)
 		return; // Don't close connection yet
 	}
 
-	// Response fully sent, close connection and cleanup
+	// Response fully sent
+	Server::logClientResponse(client);
 
-	Server::logClientResponse(client); // ICI AJOUT LOG (POSSIBEL DOUBLONS)
+	if (client.shouldCloseAfterResponse())
+	{
+		removeClient(clientFd, clientIndex);
+		return;
+	}
 
-	removeClient(clientFd, clientIndex);
+	// Keep-alive: préparer la prochaine requête sur la même connexion
+	client.resetForNextRequest();
+	_pollFds[clientIndex].events = POLLIN;
+
+	// Si une requête suivante est déjà complète (pipeline), enchaîner
+	if (client.isRequestComplete())
+	{
+		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
+		if (!cfg)
+		{
+			client.buildErrorResponse(500);
+			client.markCloseAfterResponse();
+			_pollFds[clientIndex].events = POLLIN | POLLOUT;
+			return;
+		}
+		// Log start for pipelined leftover (headers already parsed, not logged via readData)
+		Logger::logRequestStart(client.getRequest().getMethod(), client.getRequest().getUri(),
+								client.getClientIp(), cfg->getServerName(), cfg->getPort());
+		client.buildResponse(*cfg, _router, _sessions);
+		client.stashLeftoverFromRequest();
+		_pollFds[clientIndex].events = POLLIN | POLLOUT;
+	}
 }
 
 void Server::removeClient(int fd, size_t pollIndex)
@@ -640,10 +669,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				int status;
 				waitpid(cgi->pid, &status, 0);
 
-				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))
-								|| WIFSIGNALED(status)
-								|| cgi->output.empty()
-								|| cgi->output.find("Content-Type:") == std::string::npos;
+				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || cgi->output.find("Content-Type:") == std::string::npos;
 
 				if (cgiError)
 					client.buildErrorResponse(500);
@@ -799,10 +825,10 @@ void Server::installSignals()
 
 void Server::logClientResponse(Client &client)
 {
-    struct timeval end;
-    gettimeofday(&end, NULL);
-    double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
-                          (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
+	struct timeval end;
+	gettimeofday(&end, NULL);
+	double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
+						  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 
-    Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+	Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 }
