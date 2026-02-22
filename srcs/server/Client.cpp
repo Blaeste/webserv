@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/13 10:27:43 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/22 14:09:52 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,19 +26,7 @@
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket)
-	, _clientIp(clientIp)
-	, _lastActivity(time(NULL))
-	, _requestComplete(false)
-	, _responseReady(false)
-	, _closeAfterResponse(false)
-	, _requestLogged(false)
-	, _state(STATE_KEEPALIVE)
-	, _cgiProcess(NULL)
-	, _bytesSent(0)
-	, _cgiStartTime()
-	, _requestStartTime()
-	, _serverConfig(NULL)
+	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(), _requestStartTime(), _serverConfig(NULL)
 {
 	// Explicitly zero-initialize timing structs
 	_cgiStartTime.tv_sec = 0;
@@ -139,6 +127,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		buildErrorResponse(413);
 		markCloseAfterResponse();
 		_responseReady = true;
+		applyConnectionHeader();
 		return;
 	}
 
@@ -153,6 +142,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		_response.setHeader("Content-Type", "application/json");
 		_response.setBody(json);
 		_responseReady = true;
+		applyConnectionHeader();
 		return;
 	}
 
@@ -203,6 +193,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		_response.serveFile(match.filePath, match.location->getRoot());
 
 	_responseReady = true;
+	applyConnectionHeader();
 }
 
 void Client::buildResponseFromCGI(const CGIResult &result)
@@ -217,6 +208,7 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 		_response.serveError(result.statusCode, "");
 
 	_responseReady = true;
+	applyConnectionHeader();
 }
 
 void Client::buildErrorResponse(int statusCode)
@@ -238,6 +230,8 @@ void Client::buildErrorResponse(int statusCode)
 	}
 	else
 		_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
+
+	applyConnectionHeader();
 }
 
 bool Client::sendResponse()
@@ -277,6 +271,56 @@ bool Client::sendResponse()
 	}
 
 	return false; // Not complete yet
+}
+
+void Client::stashLeftoverFromRequest()
+{
+	_pendingInput = _request.getLeftover();
+}
+
+void Client::resetForNextRequest()
+{
+	_request.reset();
+	_response = HttpResponse();
+	_requestComplete = false;
+	_responseReady = false;
+	_closeAfterResponse = false;
+	_requestLogged = false;
+	_state = STATE_KEEPALIVE;
+	_cachedResponse.clear();
+	_bytesSent = 0;
+	_requestStartTime.tv_sec = 0;
+	_requestStartTime.tv_usec = 0;
+
+	// Réinjecte les octets déjà reçus pour la requête suivante
+	std::string tmp = _pendingInput;
+	_pendingInput.clear();
+	if (!tmp.empty())
+	{
+		_request.appendData(tmp);
+		if (_request.isComplete())
+			_requestComplete = true;
+		if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
+			gettimeofday(&_requestStartTime, NULL);
+	}
+}
+
+void Client::applyConnectionHeader()
+{
+	// Si déjà marqué pour fermeture, force le header close
+	if (_closeAfterResponse)
+	{
+		_response.setHeader("Connection", "close");
+		return;
+	}
+
+	std::string conn = toLowercase(trim(_request.getHeader("connection")));
+	if (_request.getVersion() == "HTTP/1.1")
+		_closeAfterResponse = (conn == "close"); // keep-alive par défaut
+	else
+		_closeAfterResponse = (conn != "keep-alive"); // HTTP/1.0 => close par défaut
+
+	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
 }
 
 // Private method(s) -----------------------------------------------------------

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:34:37 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/22 14:03:56 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,9 +23,9 @@
 
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()
-	: _statusCode(200)
-	, _statusMessage("OK")
-{}
+	: _statusCode(200), _statusMessage("OK")
+{
+}
 
 // Setter(s) -------------------------------------------------------------------
 void HttpResponse::setStatus(int code)
@@ -81,7 +81,8 @@ std::string HttpResponse::build(const std::string &method) const
 	// Standard Headers
 	response += "Server: webserv/1.0\r\n";
 	response += "Date: " + getHttpDate() + "\r\n";
-	response += "Connection: close\r\n";
+	if (_headers.find("Connection") == _headers.end())
+		response += "Connection: close\r\n"; // défaut si non précisé
 
 	// Custom Headers
 	std::map<std::string, std::string>::const_iterator it;

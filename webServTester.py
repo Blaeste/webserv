@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/15 13:22:21 by gdosch           ###   ########.fr        #
+#    Updated: 2026/02/22 13:11:09 by lmarck           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -146,29 +146,29 @@ def test_code_compilation():
 	import os
 	# Clean first to ensure we actually compile
 	subprocess.run(['make', 'fclean'], capture_output=True, text=True, cwd='.')
-	
+
 	# Première compilation
 	result1 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
-	
+
 	# Get timestamp of executable after first compilation
 	if os.path.exists('webserv'):
 		mtime_after_first = os.path.getmtime('webserv')
 	else:
 		test("Compilation without re-link", False, "webserv not created after first make")
 		return
-	
+
 	# Wait a bit to ensure timestamp would change if relinked
 	time.sleep(0.1)
-	
+
 	# Deuxième make (ne devrait rien faire)
 	result2 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
-	
+
 	# Get timestamp after second make
 	mtime_after_second = os.path.getmtime('webserv')
-	
+
 	# Check if executable was NOT relinked (timestamp unchanged)
 	no_relink = (mtime_after_first == mtime_after_second)
-	
+
 	details = f"1st make: rc={result1.returncode} | 2nd make: rc={result2.returncode} | timestamps: {mtime_after_first == mtime_after_second}"
 	test("Compilation without re-link", result1.returncode == 0 and no_relink, details)
 
@@ -1003,10 +1003,207 @@ def test_pipelined_requests():
 	except Exception as e:
 		test_error("Pipelined requests test", str(e)[:50])
 
+def test_two_requests_same_buffer():
+	"""Deux requêtes envoyées dans le même buffer de lecture"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		payload = b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\nGET /thrhteh.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		s.sendall(payload)
+		chunks = []
+		while True:
+			try:
+				data = s.recv(4096)
+				if not data:
+					break
+				chunks.append(data)
+			except socket.timeout:
+				break
+		s.close()
+		response = b"".join(chunks)
+		status_count = response.count(b"HTTP/1.")
+		first_ok = b"HTTP/1.1 200" in response or b"HTTP/1.0 200" in response
+		second_ok = b"HTTP/1.1 404" in response or b"HTTP/1.0 404" in response or status_count >= 2
+		test("Deux requetes dans un buffer", status_count >= 2 and first_ok and second_ok,
+			 f"Statuses: {status_count}, snippet: {response[:200]}")
+	except Exception as e:
+		test_error("Deux requetes meme buffer", str(e)[:50])
+
+def test_pipelined_get_head():
+	"""GET suivi de HEAD dans le même buffer"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		payload = b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\nHEAD /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		s.sendall(payload)
+		data = []
+		while True:
+			try:
+				chunk = s.recv(4096)
+				if not chunk:
+					break
+				data.append(chunk)
+			except socket.timeout:
+				break
+		s.close()
+		resp = b"".join(data)
+		status_count = resp.count(b"HTTP/1.")
+		second_is_head = b"HEAD /about.html" not in resp and status_count >= 2
+		test("GET puis HEAD pipelines", status_count >= 2 and b"200" in resp and second_is_head,
+			 f"Statuses: {status_count}, snippet: {resp[:200]}")
+	except Exception as e:
+		test_error("GET+HEAD pipeline", str(e)[:50])
+
+def test_pipelined_post_then_get():
+	"""POST avec Content-Length suivi d'un GET dans le même buffer"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		body = b"hello world"
+		payload = (
+			b"POST /uploads/test-buffer.txt HTTP/1.1\r\n"
+			b"Host: localhost\r\n"
+			b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+			b"Content-Type: text/plain\r\n\r\n"
+			+ body +
+			b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		)
+		s.sendall(payload)
+		chunks = []
+		while True:
+			try:
+				part = s.recv(4096)
+				if not part:
+					break
+				chunks.append(part)
+			except socket.timeout:
+				break
+		s.close()
+		resp = b"".join(chunks)
+		status_count = resp.count(b"HTTP/1.")
+		post_ok = b"201" in resp or b"200" in resp
+		get_ok = resp.find(b"HTTP/1.", resp.find(b"HTTP/1.")+1) != -1
+		test("POST puis GET dans buffer", status_count >= 2 and post_ok and get_ok,
+			 f"Statuses: {status_count}, snippet: {resp[:200]}")
+		# Cleanup uploaded test file
+		try:
+			safe_delete(f"{BASE_URL}/uploads/test-buffer.txt")
+		except:
+			pass
+	except Exception as e:
+		test_error("POST+GET pipeline", str(e)[:50])
+
+def test_pipelined_chunked_then_get():
+	"""POST chunked suivi d'un GET dans le même buffer"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		chunked_body = b"b\r\nhello world\r\n0\r\n\r\n"
+		payload = (
+			b"POST /uploads/test-chunked-buffer.txt HTTP/1.1\r\n"
+			b"Host: localhost\r\n"
+			b"Transfer-Encoding: chunked\r\n"
+			b"Content-Type: text/plain\r\n\r\n"
+			+ chunked_body +
+			b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		)
+		s.sendall(payload)
+		chunks = []
+		while True:
+			try:
+				part = s.recv(4096)
+				if not part:
+					break
+				chunks.append(part)
+			except socket.timeout:
+				break
+		s.close()
+		resp = b"".join(chunks)
+		status_count = resp.count(b"HTTP/1.")
+		post_ok = b"201" in resp or b"200" in resp
+		get_ok = resp.find(b"HTTP/1.", resp.find(b"HTTP/1.")+1) != -1
+		test("POST chunked puis GET", status_count >= 2 and post_ok and get_ok,
+			 f"Statuses: {status_count}, snippet: {resp[:200]}")
+		try:
+			safe_delete(f"{BASE_URL}/uploads/test-chunked-buffer.txt")
+		except:
+			pass
+	except Exception as e:
+		test_error("POST chunked+GET pipeline", str(e)[:50])
+
+def test_connection_close_then_next_request():
+	"""GET avec Connection: close suivi d'un GET dans le même buffer"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		payload = (
+			b"GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+			b"GET /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		)
+		s.sendall(payload)
+		resp = b""
+		while True:
+			try:
+				chunk = s.recv(4096)
+				if not chunk:
+					break
+				resp += chunk
+			except socket.timeout:
+				break
+		s.close()
+		status_count = resp.count(b"HTTP/1.")
+		conn_close = b"Connection: close" in resp
+		test("Connection close stoppe pipeline", status_count == 1 and conn_close,
+			 f"Statuses: {status_count}, snippet: {resp[:200]}")
+	except Exception as e:
+		test_error("Connection close pipeline", str(e)[:50])
+
+def test_three_requests_pipeline():
+	"""Trois requêtes consécutives dans le même buffer"""
+	import socket
+	try:
+		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		s.settimeout(5)
+		s.connect(('localhost', 8080))
+		payload = (
+			b"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
+			b"GET /about.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
+			b"GET /missing-nope.html HTTP/1.1\r\nHost: localhost\r\n\r\n"
+		)
+		s.sendall(payload)
+		data = []
+		while True:
+			try:
+				chunk = s.recv(4096)
+				if not chunk:
+					break
+				data.append(chunk)
+			except socket.timeout:
+				break
+		s.close()
+		resp = b"".join(data)
+		status_count = resp.count(b"HTTP/1.")
+		ok_200 = resp.count(b" 200") >= 2
+		ok_404 = b" 404" in resp
+		test("Trois requetes pipeline", status_count >= 3 and ok_200 and ok_404,
+			 f"Statuses: {status_count}, snippet: {resp[:200]}")
+	except Exception as e:
+		test_error("Pipeline triple", str(e)[:50])
+
 def test_very_small_timeout():
 	# Test avec timeout très court
 	try:
-		r = safe_get(f"{BASE_URL}/", timeout=0.001)
+		r = safe_get(f"{BASE_URL}/", timeout=0.001)	
 		test("Very short timeout handled", r.status_code == 200)
 	except:
 		test("Very short timeout causes exception (expected)", True)
@@ -1530,6 +1727,12 @@ if __name__ == "__main__":
 		run_test(test_if_modified_since)
 		run_test(test_slow_client)
 		run_test(test_pipelined_requests)
+		run_test(test_two_requests_same_buffer)
+		run_test(test_pipelined_get_head)
+		run_test(test_pipelined_post_then_get)
+		run_test(test_pipelined_chunked_then_get)
+		run_test(test_connection_close_then_next_request)
+		run_test(test_three_requests_pipeline)
 		run_test(test_very_small_timeout)
 		run_test(test_upload_during_delete)
 		run_test(test_post_multipart_boundary)

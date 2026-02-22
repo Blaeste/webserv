@@ -76,7 +76,7 @@ function testError() {
 			window.location.href = '/nonexistent-page-' + Date.now();
 			break;
 		case '405':
-			fetch('/', { method: 'PUT' })
+			fetch('/', { method: 'DELETE' })
 				.then(response => {
 					if (response.status === 405) {
 						window.location.href = '/error_pages/405.html';

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:35:19 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/22 14:03:56 by lmarck           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,16 +21,9 @@
 
 // Default constructor ---------------------------------------------------------
 HttpRequest::HttpRequest()
-	: _isComplete(false)
-	, _errorCode(0)
-	, _headersParsed(false)
-	, _bodyStart(0)
-	, _isChunked(false)
-	, _contentLength(0)
-	, _chunkParsePos(0)
-	, _chunkTotalSize(0)
-	, _chunkDone(false)
-{}
+	: _isComplete(false), _errorCode(0), _headersParsed(false), _bodyStart(0), _isChunked(false), _contentLength(0), _chunkParsePos(0), _chunkTotalSize(0), _chunkDone(false), _consumedBytes(0)
+{
+}
 
 // Public method(s) ------------------------------------------------------------
 bool HttpRequest::setError(int code)
@@ -99,6 +92,37 @@ std::string HttpRequest::getHeader(const std::string &key) const
 	if (it != _headers.end())
 		return it->second;
 	return "";
+}
+
+void HttpRequest::reset()
+{
+	_method.clear();
+	_uri.clear();
+	_version.clear();
+	_headers.clear();
+	_body.clear();
+	_rawData.clear();
+	_uploadedFiles.clear();
+
+	_consumedBytes = 0;
+	_isComplete = false;
+	_errorCode = 0;
+	_headersParsed = false;
+	_bodyStart = 0;
+	_isChunked = false;
+	_contentLength = 0;
+	_chunkParsePos = 0;
+	_chunkTotalSize = 0;
+	_chunkDone = false;
+}
+
+std::string HttpRequest::getLeftover() const
+{
+	if (!_isComplete)
+		return "";
+	if (_consumedBytes >= _rawData.size())
+		return "";
+	return _rawData.substr(_consumedBytes);
 }
 
 // Private method(s) -----------------------------------------------------------
@@ -271,6 +295,7 @@ bool HttpRequest::parseChunked()
 			_chunkParsePos = pos + 2;
 			_chunkDone = true;
 			_isComplete = true;
+			_consumedBytes = _chunkParsePos; // Fin exacte après "0\r\n\r\n"
 			return true;
 		}
 
@@ -524,6 +549,7 @@ bool HttpRequest::parse()
 
 		_body = _rawData.substr(_bodyStart, _contentLength);
 		_isComplete = true;
+		_consumedBytes = _bodyStart + _contentLength;
 
 		std::string contentType = getHeader("content-type");
 		if (!contentType.empty())
@@ -545,5 +571,6 @@ bool HttpRequest::parse()
 	// No body
 	_body = "";
 	_isComplete = true;
+	_consumedBytes = _bodyStart;
 	return true;
 }
