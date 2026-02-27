@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/22 14:09:50 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/02/27 14:41:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+// Define(s) -------------------------------------------------------------------
+# define CURSOR_HIDE "\033[?25l"
+# define CURSOR_SHOW "\033[?25h"
+
 // Static variable initialization ----------------------------------------------
 // Self-pipe for signal handling in poll()
 int Server::_s_sigpipe[2] = {-1, -1};
@@ -35,6 +39,7 @@ Server::Server(const Config &config)
 {
 	installSignals();
 	setupListenSockets();
+	std::cout << CURSOR_HIDE;
 }
 
 Server::~Server()
@@ -59,6 +64,7 @@ Server::~Server()
 	if (_s_sigpipe[1] >= 0)
 		safeClose(_s_sigpipe[1]);
 	Logger::logMessage("Server was closed");
+	std::cout << CURSOR_SHOW;
 }
 
 // Public method(s) ------------------------------------------------------------
@@ -113,18 +119,27 @@ void Server::run()
 					handleClientRead(i);
 			}
 
-			// Handle POLLOUT (socket ready to write)
-			if (revents & POLLOUT && type == SOCKET_CLIENT)
-				handleClientWrite(i);
+		// Re-verify after POLLIN: _pollFds[i] may have changed if client was removed
+		if (_pollFds.size() < oldSize)
+			continue; // Client removed during POLLIN, i now points to next element
 
-			if (type == SOCKET_CGI)
-				handleCGIPipe(i);
+		// Re-read fd and type after potential modifications
+		fd = _pollFds[i].fd;
+		type = _socketTypes[fd];
 
-			// If size changed (element removed), don't increment i
-			if (_pollFds.size() < oldSize)
-				continue; // Element removed, i already points to next
+		// Handle POLLOUT (socket ready to write)
+		if (revents & POLLOUT && type == SOCKET_CLIENT)
+			handleClientWrite(i);
 
-			i++; // Otherwise move to next
+		// Handle CGI pipes
+		if (type == SOCKET_CGI)
+			handleCGIPipe(i);
+
+		// If size changed (element removed), don't increment i
+		if (_pollFds.size() < oldSize)
+			continue; // Element removed, i already points to next
+
+		i++; // Otherwise move to next
 		}
 	}
 }
@@ -318,7 +333,7 @@ void Server::handleClientRead(size_t clientIndex)
 	if (!client.isRequestComplete())
 		return;
 
-	// Conserve d'éventuelles requêtes déjà collées dans le même buffer
+	// Keep any additional requests already present in the buffer
 	client.stashLeftoverFromRequest();
 
 	// Build response
@@ -458,11 +473,11 @@ void Server::handleClientWrite(size_t clientIndex)
 		return;
 	}
 
-	// Keep-alive: préparer la prochaine requête sur la même connexion
+	// Keep-alive: prepare the next request on the same connection
 	client.resetForNextRequest();
 	_pollFds[clientIndex].events = POLLIN;
 
-	// Si une requête suivante est déjà complète (pipeline), enchaîner
+	// If the next request is already complete (pipeline), chain it
 	if (client.isRequestComplete())
 	{
 		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
@@ -817,6 +832,7 @@ void Server::installSignals()
 	sa.sa_handler = &Server::signalHandler;
 	sigemptyset(&sa.sa_mask);
 	sigaction(SIGINT, &sa, 0);
+	sigaction(SIGQUIT, &sa, 0);
 	sigaction(SIGTERM, &sa, 0);
 
 	// Ignore SIGPIPE to prevent termination on broken socket writes

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/15 15:27:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/27 14:29:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -207,13 +207,14 @@ void Logger::flushRequestLine(bool includeCompletion)
 		   << GREY << "|" << RESET;
 
 	if (includeCompletion) {
-		output << " " << formatSize(_lastSize) << " "
-			   << GREY << "|" << RESET << " "
-			   << GREY << "→" << RESET << " "
-			   << statusColor << BOLD << _lastStatus << RESET << " "
-			   << GREY << "|" << RESET << " "
+		output << " " << formatSize(_lastSize)
+			   << GREY << " | " << RESET
+			   << GREY << "→ " << RESET
+			   << statusColor << BOLD << _lastStatus << RESET
+			   << GREY << " | " << RESET
 			   << std::left << timingStr.str();
-	}
+	} else
+		output << GREY << std::string(6, ' ') << "|" << std::string(7, ' ') << "|" << RESET;
 	
 	output << "\033[K";
 	std::cout << output.str();
