@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 12:38:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 13:05:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,12 +132,12 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	}
 	
 	// Truncate URI if necessary
-	if ((int)displayUri.length() > maxUriLen) {
-		if (maxUriLen >= 2)
-			displayUri = displayUri.substr(0, maxUriLen - 2) + "..";
-		else
-			displayUri = "..";
-	}
+    if ((int)displayUri.length() > maxUriLen) {
+        if (maxUriLen >= 1)
+            displayUri = displayUri.substr(0, maxUriLen - 1) + "…";
+        else
+            displayUri = "…";
+    }
 
 	// Format server:port
 	int serverFieldWidth = 20;
@@ -207,7 +207,9 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 			uriField << ' ';
 		uriField << countStr.str();
 	} else {
-		int padding = uriFieldWidth - displayUri.length();
+		if (!includeCompletion)
+			uriField << GREY << " ..." << RESET;
+		int padding = uriFieldWidth - displayUri.length() - (!includeCompletion ? 4 : 0);
 		if (padding > 0)
 			uriField << std::string(padding, ' ');
 	}
@@ -221,18 +223,17 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		   << centeredIP << " "
 		   << GREY << "|" << RESET << " "
 		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
-		   << uriField.str() << " "
-		   << GREY << "|" << RESET;
+		   << uriField.str() << " ";
 
 	if (includeCompletion) {
-		output << " " << formatSize(size)
+		output << GREY << "|" << RESET
+			   << " " << formatSize(size)
 			   << GREY << " | " << RESET
 			   << GREY << "→ " << RESET
 			   << statusColor << BOLD << status << RESET
 			   << GREY << " | " << RESET
 			   << std::left << timingStr.str();
-	} else
-		output << GREY << std::string(6, ' ') << "|" << std::string(7, ' ') << "|" << RESET;
+	}
 	
 	output << "\033[K";
 	std::cout << output.str();
