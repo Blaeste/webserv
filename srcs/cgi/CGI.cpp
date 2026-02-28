@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 09:45:52 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/28 18:21:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -151,7 +151,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	result.output = body;
 }
 
-CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request) {
+CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose) {
 
 	setupEnvironment(match, request);
 
@@ -210,6 +210,12 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request)
 		close(pipeIn[0]);
 		close(pipeOut[1]);
 		close(pipeErr[1]);
+
+		// Close ALL inherited FDs from the server (sockets, other CGI pipes, etc.)
+		// This prevents the child from holding write-ends of sibling CGI pipes,
+		// which would delay EOF detection on those pipes.
+		for (size_t i = 0; i < fdsToClose.size(); i++)
+			close(fdsToClose[i]);
 
 		// Get CGI interpreter path and convert to absolute BEFORE chdir
 		std::string interpreter = match.location->getCgiPath();

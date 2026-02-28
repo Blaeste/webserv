@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/27 14:41:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 18:21:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -380,8 +380,12 @@ void Server::handleClientRead(size_t clientIndex)
 			if (config)
 				client.setCGITiming(*config);
 
+			std::vector<int> fdsToClose;
+			for (size_t i = 0; i < _pollFds.size(); i++)
+				fdsToClose.push_back(_pollFds[i].fd);
+
 			CGI cgi;
-			CGIProcess *cgiProc = cgi.startAsync(match, request);
+			CGIProcess *cgiProc = cgi.startAsync(match, request, fdsToClose);
 			if (cgiProc)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
 			else
@@ -489,7 +493,7 @@ void Server::handleClientWrite(size_t clientIndex)
 			return;
 		}
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
-		Logger::logRequestStart(client.getRequest().getMethod(), client.getRequest().getUri(),
+		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
 								client.getClientIp(), cfg->getServerName(), cfg->getPort());
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
@@ -684,7 +688,9 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				int status;
 				waitpid(cgi->pid, &status, 0);
 
-				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || cgi->output.find("Content-Type:") == std::string::npos;
+				bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos) || 
+				                      (cgi->output.find("Content-type:") != std::string::npos);
+				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
 
 				if (cgiError)
 					client.buildErrorResponse(500);
@@ -762,7 +768,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				}
 			}
 		}
-		return;
+		continue;
 	}
 }
 
@@ -846,5 +852,5 @@ void Server::logClientResponse(Client &client)
 	double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
 						  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 
-	Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+	Logger::logRequestEnd(client.getSocket(), client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 }
