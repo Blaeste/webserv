@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:54:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 23:07:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -406,6 +406,6 @@ void Logger::logMessage(const std::string &message)
 
 void Logger::printSeparator()
 {
-	std::cout << GREY << std::string(140, '-') << RESET << std::endl;
+	std::cout << GREY << std::string(145, '-') << RESET << std::endl;
 	_currentLine++;
 }

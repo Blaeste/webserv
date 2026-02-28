@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/12 10:53:03 by eschwart         ###   ########.fr        #
+#    Updated: 2026/02/28 23:11:49 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -118,7 +118,7 @@ kill:
 
 test: $(NAME)
 	-pkill webserv || true
-	gnome-terminal --geometry=160x50 -- bash -c './webserv config/webServTester.conf; exec bash' 2>/dev/null &
+	xterm -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -e "bash -c './webserv config/webServTester.conf; exec bash'" 2>/dev/null &
 	sleep 1
 	@# Ensure requests is available (critical dependency)
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
@@ -184,7 +184,7 @@ eval: $(NAME)
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	gnome-terminal --geometry=160x50 -- bash -c './webserv config/eval.conf; exec bash' 2>/dev/null &
+	xterm -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -e "bash -c './webserv config/eval.conf; exec bash'" 2>/dev/null &
 	@sleep 1
 	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
