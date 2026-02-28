@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/22 14:09:52 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/02/28 12:11:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,7 +79,7 @@ bool Client::readData(const ServerConfig *config)
 	// Log request start as soon as headers are parsed
 	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
 	{
-		Logger::logRequestStart(_request.getMethod(), _request.getUri(), _clientIp,
+		Logger::logRequestStart(_socket, _request.getMethod(), _request.getUri(), _clientIp,
 								config->getServerName(), config->getPort());
 		_requestLogged = true;
 	}
@@ -98,7 +98,7 @@ bool Client::readData(const ServerConfig *config)
 			{
 				std::string method = _request.getMethod().empty() ? "UNKNOWN" : _request.getMethod();
 				std::string uri = _request.getUri().empty() ? "/" : _request.getUri();
-				Logger::logRequestStart(method, uri, _clientIp,
+				Logger::logRequestStart(_socket, method, uri, _clientIp,
 										config->getServerName(), config->getPort());
 				_requestLogged = true;
 			}

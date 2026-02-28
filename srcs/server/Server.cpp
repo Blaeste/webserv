@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/27 14:41:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 12:11:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -489,7 +489,7 @@ void Server::handleClientWrite(size_t clientIndex)
 			return;
 		}
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
-		Logger::logRequestStart(client.getRequest().getMethod(), client.getRequest().getUri(),
+		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
 								client.getClientIp(), cfg->getServerName(), cfg->getPort());
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
@@ -846,5 +846,5 @@ void Server::logClientResponse(Client &client)
 	double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
 						  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 
-	Logger::logRequestEnd(client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+	Logger::logRequestEnd(client.getSocket(), client.getResponseStatus(), client.getResponseBodySize(), responseTime);
 }
