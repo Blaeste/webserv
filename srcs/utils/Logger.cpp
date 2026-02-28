@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 12:33:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 12:38:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -302,14 +302,22 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t responseSize, d
 	_lastSize = responseSize;
 
 	// Check if this request is part of the currently displayed group
+	// We check the data BEFORE looking in the map, because concurrent requests
+	// from the same group might have already been erased
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
 	bool isGroupedRequest = false;
 	if (it != _activeRequests.end()) {
+		// Request still in map, compare its data with current group
 		isGroupedRequest = (it->second.method == _lastMethod &&
 		                    it->second.uri == _lastUri &&
 		                    it->second.clientIP == _lastClientIP &&
 		                    it->second.serverName == _lastServerName &&
 		                    it->second.serverPort == _lastServerPort);
+	} else {
+		// Request already erased by another concurrent completion
+		// This can happen when multiple requests from the same group complete concurrently
+		// In this case, we assume it's still part of the current group (don't add newline)
+		isGroupedRequest = true;
 	}
 
 	// If completing a different group of requests, we need a new line
