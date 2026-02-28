@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/02/22 13:11:09 by lmarck           ###   ########.fr        #
+#    Updated: 2026/02/28 20:46:27 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -1262,6 +1262,89 @@ def test_cgi_environment_vars():
 	r = safe_get(f"{BASE_URL}/cgi-bin/py/contact.py?test=value")
 	test("CGI with query params returns 200", r.status_code == 200, f"Got {r.status_code}")
 
+def test_cgi_concurrent_ordering():
+	"""Test that concurrent CGI requests complete in correct order (fastest first)"""
+	import threading
+
+	def run_cgi_test(lang, slow_path, medium_path):
+		results = {}
+		errors = []
+
+		def fetch(name, url):
+			try:
+				start = time.time()
+				r = requests.get(url, timeout=10)
+				elapsed = time.time() - start
+				results[name] = {'time': elapsed, 'status': r.status_code}
+			except Exception as e:
+				errors.append(f"{name}: {str(e)[:50]}")
+
+		# Launch slow first, then medium after 0.5s, then static after another 0.5s
+		t_slow = threading.Thread(target=fetch, args=('slow', f"{BASE_URL}{slow_path}"))
+		t_slow.start()
+		time.sleep(0.5)
+
+		t_medium = threading.Thread(target=fetch, args=('medium', f"{BASE_URL}{medium_path}"))
+		t_medium.start()
+		time.sleep(0.5)
+
+		t_static = threading.Thread(target=fetch, args=('static', f"{BASE_URL}/index.html"))
+		t_static.start()
+
+		t_slow.join(timeout=15)
+		t_medium.join(timeout=15)
+		t_static.join(timeout=15)
+
+		if errors:
+			return False, results, errors
+
+		# All three must return 200
+		if not all(name in results and results[name]['status'] == 200 for name in ['slow', 'medium', 'static']):
+			statuses = {k: v.get('status', 'N/A') for k, v in results.items()}
+			return False, results, [f"Bad status codes: {statuses}"]
+
+		# Check ordering: static < medium < slow
+		t_static_time = results['static']['time']
+		t_medium_time = results['medium']['time']
+		t_slow_time = results['slow']['time']
+
+		order_ok = t_static_time < t_medium_time < t_slow_time
+		if not order_ok:
+			return False, results, [f"Wrong order: static={t_static_time:.2f}s medium={t_medium_time:.2f}s slow={t_slow_time:.2f}s"]
+
+		return True, results, []
+
+	# Test Python CGI
+	py_ok, py_results, py_errors = run_cgi_test('Python', '/cgi-bin/py/slow.py', '/cgi-bin/py/medium.py')
+
+	# Test PHP CGI
+	php_ok, php_results, php_errors = run_cgi_test('PHP', '/cgi-bin/php/slow.php', '/cgi-bin/php/medium.php')
+
+	# At least one must pass
+	at_least_one = py_ok or php_ok
+	details_parts = []
+	if py_ok and py_results:
+		details_parts.append(f"Python: static={py_results['static']['time']:.2f}s medium={py_results['medium']['time']:.2f}s slow={py_results['slow']['time']:.2f}s")
+	if php_ok and php_results:
+		details_parts.append(f"PHP: static={php_results['static']['time']:.2f}s medium={php_results['medium']['time']:.2f}s slow={php_results['slow']['time']:.2f}s")
+
+	test("CGI concurrent requests complete in correct order",
+		 at_least_one,
+		 " | ".join(details_parts) if details_parts else f"Python: {py_errors} | PHP: {php_errors}")
+
+	# Warnings for individual failures
+	if not py_ok:
+		py_detail = f"Python: {py_errors}"
+		if py_results and all(k in py_results for k in ['static', 'medium', 'slow']):
+			py_detail += f" (static={py_results['static']['time']:.2f}s medium={py_results['medium']['time']:.2f}s slow={py_results['slow']['time']:.2f}s)"
+		print(f"  {YELLOW}⚠ {py_detail}{RESET}")
+
+	if not php_ok:
+		php_detail = f"PHP: {php_errors}"
+		if php_results and all(k in php_results for k in ['static', 'medium', 'slow']):
+			php_detail += f" (static={php_results['static']['time']:.2f}s medium={php_results['medium']['time']:.2f}s slow={php_results['slow']['time']:.2f}s)"
+		print(f"  {YELLOW}⚠ {php_detail}{RESET}")
+
 def test_multiple_slashes():
 	# Multiples slashes consécutifs
 	r = safe_get(f"{BASE_URL}///index.html")
@@ -1686,6 +1769,7 @@ if __name__ == "__main__":
 		run_test(test_cgi_permission_denied)
 		run_test(test_cgi_interpreter_not_executable)
 		run_test(test_cgi_environment_vars)
+		run_test(test_cgi_concurrent_ordering)
 
 		print("\n" + "=" * 70)
 		print("PARTIE 5: ADVANCED TESTS (Browser tests are manual)")

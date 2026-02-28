@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 20:15:26 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 21:34:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,12 +133,12 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	}
 	
 	// Truncate URI if necessary
-    if ((int)displayUri.length() > maxUriLen) {
-        if (maxUriLen >= 1)
-            displayUri = displayUri.substr(0, maxUriLen - 1) + "…";
-        else
-            displayUri = "…";
-    }
+	if ((int)displayUri.length() > maxUriLen) {
+		if (maxUriLen >= 1)
+			displayUri = displayUri.substr(0, maxUriLen - 1) + "…";
+		else
+			displayUri = "…";
+	}
 
 	// Format server:port
 	int serverFieldWidth = 20;
@@ -162,17 +162,40 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
+
 	if (includeCompletion) {
+		enum Unit { US, MS, S };
+		Unit maxUnit = (_maxTime < 1.0) ? US : (_maxTime < 1000.0) ? MS : S;
+
 		if (_requestCount > 1) {
-			// min
-			if (_minTime < 1000.0)
-				timingStr << std::fixed << std::setprecision(1) << _minTime;
-			else
-				timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
+			Unit minUnit = (_minTime < 1.0) ? US : (_minTime < 1000.0) ? MS : S;
+
+			// Check if min would round to zero in max's unit
+			bool minZeroInMaxUnit = false;
+			if (maxUnit == MS && _minTime < 0.05) minZeroInMaxUnit = true;
+			if (maxUnit == S && _minTime < 50.0) minZeroInMaxUnit = true;
+
+			if (minUnit == maxUnit || !minZeroInMaxUnit) {
+				// Use max's unit for min (no suffix, shared with max)
+				if (maxUnit == US)
+					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000);
+				else if (maxUnit == MS)
+					timingStr << std::fixed << std::setprecision(1) << _minTime;
+				else
+					timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
+			} else {
+				// Min too small in max's unit: keep its own unit with suffix
+				if (minUnit == US)
+					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
+				else
+					timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
+			}
 			timingStr << "-";
 		}
 
-		if (_maxTime < 1000.0)
+		if (maxUnit == US)
+			timingStr << std::fixed << std::setprecision(0) << (_maxTime * 1000) << "µs";
+		else if (maxUnit == MS)
 			timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
 		else
 			timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
@@ -231,56 +254,56 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 // Public method(s) ------------------------------------------------------------
 void Logger::logRequestStart(int requestId, const std::string &method, const std::string &uri,
-                             const std::string &clientIP, std::string serverName, int port)
+							 const std::string &clientIP, std::string serverName, int port)
 {
-    if (_firstLog) {
-        printSeparator();
-        _firstLog = false;
-    }
+	if (_firstLog) {
+		printSeparator();
+		_firstLog = false;
+	}
 
-    // Store request data for this specific request
-    RequestData data;
-    data.method = method;
-    data.uri = uri;
-    data.clientIP = clientIP;
-    data.serverName = serverName;
-    data.serverPort = port;
-    data.requestStartTime = getCurrentTime();
-    data.displayLine = _currentLine;
-    _activeRequests[requestId] = data;
+	// Store request data for this specific request
+	RequestData data;
+	data.method = method;
+	data.uri = uri;
+	data.clientIP = clientIP;
+	data.serverName = serverName;
+	data.serverPort = port;
+	data.requestStartTime = getCurrentTime();
+	data.displayLine = _currentLine;
+	_activeRequests[requestId] = data;
 
-    bool isGroupableRequest = (_lastMethod == method && _lastUri == uri &&
-                          _lastClientIP == clientIP && _lastServerName == serverName &&
-                          _lastServerPort == port);
+	bool isGroupableRequest = (_lastMethod == method && _lastUri == uri &&
+						  _lastClientIP == clientIP && _lastServerName == serverName &&
+						  _lastServerPort == port);
 
-    if (_pendingRequest && !isGroupableRequest) {
-        std::cout << std::endl;
-        _currentLine++;
-        _minTime = std::numeric_limits<double>::max();
-        _maxTime = 0.0;
-    }
+	if (_pendingRequest && !isGroupableRequest) {
+		std::cout << std::endl;
+		_currentLine++;
+		_minTime = std::numeric_limits<double>::max();
+		_maxTime = 0.0;
+	}
 
-    if (isGroupableRequest && _pendingRequest) {
-        _requestCount++;
-        return;
-    }
+	if (isGroupableRequest && _pendingRequest) {
+		_requestCount++;
+		return;
+	}
 
-    // New request - initialize
-    _requestCount = 1;
-    _lastMethod = method;
-    _lastUri = uri;
-    _lastClientIP = clientIP;
-    _lastServerName = serverName;
-    _lastServerPort = port;
-    _lastRequestStartTime = data.requestStartTime;
+	// New request - initialize
+	_requestCount = 1;
+	_lastMethod = method;
+	_lastUri = uri;
+	_lastClientIP = clientIP;
+	_lastServerName = serverName;
+	_lastServerPort = port;
+	_lastRequestStartTime = data.requestStartTime;
 
-    _pendingRequest = true;
-    _lastDisplayedRequestId = requestId;
+	_pendingRequest = true;
+	_lastDisplayedRequestId = requestId;
 
-    // Record line AFTER potential endl above
-    _activeRequests[requestId].displayLine = _currentLine;
+	// Record line AFTER potential endl above
+	_activeRequests[requestId].displayLine = _currentLine;
 
-    flushRequestLine(requestId, false, 0, 0);
+	flushRequestLine(requestId, false, 0, 0);
 }
 
 void Logger::logRequestEnd(int requestId, int statusCode, size_t responseSize, double responseTime)
@@ -296,10 +319,10 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t responseSize, d
 	bool isGroupedRequest = false;
 	if (it != _activeRequests.end()) {
 		isGroupedRequest = (it->second.method == _lastMethod &&
-		                    it->second.uri == _lastUri &&
-		                    it->second.clientIP == _lastClientIP &&
-		                    it->second.serverName == _lastServerName &&
-		                    it->second.serverPort == _lastServerPort);
+							it->second.uri == _lastUri &&
+							it->second.clientIP == _lastClientIP &&
+							it->second.serverName == _lastServerName &&
+							it->second.serverPort == _lastServerPort);
 	} else {
 		isGroupedRequest = true;
 	}
