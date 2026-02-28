@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 19:15:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 19:29:38 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ bool Logger::_firstLog = true;
 bool Logger::_pendingRequest = false;
 std::string Logger::_lastRequestStartTime = "";
 int Logger::_lastDisplayedRequestId = -1;
+int Logger::_currentLine = 0;
 
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
@@ -75,7 +76,7 @@ std::string Logger::getStatusColor(int statusCode)
 	return RESET;
 }
 
-void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t size, bool isLateCompletion)
+void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t size)
 {
 	std::stringstream output;
 
@@ -219,13 +220,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 	// Build output
 	output << "\r";
-	if (isLateCompletion) {
-	int dotsOffset = 9 + serverPad; // align ... 1 space before server name (13 prefix chars - 4 for "... ")
-	output << GREY << std::string(dotsOffset > 0 ? dotsOffset : 0, ' ') << "... "
-		   << serverPortStr << " >-< "
-		   << leftAlignedIP << " | " << BOLD << std::setw(7) << std::right << method << NOBOLD << " "
-		   << uriField.str() << " ";
-	} else {
 	output << "[" << requestStartTime << "] "
 		   << GREY << "| " << RESET
 		   << rightAlignedServerPort << " >-< "
@@ -233,7 +227,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		   << GREY << " | " << RESET
 		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
 		   << uriField.str() << " ";
-	}
 	if (includeCompletion) {
 		output << GREY << "|" << RESET
 			   << " " << formatSize(size)
@@ -265,6 +258,7 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
     data.serverName = serverName;
     data.serverPort = port;
     data.requestStartTime = getCurrentTime();
+    data.displayLine = _currentLine;
     _activeRequests[requestId] = data;
 
     bool isGroupableRequest = (_lastMethod == method && _lastUri == uri &&
@@ -273,6 +267,7 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 
     if (_pendingRequest && !isGroupableRequest) {
         std::cout << std::endl;
+        _currentLine++;
         _minTime = std::numeric_limits<double>::max();
         _maxTime = 0.0;
     }
@@ -292,9 +287,12 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
     _lastRequestStartTime = data.requestStartTime;
 
     _pendingRequest = true;
-    _lastDisplayedRequestId = requestId; // Track which request displayed this line
+    _lastDisplayedRequestId = requestId;
 
-    flushRequestLine(requestId, false, 0, 0, false);
+    // Record line AFTER potential endl above
+    _activeRequests[requestId].displayLine = _currentLine;
+
+    flushRequestLine(requestId, false, 0, 0);
 }
 
 void Logger::logRequestEnd(int requestId, int statusCode, size_t responseSize, double responseTime)
@@ -302,58 +300,76 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t responseSize, d
 	if (!_pendingRequest)
 		return;
 
-	if (responseTime < _minTime)
-		_minTime = responseTime;
-	if (responseTime > _maxTime)
-		_maxTime = responseTime;
-
 	_lastStatus = statusCode;
 	_lastSize = responseSize;
 
 	// Check if this request is part of the currently displayed group
-    // We check the data BEFORE looking in the map, because concurrent requests
-    // from the same group might have already been erased
-    std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
-    bool isGroupedRequest = false;
-    if (it != _activeRequests.end()) {
-        // Request still in map, compare its data with current group
-        isGroupedRequest = (it->second.method == _lastMethod &&
-                            it->second.uri == _lastUri &&
-                            it->second.clientIP == _lastClientIP &&
-                            it->second.serverName == _lastServerName &&
-                            it->second.serverPort == _lastServerPort);
-    } else {
-        // Request already erased by another concurrent completion
-        // This can happen when multiple requests from the same group complete concurrently
-        // In this case, we assume it's still part of the current group (don't add newline)
-        isGroupedRequest = true;
-    }
+	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
+	bool isGroupedRequest = false;
+	if (it != _activeRequests.end()) {
+		isGroupedRequest = (it->second.method == _lastMethod &&
+		                    it->second.uri == _lastUri &&
+		                    it->second.clientIP == _lastClientIP &&
+		                    it->second.serverName == _lastServerName &&
+		                    it->second.serverPort == _lastServerPort);
+	} else {
+		isGroupedRequest = true;
+	}
 
-    // Check if this is a "late" completion (another request displayed between start and end)
-    // BUT: if it's a grouped request, it's not "late", it's expected
-    bool isLateCompletion = !isGroupedRequest && (_lastDisplayedRequestId != requestId && _lastDisplayedRequestId != -1);
+	if (isGroupedRequest) {
+		// Part of the current group - update timing and overwrite current line
+		if (responseTime < _minTime) _minTime = responseTime;
+		if (responseTime > _maxTime) _maxTime = responseTime;
+		flushRequestLine(requestId, true, statusCode, responseSize);
+		_lastDisplayedRequestId = requestId;
+	} else if (it != _activeRequests.end()) {
+		// Non-grouped request on a previous line - overwrite it in place
+		int linesUp = _currentLine - it->second.displayLine;
 
-    // If completing a different group of requests, we need a new line
-    if (!isGroupedRequest && _lastDisplayedRequestId != -1) {
-        std::cout << std::endl; // Finalize the previous line
-    }
+		// Save current group state
+		size_t savedCount = _requestCount;
+		double savedMin = _minTime;
+		double savedMax = _maxTime;
 
-    flushRequestLine(requestId, true, statusCode, responseSize, isLateCompletion);
-    _lastDisplayedRequestId = requestId;
+		// Set state for this individual request
+		_requestCount = 1;
+		_minTime = responseTime;
+		_maxTime = responseTime;
 
-    _activeRequests.erase(requestId);
+		if (linesUp > 0)
+			std::cout << "\033[" << linesUp << "A"; // cursor up
+		flushRequestLine(requestId, true, statusCode, responseSize);
+		if (linesUp > 0)
+			std::cout << "\033[" << linesUp << "B"; // cursor down
+		std::cout.flush();
+
+		// Restore group state
+		_requestCount = savedCount;
+		_minTime = savedMin;
+		_maxTime = savedMax;
+	}
+
+	_activeRequests.erase(requestId);
 }
 
 void Logger::logMessage(const std::string &message)
 {
 	// Force finalization to ensure log line is complete
-	if (_pendingRequest)
+	if (_pendingRequest) {
 		std::cout << std::endl;
+		_currentLine++;
+	}
 
 	Logger::printSeparator();
 	std::cout << message;
-	if (message.empty() || message[message.length() - 1] != '\n')
+	for (size_t i = 0; i < message.length(); i++) {
+		if (message[i] == '\n')
+			_currentLine++;
+	}
+	if (message.empty() || message[message.length() - 1] != '\n') {
 		std::cout << std::endl;
+		_currentLine++;
+	}
 	Logger::printSeparator();
 
 	std::cout.flush();
@@ -362,4 +378,5 @@ void Logger::logMessage(const std::string &message)
 void Logger::printSeparator()
 {
 	std::cout << GREY << std::string(132, '-') << RESET << std::endl;
+	_currentLine++;
 }

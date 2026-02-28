@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 14:37:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 19:29:38 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,7 @@ struct RequestData {
 	std::string serverName;
 	int serverPort;
 	std::string requestStartTime;
+	int displayLine;
 };
 
 // Class ***********************************************************************
@@ -59,13 +60,14 @@ class Logger {
 		static bool _pendingRequest; // Request started but not completed
 		static std::string _lastRequestStartTime; // Store timestamp from logRequestStart
 		static int _lastDisplayedRequestId; // Track which request displayed the last line
+		static int _currentLine; // Current terminal line number for cursor movement
 
 		// Private method(s) ---------------------------------------------------
 		static std::string getCurrentTime();
 		static std::string formatSize(size_t bytes);
 		static std::string getStatusColor(int statusCode);
 		static void printSeparator();
-		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t size, bool isLateCompletion = false);
+		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t size);
 
 	public:
 		// Public method(s) ----------------------------------------------------
