@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 20:00:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 20:15:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,29 +164,15 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::stringstream timingStr;
 	if (includeCompletion) {
 		if (_requestCount > 1) {
-			enum Unit { US, MS, S };
-			Unit minUnit = (_minTime < 1.0) ? US : (_minTime < 1000.0) ? MS : S;
-			Unit maxUnit = (_maxTime < 1.0) ? US : (_maxTime < 1000.0) ? MS : S;
-			
-			if (minUnit == maxUnit) {
-				if (minUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000);
-				else if (minUnit == MS)
-					timingStr << std::fixed << std::setprecision(1) << _minTime;
-				else
-					timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
-			} else {
-				if (minUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
-				else
-					timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
-			}
+			// min
+			if (_minTime < 1000.0)
+				timingStr << std::fixed << std::setprecision(1) << _minTime;
+			else
+				timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
 			timingStr << "-";
 		}
-		
-		if (_maxTime < 1.0)
-			timingStr << std::fixed << std::setprecision(0) << (_maxTime * 1000) << "µs";
-		else if (_maxTime < 1000.0)
+
+		if (_maxTime < 1000.0)
 			timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
 		else
 			timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
@@ -379,6 +365,6 @@ void Logger::logMessage(const std::string &message)
 
 void Logger::printSeparator()
 {
-	std::cout << GREY << std::string(132, '-') << RESET << std::endl;
+	std::cout << GREY << std::string(135, '-') << RESET << std::endl;
 	_currentLine++;
 }
