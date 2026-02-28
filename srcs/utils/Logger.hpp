@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 19:29:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 22:31:23 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,6 +56,8 @@ class Logger {
 		static double _maxTime; // Maximum response time in group
 		static std::string _lastServerName; // Last logged server name
 		static int _lastServerPort; // Last logged server port
+		static size_t _lastEndRequestSize; // Last completed request body size
+		static size_t _groupEndCount; // Number of completions in current visual group
 		static bool _firstLog; // Indicates if this is the first log entry
 		static bool _pendingRequest; // Request started but not completed
 		static std::string _lastRequestStartTime; // Store timestamp from logRequestStart
@@ -67,12 +69,12 @@ class Logger {
 		static std::string formatSize(size_t bytes);
 		static std::string getStatusColor(int statusCode);
 		static void printSeparator();
-		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t size);
+		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize);
 
 	public:
 		// Public method(s) ----------------------------------------------------
 		static void logRequestStart(int requestId, const std::string &method, const std::string &uri,
 							const std::string &clientIP, std::string serverName, int port);
-		static void logRequestEnd(int requestId, int statusCode, size_t responseSize, double responseTime);
+		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime);
 		static void logMessage(const std::string &message);
 };

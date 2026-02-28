@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Client.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/22 14:03:56 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/02/28 21:46:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -66,6 +66,7 @@ public:
 	const HttpRequest &getRequest() const { return _request; }
 	int getResponseStatus() { return _response.getStatus(); }
 	size_t getResponseBodySize() const { return _response.getBody().size(); }
+	size_t getRequestBodySize() const { return _request.getBody().size(); }
 	bool isRequestComplete() const { return _requestComplete; }
 	bool isResponseReady() const { return _responseReady; }
 	bool shouldCloseAfterResponse() const { return _closeAfterResponse; }

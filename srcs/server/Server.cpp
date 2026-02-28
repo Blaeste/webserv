@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 18:21:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 22:37:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,6 +21,7 @@
 #include <cerrno>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <stdexcept>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -852,5 +853,9 @@ void Server::logClientResponse(Client &client)
 	double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
 						  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
 
-	Logger::logRequestEnd(client.getSocket(), client.getResponseStatus(), client.getResponseBodySize(), responseTime);
+	const std::string &method = client.getRequest().getMethod();
+	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
+	size_t reqSize = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
+
+	Logger::logRequestEnd(client.getSocket(), client.getResponseStatus(), reqSize, client.getResponseBodySize(), responseTime);
 }
