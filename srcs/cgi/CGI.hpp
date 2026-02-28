@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   CGI.hpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/12 10:26:22 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/02/28 18:21:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <map>
 #include <string>
 #include <sys/types.h>
+#include <vector>
 
 // Forward declaration(s) ------------------------------------------------------
 class HttpRequest;
@@ -67,7 +68,7 @@ class CGI {
 	public:
 		// Public method(s) ----------------------------------------------------
 		void parseHeaders(const std::string& output, CGIResult& result);
-		CGIProcess* startAsync(const RouteMatch& match, const HttpRequest& request);
+		CGIProcess* startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose);
 
 	private:
 		// Private method(s) ---------------------------------------------------
