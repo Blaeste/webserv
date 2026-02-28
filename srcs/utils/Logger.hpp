@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 12:33:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 13:31:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,15 +18,17 @@
 #include <map>
 
 // Defines *********************************************************************
-#define RESET   "\033[0m"
-#define RED     "\033[31m"
-#define GREEN   "\033[32m"
-#define YELLOW  "\033[33m"
-#define BLUE    "\033[34m"
-#define MAGENTA "\033[35m"
-#define CYAN    "\033[36m"
-#define GREY    "\033[90m"
-#define BOLD    "\033[1m"
+#define RESET		"\033[0m"
+#define RED			"\033[31m"
+#define GREEN		"\033[32m"
+#define YELLOW		"\033[33m"
+#define BLUE		"\033[34m"
+#define MAGENTA		"\033[35m"
+#define CYAN		"\033[36m"
+#define GREY		"\033[90m"
+#define BOLD		"\033[1m"
+#define NOBOLD		"\033[22m"
+#define CLEARLINE	"\033[K"
 
 // Struct **********************************************************************
 struct RequestData {
@@ -63,7 +65,7 @@ class Logger {
 		static std::string formatSize(size_t bytes);
 		static std::string getStatusColor(int statusCode);
 		static void printSeparator();
-		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t size);
+		static void flushRequestLine(int requestId, bool includeCompletion, int status, size_t size, bool isLateCompletion = false);
 
 	public:
 		// Public method(s) ----------------------------------------------------
