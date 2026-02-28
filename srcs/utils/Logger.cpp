@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 14:37:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 19:15:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,12 +117,10 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		maxUriLen--;
 	if (maxUriLen < 2) maxUriLen = 2;
 
-	// Center-align client IP
+	// Left-align client IP
 	int ipFieldWidth = 15;
 	int ipLen = clientIP.length();
-	int ipPadding = (ipFieldWidth - ipLen) / 2;
-	std::string centeredIP = std::string(ipPadding, ' ') + clientIP + 
-							 std::string(ipFieldWidth - ipLen - ipPadding, ' ');
+	std::string leftAlignedIP = clientIP + std::string(ipFieldWidth - ipLen > 0 ? ipFieldWidth - ipLen : 0, ' ');
 
 	// Clean URI: replace non-printable characters with '?'
 	std::string displayUri = uri;
@@ -153,6 +151,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		displayServerName = displayServerName.substr(0, maxServerNameLen);
 	}
 	std::string serverPortStr = displayServerName + portPart;
+
+	// Right-align serverPortStr within serverFieldWidth
+	int serverPad = serverFieldWidth - (int)serverPortStr.length();
+	if (serverPad < 0) serverPad = 0;
+	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
@@ -217,17 +220,17 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	// Build output
 	output << "\r";
 	if (isLateCompletion) {
-	output << GREY << "         ... "
-		   << std::setw(20) << std::left << serverPortStr << " | "
-		   << centeredIP << " | " << BOLD << std::setw(7) << std::right << method << NOBOLD << " "
+	int dotsOffset = 9 + serverPad; // align ... 1 space before server name (13 prefix chars - 4 for "... ")
+	output << GREY << std::string(dotsOffset > 0 ? dotsOffset : 0, ' ') << "... "
+		   << serverPortStr << " >-< "
+		   << leftAlignedIP << " | " << BOLD << std::setw(7) << std::right << method << NOBOLD << " "
 		   << uriField.str() << " ";
 	} else {
 	output << "[" << requestStartTime << "] "
-		   << GREY << "|" << RESET << " " 
-		   << std::setw(20) << std::left << serverPortStr << " "
-		   << GREY << "|" << RESET << " "
-		   << centeredIP << " "
-		   << GREY << "|" << RESET << " "
+		   << GREY << "| " << RESET
+		   << rightAlignedServerPort << " >-< "
+		   << leftAlignedIP
+		   << GREY << " | " << RESET
 		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
 		   << uriField.str() << " ";
 	}
