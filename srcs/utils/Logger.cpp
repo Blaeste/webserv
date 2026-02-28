@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 19:29:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/02/28 20:00:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,9 @@ std::string Logger::formatSize(size_t bytes)
 	const size_t TB = GB * 1024;
 
 	std::stringstream ss;
-	if (bytes < KB)
+	if (!bytes)
+		ss << std::string(4, ' ');
+	else if (bytes < KB)
 		ss << std::setw(3) << std::right << bytes << "B";
 	else if (bytes < MB)
 		ss << std::setw(3) << std::right << (bytes / KB) << "K";
@@ -93,7 +95,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::string clientIP = (it != _activeRequests.end()) ? it->second.clientIP : _lastClientIP;
 	std::string serverName = (it != _activeRequests.end()) ? it->second.serverName : _lastServerName;
 	int serverPort = (it != _activeRequests.end()) ? it->second.serverPort : _lastServerPort;
-	std::string requestStartTime = (it != _activeRequests.end()) ? it->second.requestStartTime : _lastRequestStartTime;
+	std::string requestStartTime = _lastRequestStartTime;
 
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
