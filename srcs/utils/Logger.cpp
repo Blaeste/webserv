@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 16:02:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:20:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ double Logger::_maxTime = 0.0;
 std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
 size_t Logger::_lastEndRequestSize = std::numeric_limits<size_t>::max();
+int Logger::_lastEndStatus = -1;
 size_t Logger::_groupEndCount = 0;
 bool Logger::_firstLog = true;
 bool Logger::_pendingRequest = false;
@@ -263,6 +264,7 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 		_minTime = std::numeric_limits<double>::max();
 		_maxTime = 0.0;
 		_lastEndRequestSize = std::numeric_limits<size_t>::max();
+		_lastEndStatus = -1;
 		_groupEndCount = 0;
 	}
 
@@ -309,8 +311,9 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		isGroupedRequest = true;
 	}
 
-	// Break the group if actual request body size differs from previous completion
-	if (isGroupedRequest && _groupEndCount > 0 && requestSize != _lastEndRequestSize) {
+	// Break the group if request body size or status differs from previous completion
+	if (isGroupedRequest && _groupEndCount > 0
+		&& (requestSize != _lastEndRequestSize || statusCode != _lastEndStatus)) {
 		std::cout << std::endl;
 		_currentLine++;
 		_requestCount = 1;
@@ -324,6 +327,7 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		if (responseTime < _minTime) _minTime = responseTime;
 		if (responseTime > _maxTime) _maxTime = responseTime;
 		_lastEndRequestSize = requestSize;
+		_lastEndStatus = statusCode;
 		_groupEndCount++;
 		flushRequestLine(requestId, true, statusCode, requestSize, responseSize);
 		_lastDisplayedRequestId = requestId;

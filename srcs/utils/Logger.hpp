@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:59:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:20:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,6 +59,7 @@ class Logger {
 		static std::string _lastServerName; // Last logged server name
 		static int _lastServerPort; // Last logged server port
 		static size_t _lastEndRequestSize; // Last completed request body size
+		static int _lastEndStatus; // Last completed response status code
 		static size_t _groupEndCount; // Number of completions in current visual group
 		static bool _firstLog; // Indicates if this is the first log entry
 		static bool _pendingRequest; // Request started but not completed
