@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:37:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -494,8 +494,14 @@ void Server::handleClientWrite(size_t clientIndex)
 			return;
 		}
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
+		size_t declSize = std::numeric_limits<size_t>::max();
+		{
+			const std::string &m = client.getRequest().getMethod();
+			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
+				declSize = client.getRequest().getContentLength();
+		}
 		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
-								client.getClientIp(), cfg->getServerName(), cfg->getPort());
+								client.getClientIp(), cfg->getServerName(), cfg->getPort(), declSize);
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;

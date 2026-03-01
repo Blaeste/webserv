@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:22:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,6 +20,7 @@
 #include <cerrno>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <sys/socket.h>
 #include <unistd.h>
 
@@ -79,8 +80,12 @@ bool Client::readData(const ServerConfig *config)
 	// Log request start as soon as headers are parsed
 	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
 	{
+		size_t declSize = std::numeric_limits<size_t>::max();
+		const std::string &m = _request.getMethod();
+		if ((m == "POST" || m == "PUT" || m == "PATCH") && !_request.isChunked())
+			declSize = _request.getContentLength();
 		Logger::logRequestStart(_socket, _request.getMethod(), _request.getUri(), _clientIp,
-								config->getServerName(), config->getPort());
+								config->getServerName(), config->getPort(), declSize);
 		_requestLogged = true;
 	}
 
@@ -98,8 +103,11 @@ bool Client::readData(const ServerConfig *config)
 			{
 				std::string method = _request.getMethod().empty() ? "UNKNOWN" : _request.getMethod();
 				std::string uri = _request.getUri().empty() ? "/" : _request.getUri();
+				size_t declSize = std::numeric_limits<size_t>::max();
+				if ((method == "POST" || method == "PUT" || method == "PATCH") && !_request.isChunked())
+					declSize = _request.getContentLength();
 				Logger::logRequestStart(_socket, method, uri, _clientIp,
-										config->getServerName(), config->getPort());
+										config->getServerName(), config->getPort(), declSize);
 				_requestLogged = true;
 			}
 		}

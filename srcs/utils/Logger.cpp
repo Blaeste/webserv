@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 23:07:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -205,11 +205,31 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 			timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
 	}
 
+	// Compute upload size hint to show after URI
+	std::string uploadHint;
+	int uploadHintPlainLen = 0;
+	{
+		size_t displayUploadSize = std::numeric_limits<size_t>::max();
+		if (it != _activeRequests.end() && it->second.declaredSize != std::numeric_limits<size_t>::max())
+			displayUploadSize = it->second.declaredSize;
+		else if (includeCompletion && requestSize != std::numeric_limits<size_t>::max())
+			displayUploadSize = requestSize;
+		if (displayUploadSize != std::numeric_limits<size_t>::max()) {
+			std::string sizeStr = formatSize(displayUploadSize);
+			size_t pos = sizeStr.find_first_not_of(' ');
+			if (pos != std::string::npos)
+				sizeStr = sizeStr.substr(pos);
+			uploadHint = std::string(YELLOW) + "(" + sizeStr + ")" + RESET;
+			uploadHintPlainLen = 2 + sizeStr.length();
+		}
+	}
+	int hintSpace = uploadHintPlainLen > 0 ? 1 + uploadHintPlainLen : 0;
+
 	// Build URI+count field
 	std::stringstream uriField;
 	uriField << displayUri;
 	if (_requestCount > 1) {
-		int combinedLen = displayUri.length() + 1 + actualCountLen;
+		int combinedLen = displayUri.length() + hintSpace + 1 + actualCountLen;
 		if (combinedLen > uriFieldWidth && displayUri.length() > 2) {
 			int excess = combinedLen - uriFieldWidth;
 			int newUriLen = displayUri.length() - excess;
@@ -219,16 +239,20 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 				uriField << displayUri;
 			}
 		}
-		int padding = uriFieldWidth - displayUri.length() - actualCountLen;
+		if (uploadHintPlainLen > 0)
+			uriField << " " << uploadHint;
+		int padding = uriFieldWidth - displayUri.length() - hintSpace - actualCountLen;
 		if (padding > 0)
 			uriField << std::string(padding, ' ');
 		else
 			uriField << ' ';
 		uriField << countStr.str();
 	} else {
+		if (uploadHintPlainLen > 0)
+			uriField << " " << uploadHint;
 		if (!includeCompletion)
 			uriField << GREY << " ..." << RESET;
-		int padding = uriFieldWidth - displayUri.length() - (!includeCompletion ? 4 : 0);
+		int padding = uriFieldWidth - displayUri.length() - hintSpace - (!includeCompletion ? 4 : 0);
 		if (padding > 0)
 			uriField << std::string(padding, ' ');
 	}
@@ -242,7 +266,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		   << uriField.str() << " ";
 	if (includeCompletion) {
 		output << GREY << "|" << RESET
-			   << " " << formatSize(requestSize)
+			   << " " << "    "
 			   << GREY << " | " << RESET
 			   << formatSize(responseSize)
 			   << GREY << " | " << RESET
@@ -258,7 +282,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 // Public method(s) ------------------------------------------------------------
 void Logger::logRequestStart(int requestId, const std::string &method, const std::string &uri,
-							 const std::string &clientIP, std::string serverName, int port)
+							 const std::string &clientIP, std::string serverName, int port, size_t declaredSize)
 {
 	if (_firstLog) {
 		printSeparator();
@@ -272,6 +296,7 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	data.clientIP = clientIP;
 	data.serverName = serverName;
 	data.serverPort = port;
+	data.declaredSize = declaredSize;
 	data.requestStartTime = getCurrentTime();
 	data.displayLine = _currentLine;
 	_activeRequests[requestId] = data;

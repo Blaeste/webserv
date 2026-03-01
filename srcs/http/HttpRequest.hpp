@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:22:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -106,6 +106,8 @@ public:
 	const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
 	int getErrorCode() const { return _errorCode; }
 	bool headersParsed() const { return _headersParsed; }
+	size_t getContentLength() const { return _contentLength; }
+	bool isChunked() const { return _isChunked; }
 	std::map<std::string, std::string> getCookies() const;
 
 private:

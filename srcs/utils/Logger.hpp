@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:31:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,7 @@
 #include <string>
 #include <sys/time.h>
 #include <map>
+#include <limits>
 
 // Defines *********************************************************************
 #define RESET		"\033[0m"
@@ -37,6 +38,7 @@ struct RequestData {
 	std::string clientIP;
 	std::string serverName;
 	int serverPort;
+	size_t declaredSize;
 	std::string requestStartTime;
 	int displayLine;
 };
@@ -74,7 +76,8 @@ class Logger {
 	public:
 		// Public method(s) ----------------------------------------------------
 		static void logRequestStart(int requestId, const std::string &method, const std::string &uri,
-							const std::string &clientIP, std::string serverName, int port);
+							const std::string &clientIP, std::string serverName, int port,
+							size_t declaredSize = std::numeric_limits<size_t>::max());
 		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime);
 		static void logMessage(const std::string &message);
 };
