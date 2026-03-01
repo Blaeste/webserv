@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 16:34:43 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 17:11:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,23 +134,24 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	}
 
 	// Format server:port
-	int serverFieldWidth = 20;
 	std::stringstream portStr;
 	portStr << ":" << serverPort;
 	std::string portPart = portStr.str();
-	int maxServerNameLen = serverFieldWidth - portPart.length();
+	size_t maxServerNameLen = 0;
+	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
+		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
 	std::string displayServerName = serverName;
-
-	if ((int)displayServerName.length() > maxServerNameLen && maxServerNameLen >= 2) {
-		displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
-	} else if ((int)displayServerName.length() > maxServerNameLen) {
-		displayServerName = displayServerName.substr(0, maxServerNameLen);
+	if (displayServerName.length() > maxServerNameLen) {
+		if (maxServerNameLen < 2)
+			displayServerName = displayServerName.substr(0, maxServerNameLen);
+		else
+			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
 	}
 	std::string serverPortStr = displayServerName + portPart;
-
-	// Right-align serverPortStr within serverFieldWidth
-	int serverPad = serverFieldWidth - (int)serverPortStr.length();
-	if (serverPad < 0) serverPad = 0;
+	// Right-align serverPortStr within SERVER_PORT_FIELD_WIDTH
+	size_t serverPad = 0;
+	if (serverPortStr.length() < SERVER_PORT_FIELD_WIDTH)
+		serverPad = SERVER_PORT_FIELD_WIDTH - serverPortStr.length();
 	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
 
 	// Format timing (only if completion)
