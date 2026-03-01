@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:33:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 15:36:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,10 +84,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 	// Look up request data for this specific request
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
-	if (it == _activeRequests.end() && includeCompletion) {
-		// Request not found in active requests, use static variables as fallback
-		// This happens for grouped requests that don't have individual entries
-	}
 
 	// Get request-specific data or fall back to static variables for display
 	std::string method = (it != _activeRequests.end()) ? it->second.method : _lastMethod;
@@ -96,13 +92,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::string serverName = (it != _activeRequests.end()) ? it->second.serverName : _lastServerName;
 	int serverPort = (it != _activeRequests.end()) ? it->second.serverPort : _lastServerPort;
 	std::string requestStartTime = _lastRequestStartTime;
-
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
 							  (method == "HEAD") ? CYAN : 
 							  (method == "POST") ? YELLOW : 
 							  (method == "DELETE") ? RED : GREY;
-	int uriFieldWidth = 42;
 
 	// Format count suffix
 	std::stringstream countStr;
@@ -115,7 +109,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	}
 
 	// Calculate available space for URI
-	int maxUriLen = uriFieldWidth - actualCountLen;
+	int maxUriLen = URI_FIELD_WIDTH - actualCountLen;
 	if (actualCountLen > 0)
 		maxUriLen--;
 	if (maxUriLen < 2) maxUriLen = 2;
@@ -222,9 +216,9 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::stringstream uriField;
 	uriField << displayUri;
 	if (_requestCount > 1) {
-		int combinedLen = displayUri.length() + hintSpace + 1 + actualCountLen;
-		if (combinedLen > uriFieldWidth && displayUri.length() > 2) {
-			int excess = combinedLen - uriFieldWidth;
+		size_t combinedLen = displayUri.length() + hintSpace + 1 + actualCountLen;
+		if (combinedLen > URI_FIELD_WIDTH && displayUri.length() > 2) {
+			int excess = combinedLen - URI_FIELD_WIDTH;
 			int newUriLen = displayUri.length() - excess;
 			if (newUriLen >= 2) {
 				displayUri = displayUri.substr(0, newUriLen - 2) + "..";
@@ -234,7 +228,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		}
 		if (uploadHintPlainLen > 0)
 			uriField << " " << uploadHint;
-		int padding = uriFieldWidth - displayUri.length() - hintSpace - actualCountLen;
+		int padding = URI_FIELD_WIDTH - displayUri.length() - hintSpace - actualCountLen;
 		if (padding > 0)
 			uriField << std::string(padding, ' ');
 		else
@@ -245,7 +239,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 			uriField << " " << uploadHint;
 		if (!includeCompletion)
 			uriField << GREY << " ..." << RESET;
-		int padding = uriFieldWidth - displayUri.length() - hintSpace - (!includeCompletion ? 4 : 0);
+		int padding = URI_FIELD_WIDTH - displayUri.length() - hintSpace - (!includeCompletion ? 4 : 0);
 		if (padding > 0)
 			uriField << std::string(padding, ' ');
 	}
@@ -256,11 +250,9 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		   << CYAN << rightAlignedServerPort << RESET << " >-< "
 		   << CYAN << leftAlignedIP << GREY << " | " << RESET
 		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
-		   << uriField.str() << " ";
+		   << uriField.str();
 	if (includeCompletion) {
-		output << GREY << "|" << RESET
-			   << " " << "    "
-			   << GREY << " | " << RESET
+		output << GREY << " | " << RESET
 			   << std::setw(4) << std::right << formatSize(responseSize)
 			   << GREY << " | " << RESET
 			   << GREY << "→ " << RESET
