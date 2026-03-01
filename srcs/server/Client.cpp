@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 15:54:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,13 +27,8 @@
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(), _requestStartTime(), _serverConfig(NULL)
+	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(0), _requestStartTime(0), _serverConfig(NULL)
 {
-	// Explicitly zero-initialize timing structs
-	_cgiStartTime.tv_sec = 0;
-	_cgiStartTime.tv_usec = 0;
-	_requestStartTime.tv_sec = 0;
-	_requestStartTime.tv_usec = 0;
 }
 
 // Accessor(s) -----------------------------------------------------------------
@@ -56,7 +51,7 @@ void Client::markCloseAfterResponse()
 
 void Client::setCGITiming(const ServerConfig &config)
 {
-	gettimeofday(&_cgiStartTime, NULL);
+	_cgiStartTime = time(NULL);
 	_serverConfig = &config;
 }
 
@@ -64,8 +59,8 @@ void Client::setCGITiming(const ServerConfig &config)
 bool Client::readData(const ServerConfig *config)
 {
 	// Set start time on very first read (before any parsing)
-	if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
-		gettimeofday(&_requestStartTime, NULL);
+	if (_requestStartTime == 0)
+		_requestStartTime = time(NULL);
 
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
@@ -118,10 +113,6 @@ bool Client::readData(const ServerConfig *config)
 
 void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
 {
-	// Timer - use request start time if available, otherwise start now
-	struct timeval end;
-	gettimeofday(&end, NULL);
-
 	// Match route to get location-specific settings
 	RouteMatch match = router.matchRoute(config, _request);
 
@@ -297,8 +288,7 @@ void Client::resetForNextRequest()
 	_state = STATE_KEEPALIVE;
 	_cachedResponse.clear();
 	_bytesSent = 0;
-	_requestStartTime.tv_sec = 0;
-	_requestStartTime.tv_usec = 0;
+	_requestStartTime = 0;
 
 	// Réinjecte les octets déjà reçus pour la requête suivante
 	std::string tmp = _pendingInput;
@@ -308,8 +298,8 @@ void Client::resetForNextRequest()
 		_request.appendData(tmp);
 		if (_request.isComplete())
 			_requestComplete = true;
-		if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
-			gettimeofday(&_requestStartTime, NULL);
+		if (_requestStartTime == 0)
+			_requestStartTime = time(NULL);
 	}
 }
 

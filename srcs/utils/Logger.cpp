@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:36:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:02:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@ std::map<int, RequestData> Logger::_activeRequests;
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
 std::string Logger::_lastClientIP = "";
-int Logger::_lastStatus = 0;
 size_t Logger::_lastSize = 0;
 size_t Logger::_requestCount = 0;
 double Logger::_minTime = std::numeric_limits<double>::max();
@@ -40,11 +39,11 @@ int Logger::_currentLine = 0;
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
 {
-	time_t now = time(NULL);
-	struct tm *tm_info = localtime(&now);
+	time_t now = std::time(NULL);
+	struct tm *tm_info = std::localtime(&now);
 	char buffer[9];
 
-	strftime(buffer, 9, "%H:%M:%S", tm_info);
+	std::strftime(buffer, 9, "%H:%M:%S", tm_info);
 	return std::string(buffer);
 }
 
@@ -102,9 +101,9 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::stringstream countStr;
 	int actualCountLen = 0;
 	if (_requestCount > 1) {
-		countStr << GREY << "(" << _requestCount << ")" << RESET;
+		countStr << GREY << "(x" << _requestCount << ")" << RESET;
 		std::stringstream plainCount;
-		plainCount << "(" << _requestCount << ")";
+		plainCount << "(x" << _requestCount << ")";
 		actualCountLen = plainCount.str().length();
 	}
 
@@ -158,41 +157,9 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::stringstream timingStr;
 
 	if (includeCompletion) {
-		enum Unit { US, MS, S };
-		Unit maxUnit = (_maxTime < 1.0) ? US : (_maxTime < 1000.0) ? MS : S;
-
-		if (_requestCount > 1) {
-			Unit minUnit = (_minTime < 1.0) ? US : (_minTime < 1000.0) ? MS : S;
-
-			// Check if min would round to zero in max's unit
-			bool minZeroInMaxUnit = false;
-			if (maxUnit == MS && _minTime < 0.05) minZeroInMaxUnit = true;
-			if (maxUnit == S && _minTime < 50.0) minZeroInMaxUnit = true;
-
-			if (minUnit == maxUnit || !minZeroInMaxUnit) {
-				// Use max's unit for min (no suffix, shared with max)
-				if (maxUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000);
-				else if (maxUnit == MS)
-					timingStr << std::fixed << std::setprecision(1) << _minTime;
-				else
-					timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
-			} else {
-				// Min too small in max's unit: keep its own unit with suffix
-				if (minUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
-				else
-					timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
-			}
-			timingStr << "-";
-		}
-
-		if (maxUnit == US)
-			timingStr << std::fixed << std::setprecision(0) << (_maxTime * 1000) << "µs";
-		else if (maxUnit == MS)
-			timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
-		else
-			timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
+		if (_requestCount > 1 && _minTime != _maxTime)
+			timingStr << std::fixed << std::setprecision(0) << (_minTime / 1000.0) << "-";
+		timingStr << std::fixed << std::setprecision(0) << (_maxTime / 1000.0) << "s";
 	}
 
 	// Compute upload size hint to show after URI
@@ -327,7 +294,6 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 	if (!_pendingRequest)
 		return;
 
-	_lastStatus = statusCode;
 	_lastSize = responseSize;
 
 	// Check if this request is part of the currently displayed group
