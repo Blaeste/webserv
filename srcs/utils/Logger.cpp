@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 23:07:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:33:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,14 +22,13 @@ std::map<int, RequestData> Logger::_activeRequests;
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
 std::string Logger::_lastClientIP = "";
-int Logger::_lastStatus = 0;
-size_t Logger::_lastSize = 0;
 size_t Logger::_requestCount = 0;
-double Logger::_minTime = std::numeric_limits<double>::max();
-double Logger::_maxTime = 0.0;
+time_t Logger::_minTime = std::numeric_limits<time_t>::max();
+time_t Logger::_maxTime = 0;
 std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
 size_t Logger::_lastEndRequestSize = std::numeric_limits<size_t>::max();
+int Logger::_lastEndStatus = -1;
 size_t Logger::_groupEndCount = 0;
 bool Logger::_firstLog = true;
 bool Logger::_pendingRequest = false;
@@ -40,11 +39,12 @@ int Logger::_currentLine = 0;
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
 {
-	time_t now = time(NULL);
-	struct tm *tm_info = localtime(&now);
-	char buffer[9];
-
-	strftime(buffer, 9, "%H:%M:%S", tm_info);
+	std::time_t now = std::time(NULL);
+	std::tm *tm_info = std::localtime(&now);
+	if (!tm_info)
+		return "00:00:00";
+	char buffer[10];
+	std::strftime(buffer, sizeof(buffer), "%H:%M:%S", tm_info);
 	return std::string(buffer);
 }
 
@@ -56,20 +56,16 @@ std::string Logger::formatSize(size_t bytes)
 	const size_t TB = GB * 1024;
 
 	std::stringstream ss;
-	if (bytes == std::numeric_limits<size_t>::max())
-		ss << std::string(4, ' ');
-	else if (bytes == 0)
-		ss << "  0B";
-	else if (bytes < KB)
-		ss << std::setw(3) << std::right << bytes << "B";
+	if (bytes < KB)
+		ss << bytes << "B";
 	else if (bytes < MB)
-		ss << std::setw(3) << std::right << (bytes / KB) << "K";
+		ss << (bytes / KB) << "K";
 	else if (bytes < GB)
-		ss << std::setw(3) << std::right << (bytes / MB) << "M";
+		ss << (bytes / MB) << "M";
 	else if (bytes < TB)
-		ss << std::setw(3) << std::right << (bytes / GB) << "G";
+		ss << (bytes / GB) << "G";
 	else
-		ss << std::setw(3) << std::right << (bytes / TB) << "T";
+		ss << (bytes / TB) << "T";
 	return ss.str();
 }
 
@@ -84,173 +80,119 @@ std::string Logger::getStatusColor(int statusCode)
 
 void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize)
 {
-	std::stringstream output;
-
 	// Look up request data for this specific request
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
-	if (it == _activeRequests.end() && includeCompletion) {
-		// Request not found in active requests, use static variables as fallback
-		// This happens for grouped requests that don't have individual entries
-	}
-
-	// Get request-specific data or fall back to static variables for display
-	std::string method = (it != _activeRequests.end()) ? it->second.method : _lastMethod;
-	std::string uri = (it != _activeRequests.end()) ? it->second.uri : _lastUri;
-	std::string clientIP = (it != _activeRequests.end()) ? it->second.clientIP : _lastClientIP;
-	std::string serverName = (it != _activeRequests.end()) ? it->second.serverName : _lastServerName;
-	int serverPort = (it != _activeRequests.end()) ? it->second.serverPort : _lastServerPort;
+	std::string method = it->second.method;
+	std::string uri = it->second.uri;
+	std::string clientIP = it->second.clientIP;
+	std::string serverName = it->second.serverName;
+	int serverPort = it->second.serverPort;
 	std::string requestStartTime = _lastRequestStartTime;
-
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
 							  (method == "HEAD") ? CYAN : 
 							  (method == "POST") ? YELLOW : 
 							  (method == "DELETE") ? RED : GREY;
-	int uriFieldWidth = 42;
 
-	// Format count suffix
-	std::stringstream countStr;
-	int actualCountLen = 0;
-	if (_requestCount > 1) {
-		countStr << GREY << "(" << _requestCount << ")" << RESET;
-		std::stringstream plainCount;
-		plainCount << "(" << _requestCount << ")";
-		actualCountLen = plainCount.str().length();
-	}
-
-	// Calculate available space for URI
-	int maxUriLen = uriFieldWidth - actualCountLen;
-	if (actualCountLen > 0)
-		maxUriLen--;
-	if (maxUriLen < 2) maxUriLen = 2;
-
-	// Left-align client IP
-	int ipFieldWidth = 15;
-	int ipLen = clientIP.length();
-	std::string leftAlignedIP = clientIP + std::string(ipFieldWidth - ipLen > 0 ? ipFieldWidth - ipLen : 0, ' ');
-
-	// Clean URI: replace non-printable characters with '?'
-	std::string displayUri = uri;
-	for (size_t i = 0; i < displayUri.length(); i++) {
-		if (displayUri[i] < 32 || displayUri[i] == 127)
-			displayUri[i] = '?';
-	}
-	
-	// Truncate URI if necessary
-	if ((int)displayUri.length() > maxUriLen) {
-		if (maxUriLen >= 1)
-			displayUri = displayUri.substr(0, maxUriLen - 1) + "…";
-		else
-			displayUri = "…";
-	}
-
-	// Format server:port
-	int serverFieldWidth = 20;
+	// Format server:port (right-align)
 	std::stringstream portStr;
 	portStr << ":" << serverPort;
 	std::string portPart = portStr.str();
-	int maxServerNameLen = serverFieldWidth - portPart.length();
+	size_t maxServerNameLen = 0;
+	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
+		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
 	std::string displayServerName = serverName;
-
-	if ((int)displayServerName.length() > maxServerNameLen && maxServerNameLen >= 2) {
-		displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
-	} else if ((int)displayServerName.length() > maxServerNameLen) {
-		displayServerName = displayServerName.substr(0, maxServerNameLen);
+	if (displayServerName.length() > maxServerNameLen) {
+		if (maxServerNameLen < 2)
+			displayServerName = displayServerName.substr(0, maxServerNameLen);
+		else
+			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
 	}
 	std::string serverPortStr = displayServerName + portPart;
-
-	// Right-align serverPortStr within serverFieldWidth
-	int serverPad = serverFieldWidth - (int)serverPortStr.length();
-	if (serverPad < 0) serverPad = 0;
+	size_t serverPad = 0;
+	if (serverPortStr.length() < SERVER_PORT_FIELD_WIDTH)
+		serverPad = SERVER_PORT_FIELD_WIDTH - serverPortStr.length();
 	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
 
-	// Format timing (only if completion)
-	std::stringstream timingStr;
+	// --- Build URI field (fixed width: URI_FIELD_WIDTH) ---
 
-	if (includeCompletion) {
-		enum Unit { US, MS, S };
-		Unit maxUnit = (_maxTime < 1.0) ? US : (_maxTime < 1000.0) ? MS : S;
+	// Clean URI: replace non-printable characters with '?'
+	std::string displayUri = uri;
+	for (size_t i = 0; i < displayUri.length(); i++)
+		if (displayUri[i] < 32 || displayUri[i] == 127)
+			displayUri[i] = '?';
 
-		if (_requestCount > 1) {
-			Unit minUnit = (_minTime < 1.0) ? US : (_minTime < 1000.0) ? MS : S;
-
-			// Check if min would round to zero in max's unit
-			bool minZeroInMaxUnit = false;
-			if (maxUnit == MS && _minTime < 0.05) minZeroInMaxUnit = true;
-			if (maxUnit == S && _minTime < 50.0) minZeroInMaxUnit = true;
-
-			if (minUnit == maxUnit || !minZeroInMaxUnit) {
-				// Use max's unit for min (no suffix, shared with max)
-				if (maxUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000);
-				else if (maxUnit == MS)
-					timingStr << std::fixed << std::setprecision(1) << _minTime;
-				else
-					timingStr << std::fixed << std::setprecision(1) << (_minTime / 1000.0);
-			} else {
-				// Min too small in max's unit: keep its own unit with suffix
-				if (minUnit == US)
-					timingStr << std::fixed << std::setprecision(0) << (_minTime * 1000) << "µs";
-				else
-					timingStr << std::fixed << std::setprecision(1) << _minTime << "ms";
-			}
-			timingStr << "-";
+	// Compute upload size hint shown after URI for POST
+	std::string hintStr;
+	size_t hintLen = 0;
+	{
+		size_t sz = it->second.declaredSize;
+		if (sz == std::numeric_limits<size_t>::max() && includeCompletion
+			&& requestSize != std::numeric_limits<size_t>::max())
+			sz = requestSize;
+		if (sz != std::numeric_limits<size_t>::max()) {
+			std::string s = formatSize(sz);
+			hintStr = std::string(" ") + YELLOW + "(" + s + ")" + RESET;
+			hintLen = 3 + s.length();
 		}
-
-		if (maxUnit == US)
-			timingStr << std::fixed << std::setprecision(0) << (_maxTime * 1000) << "µs";
-		else if (maxUnit == MS)
-			timingStr << std::fixed << std::setprecision(1) << _maxTime << "ms";
-		else
-			timingStr << std::fixed << std::setprecision(1) << (_maxTime / 1000.0) << "s";
 	}
 
-	// Build URI+count field
-	std::stringstream uriField;
-	uriField << displayUri;
+	// Compute count suffix for grouped requests
+	std::string countStr;
+	size_t countLen = 0;
 	if (_requestCount > 1) {
-		int combinedLen = displayUri.length() + 1 + actualCountLen;
-		if (combinedLen > uriFieldWidth && displayUri.length() > 2) {
-			int excess = combinedLen - uriFieldWidth;
-			int newUriLen = displayUri.length() - excess;
-			if (newUriLen >= 2) {
-				displayUri = displayUri.substr(0, newUriLen - 2) + "..";
-				uriField.str("");
-				uriField << displayUri;
-			}
-		}
-		int padding = uriFieldWidth - displayUri.length() - actualCountLen;
-		if (padding > 0)
-			uriField << std::string(padding, ' ');
-		else
-			uriField << ' ';
-		uriField << countStr.str();
+		std::stringstream ss;
+		ss << "(x" << _requestCount << ")";
+		countLen = ss.str().length();
+		countStr = std::string(GREY) + ss.str() + RESET;
+	}
+
+	// Truncate URI to fit - reserving space for hint, count, pending "..."
+	size_t reserved = hintLen + (countLen > 0 ? 1 + countLen : 0)
+					+ (!includeCompletion && countLen == 0 ? 4 : 0);
+	size_t maxUriLen = (reserved < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - reserved : 2;
+	if (maxUriLen < 2) maxUriLen = 2;
+	if (displayUri.length() > maxUriLen)
+		displayUri = (maxUriLen >= 2) ? displayUri.substr(0, maxUriLen - 1) + "…" : "…";
+
+	// Assemble URI field
+	std::stringstream uriField;
+	size_t usedLen = displayUri.length() + hintLen;
+	uriField << displayUri << hintStr;
+	if (countLen > 0) {
+		size_t gap = (usedLen + countLen < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - usedLen - countLen : 1;
+		uriField << std::string(gap, ' ') << countStr;
 	} else {
 		if (!includeCompletion)
 			uriField << GREY << " ..." << RESET;
-		int padding = uriFieldWidth - displayUri.length() - (!includeCompletion ? 4 : 0);
-		if (padding > 0)
-			uriField << std::string(padding, ' ');
+		size_t totalUsed = usedLen + (!includeCompletion ? 4 : 0);
+		if (totalUsed < URI_FIELD_WIDTH)
+			uriField << std::string(URI_FIELD_WIDTH - totalUsed, ' ');
 	}
 
-	// Build output
-	output << "\r";
-	output << "[" << requestStartTime << "] " << GREY << "| "
-		   << CYAN << rightAlignedServerPort << RESET << " >-< "
-		   << CYAN << leftAlignedIP << GREY << " | " << RESET
-		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
-		   << uriField.str() << " ";
-	if (includeCompletion) {
-		output << GREY << "|" << RESET
-			   << " " << formatSize(requestSize)
-			   << GREY << " | " << RESET
-			   << formatSize(responseSize)
-			   << GREY << " | " << RESET
-			   << GREY << "→ " << RESET
-			   << statusColor << BOLD << status << RESET
-			   << GREY << " | " << RESET
-			   << std::left << timingStr.str();
+	// Format timing (only if completion)
+	std::stringstream timingStr;
+	if (includeCompletion && _maxTime) {
+		if (_requestCount > 1 && _minTime != _maxTime)
+			timingStr << _minTime << "-";
+		timingStr << _maxTime << "s";
 	}
+
+	std::stringstream statusStr;
+	if (includeCompletion)
+		statusStr << GREY << "→ " << statusColor << BOLD << status << RESET;
+
+	// Build output
+	std::stringstream output;
+	output << "\r" << "[" << requestStartTime << "] " << GREY << "| "
+		   << CYAN << std::setw(SERVER_PORT_FIELD_WIDTH) << std::right << serverPortStr << RESET << " >-< "
+		   << CYAN << std::setw(IP_FIELD_WIDTH) << std::left << clientIP << GREY << " | " << RESET
+		   << methodColor << BOLD << std::setw(METHOD_FIELD_WIDTH) << std::right << method << RESET << " "
+		   << uriField.str();
+	if (includeCompletion)
+		output << GREY << " | " << RESET << std::setw(RESPONSE_SIZE_FIELD_WIDTH) << std::right << formatSize(responseSize)
+			   << GREY << " | " << RESET << std::setw(STATUS_FIELD_WIDTH) << statusStr.str() << RESET
+			   << GREY << " | " << RESET << std::left << timingStr.str();
 	output << CLEARLINE;
 	std::cout << output.str();
 	std::cout.flush();
@@ -258,7 +200,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 // Public method(s) ------------------------------------------------------------
 void Logger::logRequestStart(int requestId, const std::string &method, const std::string &uri,
-							 const std::string &clientIP, std::string serverName, int port)
+							 const std::string &clientIP, std::string serverName, int port, size_t declaredSize)
 {
 	if (_firstLog) {
 		printSeparator();
@@ -272,20 +214,21 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	data.clientIP = clientIP;
 	data.serverName = serverName;
 	data.serverPort = port;
+	data.declaredSize = declaredSize;
 	data.requestStartTime = getCurrentTime();
 	data.displayLine = _currentLine;
 	_activeRequests[requestId] = data;
 
-	bool isGroupableRequest = (_lastMethod == method && _lastUri == uri &&
-						  _lastClientIP == clientIP && _lastServerName == serverName &&
-						  _lastServerPort == port);
+	bool isGroupableRequest = (_lastMethod == method && _lastUri == uri && _lastClientIP == clientIP
+		&& _lastServerName == serverName && _lastServerPort == port);
 
 	if (_pendingRequest && !isGroupableRequest) {
 		std::cout << std::endl;
 		_currentLine++;
-		_minTime = std::numeric_limits<double>::max();
-		_maxTime = 0.0;
+		_minTime = std::numeric_limits<time_t>::max();
+		_maxTime = 0;
 		_lastEndRequestSize = std::numeric_limits<size_t>::max();
+		_lastEndStatus = -1;
 		_groupEndCount = 0;
 	}
 
@@ -302,7 +245,6 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	_lastServerName = serverName;
 	_lastServerPort = port;
 	_lastRequestStartTime = data.requestStartTime;
-
 	_pendingRequest = true;
 	_lastDisplayedRequestId = requestId;
 
@@ -312,34 +254,29 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	flushRequestLine(requestId, false, 0, 0, 0);
 }
 
-void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime)
+void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime)
 {
 	if (!_pendingRequest)
 		return;
 
-	_lastStatus = statusCode;
-	_lastSize = responseSize;
-
 	// Check if this request is part of the currently displayed group
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
-	bool isGroupedRequest = false;
-	if (it != _activeRequests.end()) {
-		isGroupedRequest = (it->second.method == _lastMethod &&
+	if (it == _activeRequests.end())
+		return; // already logged or unknown request
+	bool isGroupedRequest = (it->second.method == _lastMethod &&
 							it->second.uri == _lastUri &&
 							it->second.clientIP == _lastClientIP &&
 							it->second.serverName == _lastServerName &&
 							it->second.serverPort == _lastServerPort);
-	} else {
-		isGroupedRequest = true;
-	}
 
-	// Break the group if actual request body size differs from previous completion
-	if (isGroupedRequest && _groupEndCount > 0 && requestSize != _lastEndRequestSize) {
+	// Break the group if request body size or status differs from previous completion
+	if (isGroupedRequest && _groupEndCount
+		&& (requestSize != _lastEndRequestSize || statusCode != _lastEndStatus)) {
 		std::cout << std::endl;
 		_currentLine++;
 		_requestCount = 1;
-		_minTime = std::numeric_limits<double>::max();
-		_maxTime = 0.0;
+		_minTime = std::numeric_limits<time_t>::max();
+		_maxTime = 0;
 		_groupEndCount = 0;
 	}
 
@@ -348,6 +285,7 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		if (responseTime < _minTime) _minTime = responseTime;
 		if (responseTime > _maxTime) _maxTime = responseTime;
 		_lastEndRequestSize = requestSize;
+		_lastEndStatus = statusCode;
 		_groupEndCount++;
 		flushRequestLine(requestId, true, statusCode, requestSize, responseSize);
 		_lastDisplayedRequestId = requestId;
@@ -357,8 +295,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 
 		// Save current group state
 		size_t savedCount = _requestCount;
-		double savedMin = _minTime;
-		double savedMax = _maxTime;
+		time_t savedMin = _minTime;
+		time_t savedMax = _maxTime;
 
 		// Set state for this individual request
 		_requestCount = 1;

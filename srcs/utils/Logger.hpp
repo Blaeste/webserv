@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:31:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:14:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,9 @@
 
 // Include(s) ******************************************************************
 #include <string>
-#include <sys/time.h>
+#include <ctime>
 #include <map>
+#include <limits>
 
 // Defines *********************************************************************
 #define RESET		"\033[0m"
@@ -37,6 +38,7 @@ struct RequestData {
 	std::string clientIP;
 	std::string serverName;
 	int serverPort;
+	size_t declaredSize;
 	std::string requestStartTime;
 	int displayLine;
 };
@@ -45,18 +47,24 @@ struct RequestData {
 class Logger {
 	private:
 		// Attribute(s) --------------------------------------------------------
+		static const size_t SERVER_PORT_FIELD_WIDTH = 20;
+		static const size_t IP_FIELD_WIDTH = 15;
+		static const size_t METHOD_FIELD_WIDTH = 7;
+		static const size_t URI_FIELD_WIDTH = 55;
+		static const size_t RESPONSE_SIZE_FIELD_WIDTH = 4;
+		static const size_t STATUS_FIELD_WIDTH = 5;
+
 		static std::map<int, RequestData> _activeRequests; // Track each request's data by socket
 		static std::string _lastMethod; // Last logged HTTP method
 		static std::string _lastUri; // Last logged URI
 		static std::string _lastClientIP; // Last logged client IP address
-		static int _lastStatus; // Last logged HTTP status code
-		static size_t _lastSize; // Last logged response size
 		static size_t _requestCount; // Number of grouped identical requests
-		static double _minTime; // Minimum response time in group
-		static double _maxTime; // Maximum response time in group
+		static time_t _minTime; // Minimum response time in group
+		static time_t _maxTime; // Maximum response time in group
 		static std::string _lastServerName; // Last logged server name
 		static int _lastServerPort; // Last logged server port
 		static size_t _lastEndRequestSize; // Last completed request body size
+		static int _lastEndStatus; // Last completed response status code
 		static size_t _groupEndCount; // Number of completions in current visual group
 		static bool _firstLog; // Indicates if this is the first log entry
 		static bool _pendingRequest; // Request started but not completed
@@ -74,7 +82,8 @@ class Logger {
 	public:
 		// Public method(s) ----------------------------------------------------
 		static void logRequestStart(int requestId, const std::string &method, const std::string &uri,
-							const std::string &clientIP, std::string serverName, int port);
-		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime);
+							const std::string &clientIP, std::string serverName, int port,
+							size_t declaredSize = std::numeric_limits<size_t>::max());
+		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime);
 		static void logMessage(const std::string &message);
 };

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:22:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:58:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,19 +20,15 @@
 #include <cerrno>
 #include <cstring>
 #include <iostream>
+#include <limits>
 #include <sys/socket.h>
 #include <unistd.h>
 
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(), _requestStartTime(), _serverConfig(NULL)
+	: _socket(socket), _clientIp(clientIp), _lastActivity(std::time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(0), _requestStartTime(0), _serverConfig(NULL)
 {
-	// Explicitly zero-initialize timing structs
-	_cgiStartTime.tv_sec = 0;
-	_cgiStartTime.tv_usec = 0;
-	_requestStartTime.tv_sec = 0;
-	_requestStartTime.tv_usec = 0;
 }
 
 // Accessor(s) -----------------------------------------------------------------
@@ -44,7 +40,7 @@ bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 		timeout = processingTimeout;
 	else
 		timeout = idleTimeout;
-	return time(NULL) - _lastActivity > timeout;
+	return std::time(NULL) - _lastActivity > timeout;
 }
 
 void Client::markCloseAfterResponse()
@@ -55,7 +51,7 @@ void Client::markCloseAfterResponse()
 
 void Client::setCGITiming(const ServerConfig &config)
 {
-	gettimeofday(&_cgiStartTime, NULL);
+	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;
 }
 
@@ -63,8 +59,8 @@ void Client::setCGITiming(const ServerConfig &config)
 bool Client::readData(const ServerConfig *config)
 {
 	// Set start time on very first read (before any parsing)
-	if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
-		gettimeofday(&_requestStartTime, NULL);
+	if (_requestStartTime == 0)
+		_requestStartTime = std::time(NULL);
 
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
@@ -79,8 +75,12 @@ bool Client::readData(const ServerConfig *config)
 	// Log request start as soon as headers are parsed
 	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
 	{
+		size_t declSize = std::numeric_limits<size_t>::max();
+		const std::string &m = _request.getMethod();
+		if ((m == "POST" || m == "PUT" || m == "PATCH") && !_request.isChunked())
+			declSize = _request.getContentLength();
 		Logger::logRequestStart(_socket, _request.getMethod(), _request.getUri(), _clientIp,
-								config->getServerName(), config->getPort());
+								config->getServerName(), config->getPort(), declSize);
 		_requestLogged = true;
 	}
 
@@ -98,8 +98,11 @@ bool Client::readData(const ServerConfig *config)
 			{
 				std::string method = _request.getMethod().empty() ? "UNKNOWN" : _request.getMethod();
 				std::string uri = _request.getUri().empty() ? "/" : _request.getUri();
+				size_t declSize = std::numeric_limits<size_t>::max();
+				if ((method == "POST" || method == "PUT" || method == "PATCH") && !_request.isChunked())
+					declSize = _request.getContentLength();
 				Logger::logRequestStart(_socket, method, uri, _clientIp,
-										config->getServerName(), config->getPort());
+										config->getServerName(), config->getPort(), declSize);
 				_requestLogged = true;
 			}
 		}
@@ -110,10 +113,6 @@ bool Client::readData(const ServerConfig *config)
 
 void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
 {
-	// Timer - use request start time if available, otherwise start now
-	struct timeval end;
-	gettimeofday(&end, NULL);
-
 	// Match route to get location-specific settings
 	RouteMatch match = router.matchRoute(config, _request);
 
@@ -289,8 +288,7 @@ void Client::resetForNextRequest()
 	_state = STATE_KEEPALIVE;
 	_cachedResponse.clear();
 	_bytesSent = 0;
-	_requestStartTime.tv_sec = 0;
-	_requestStartTime.tv_usec = 0;
+	_requestStartTime = 0;
 
 	// Réinjecte les octets déjà reçus pour la requête suivante
 	std::string tmp = _pendingInput;
@@ -300,8 +298,8 @@ void Client::resetForNextRequest()
 		_request.appendData(tmp);
 		if (_request.isComplete())
 			_requestComplete = true;
-		if (_requestStartTime.tv_sec == 0 && _requestStartTime.tv_usec == 0)
-			gettimeofday(&_requestStartTime, NULL);
+		if (_requestStartTime == 0)
+			_requestStartTime = std::time(NULL);
 	}
 }
 
@@ -336,7 +334,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 		// Update existing session or create new if expired
 		if (sessions.find(sessionId) != sessions.end())
 		{
-			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].lastActive = std::time(NULL);
 
 			// Only count html request (for good count page visit)
 			std::string uri = _request.getUri();
@@ -351,7 +349,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 		{
 			// Invalid/expired session → create new
 			sessionId = generateSessionId();
-			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].lastActive = std::time(NULL);
 			sessions[sessionId].visitCount = 1;
 			sessions[sessionId].username = "";
 			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
@@ -361,7 +359,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 	{
 		// New session
 		sessionId = generateSessionId();
-		sessions[sessionId].lastActive = time(NULL);
+		sessions[sessionId].lastActive = std::time(NULL);
 		sessions[sessionId].visitCount = 1;
 		sessions[sessionId].username = "";
 		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");

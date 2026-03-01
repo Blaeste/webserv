@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 21:46:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:58:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,8 +51,8 @@ private:
 	CGIProcess *_cgiProcess;		   ///< Active CGI process (NULL if none)
 	std::string _cachedResponse;	   ///< Cached response for progressive sending
 	size_t _bytesSent;				   ///< Bytes already sent from cached response
-	timeval _cgiStartTime;			   ///< Start time for CGI timeout tracking
-	timeval _requestStartTime;		   ///< Start time for request timing (from first data)
+	time_t _cgiStartTime;			   ///< Start time for CGI timeout tracking
+	time_t _requestStartTime;		   ///< Start time for request timing (from first data)
 	const ServerConfig *_serverConfig; ///< Server configuration for logging
 	std::string _pendingInput;		   ///< Restes d'une requête suivante déjà reçue
 
@@ -71,10 +71,10 @@ public:
 	bool isResponseReady() const { return _responseReady; }
 	bool shouldCloseAfterResponse() const { return _closeAfterResponse; }
 	CGIProcess *getCGIProcess() const { return _cgiProcess; }
-	const timeval &getRequestStartTime() const { return _requestStartTime; }
+	time_t getRequestStartTime() const { return _requestStartTime; }
 
 	// Setter(s) -----------------------------------------------------------
-	void updateActivity() { _lastActivity = time(NULL); }
+	void updateActivity() { _lastActivity = std::time(NULL); }
 	void setState(ClientState state) { _state = state; }
 	void setCGIProcess(CGIProcess *cgi) { _cgiProcess = cgi; }
 

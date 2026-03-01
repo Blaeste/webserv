@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:13:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 19:16:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -180,3 +180,10 @@ bool isValidHttpMethod(const std::string &method);
  * @return A new string with all characters converted to uppercase.
  */
 std::string toUpperString(const std::string &str);
+
+/**
+ * @brief Converts a relative path to absolute using the process working directory.
+ * @param path The path to resolve (returned as-is if already absolute).
+ * @return The absolute path, or the original path if PWD is unavailable.
+ */
+std::string buildAbsolutePath(const std::string &path);

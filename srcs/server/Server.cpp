@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 22:37:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 19:21:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,14 +17,16 @@
 #include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <arpa/inet.h> // IP client
+#include <netinet/in.h> // sockaddr_in, htons, INADDR_ANY
 #include <cerrno>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <sys/wait.h> // waitpid()
 
 // Define(s) -------------------------------------------------------------------
 # define CURSOR_HIDE "\033[?25l"
@@ -72,7 +74,7 @@ Server::~Server()
 void Server::run()
 {
 	_running = true;
-	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+	std::cout << "Press Ctrl+C to stop" << std::endl;
 
 	while (_running)
 	{
@@ -219,8 +221,11 @@ void Server::acceptNewClient(int listenSocket)
 	}
 
 	// Get client IP
-	char clientIp[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
+	unsigned char *ip = reinterpret_cast<unsigned char *>(&clientAddr.sin_addr);
+	std::stringstream ipStream;
+	ipStream << static_cast<int>(ip[0]) << "." << static_cast<int>(ip[1]) << "."
+			 << static_cast<int>(ip[2]) << "." << static_cast<int>(ip[3]);
+	std::string clientIp = ipStream.str();
 
 	// Set the client socket to non-blocking mode
 	try
@@ -494,8 +499,14 @@ void Server::handleClientWrite(size_t clientIndex)
 			return;
 		}
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
+		size_t declSize = std::numeric_limits<size_t>::max();
+		{
+			const std::string &m = client.getRequest().getMethod();
+			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
+				declSize = client.getRequest().getContentLength();
+		}
 		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
-								client.getClientIp(), cfg->getServerName(), cfg->getPort());
+								client.getClientIp(), cfg->getServerName(), cfg->getPort(), declSize);
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;
@@ -537,7 +548,7 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 
 void Server::handleCGITimeouts()
 {
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
@@ -776,15 +787,15 @@ void Server::handleCGIPipe(size_t pipeIndex)
 void Server::handleSessionTimeouts()
 {
 	// Check cleanup interval
-	if (time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
+	if (std::time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
 		return;
-	_lastSessionCleanup = time(NULL);
+	_lastSessionCleanup = std::time(NULL);
 
 	// Remove expired sessions
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
 	while (it != _sessions.end())
 	{
-		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT)
+		if (std::time(NULL) - it->second.lastActive > SESSION_TIMEOUT)
 		{
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
@@ -834,13 +845,9 @@ void Server::installSignals()
 	addSignalPipeToPoll();
 
 	// Register signal handlers for graceful shutdown
-	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = &Server::signalHandler;
-	sigemptyset(&sa.sa_mask);
-	sigaction(SIGINT, &sa, 0);
-	sigaction(SIGQUIT, &sa, 0);
-	sigaction(SIGTERM, &sa, 0);
+	signal(SIGINT, Server::signalHandler);
+	signal(SIGQUIT, Server::signalHandler);
+	signal(SIGTERM, Server::signalHandler);
 
 	// Ignore SIGPIPE to prevent termination on broken socket writes
 	signal(SIGPIPE, SIG_IGN);
@@ -848,10 +855,8 @@ void Server::installSignals()
 
 void Server::logClientResponse(Client &client)
 {
-	struct timeval end;
-	gettimeofday(&end, NULL);
-	double responseTime = (end.tv_sec - client.getRequestStartTime().tv_sec) * 1000.0 +
-						  (end.tv_usec - client.getRequestStartTime().tv_usec) / 1000.0;
+	time_t end = std::time(NULL);
+	time_t responseTime = end - client.getRequestStartTime();
 
 	const std::string &method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
