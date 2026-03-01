@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/01 11:34:45 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/01 20:12:16 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -118,7 +118,7 @@ kill:
 
 test: $(NAME)
 	-pkill webserv || true
-	xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "webserv | webServTester" -e "bash -c './webserv config/webServTester.conf; read -p \"Press Enter to close window...\"'" 2>/dev/null &
+	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	sleep 1
 	@# Ensure requests is available (critical dependency)
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
@@ -184,11 +184,15 @@ eval: $(NAME)
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "webserv | 42tester" -e "bash -c './webserv config/eval.conf; read -p \"Press Enter to close window...\"'" 2>/dev/null &
+	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/eval.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	@sleep 1
 	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
 	@-pkill webserv 2>/dev/null || true
+
+run: $(NAME)
+	-pkill webserv || true
+	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME)" -e "bash -c 'stty -echoctl; ./$(NAME); stty echoctl; read -p \"Press Enter to close window...\"'" &
 
 clear_eval:
 	@rm -rf YoupiBanane
