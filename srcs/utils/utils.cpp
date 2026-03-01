@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 19:16:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 20:54:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@
 #include <unistd.h>		// read(), close()
 #include <sys/socket.h> // for getsockname()
 #include <netinet/in.h> // for sockaddr_in, ntohs()
-#include <limits.h>
+#include <limits>
 #include <cstdio> //snprintf
 
 // Function(s) -----------------------------------------------------------------
@@ -344,7 +344,7 @@ int parseIntSafe(const std::string &str, const std::string &context)
 	long val = std::strtol(str.c_str(), &endptr, 10);
 
 	// Check errors
-	if (errno == ERANGE || val > INT_MAX || val < INT_MIN)
+	if (errno == ERANGE || val > std::numeric_limits<int>::max() || val < std::numeric_limits<int>::min())
 		throw std::runtime_error("parseIntSafe [" + context + "]: value out of range: " + str);
 
 	if (endptr == str.c_str() || *endptr != '\0')

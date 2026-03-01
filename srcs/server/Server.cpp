@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 19:21:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 20:59:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -697,8 +697,17 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					cgi->pipeErr = -1;
 				}
 
-				int status;
-				waitpid(cgi->pid, &status, 0);
+				int status = 0; // Always initialize for WNOHANG
+				int waitRet = waitpid(cgi->pid, &status, WNOHANG);
+
+				if (waitRet == 0) {
+					// The CGI closed its stdout but is still running (e.g., infinite sleep).
+					// We kill it immediately so it doesn't become a zombie process.
+					kill(cgi->pid, SIGKILL);
+					
+					// Perform a blocking waitpid which will be instant since we just killed it.
+					waitpid(cgi->pid, &status, 0); 
+				}
 
 				bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos) || 
 				                      (cgi->output.find("Content-type:") != std::string::npos);
