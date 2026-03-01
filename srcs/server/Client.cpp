@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:54:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:58:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,7 +27,7 @@
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(0), _requestStartTime(0), _serverConfig(NULL)
+	: _socket(socket), _clientIp(clientIp), _lastActivity(std::time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(0), _requestStartTime(0), _serverConfig(NULL)
 {
 }
 
@@ -40,7 +40,7 @@ bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 		timeout = processingTimeout;
 	else
 		timeout = idleTimeout;
-	return time(NULL) - _lastActivity > timeout;
+	return std::time(NULL) - _lastActivity > timeout;
 }
 
 void Client::markCloseAfterResponse()
@@ -51,7 +51,7 @@ void Client::markCloseAfterResponse()
 
 void Client::setCGITiming(const ServerConfig &config)
 {
-	_cgiStartTime = time(NULL);
+	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;
 }
 
@@ -60,7 +60,7 @@ bool Client::readData(const ServerConfig *config)
 {
 	// Set start time on very first read (before any parsing)
 	if (_requestStartTime == 0)
-		_requestStartTime = time(NULL);
+		_requestStartTime = std::time(NULL);
 
 	// Read data from socket into buffer and parse request
 	char buffer[4096];
@@ -299,7 +299,7 @@ void Client::resetForNextRequest()
 		if (_request.isComplete())
 			_requestComplete = true;
 		if (_requestStartTime == 0)
-			_requestStartTime = time(NULL);
+			_requestStartTime = std::time(NULL);
 	}
 }
 
@@ -334,7 +334,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 		// Update existing session or create new if expired
 		if (sessions.find(sessionId) != sessions.end())
 		{
-			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].lastActive = std::time(NULL);
 
 			// Only count html request (for good count page visit)
 			std::string uri = _request.getUri();
@@ -349,7 +349,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 		{
 			// Invalid/expired session → create new
 			sessionId = generateSessionId();
-			sessions[sessionId].lastActive = time(NULL);
+			sessions[sessionId].lastActive = std::time(NULL);
 			sessions[sessionId].visitCount = 1;
 			sessions[sessionId].username = "";
 			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
@@ -359,7 +359,7 @@ void Client::handleSession(std::map<std::string, SessionData> &sessions)
 	{
 		// New session
 		sessionId = generateSessionId();
-		sessions[sessionId].lastActive = time(NULL);
+		sessions[sessionId].lastActive = std::time(NULL);
 		sessions[sessionId].visitCount = 1;
 		sessions[sessionId].username = "";
 		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");

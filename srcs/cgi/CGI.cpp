@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 18:21:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:59:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -104,7 +104,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 			if (key[i] == '-')
 				envKey += '_';
 			else
-				envKey += toupper(key[i]);
+				envKey += std::toupper(key[i]);
 		}
 		_env[envKey] = it->second;
 	}
@@ -184,7 +184,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 		return NULL;
 	}
 
-	cgi->startTime = time(NULL);
+	cgi->startTime = std::time(NULL);
 	pid_t pid = fork();
 
 	if (pid == -1) {
@@ -238,9 +238,11 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 		// Prepare environment variables
 		std::vector<char*> envp;
 		for (std::map<std::string, std::string>::const_iterator it = _env.begin();
-			 it != _env.end(); ++it) {
+			it != _env.end(); ++it) {
 			std::string envStr = it->first + "=" + it->second;
-			envp.push_back(strdup(envStr.c_str()));
+			char* element = new char[envStr.length() + 1];
+			std::strcpy(element, envStr.c_str());
+			envp.push_back(element);
 		}
 		envp.push_back(NULL);
 
@@ -256,7 +258,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 
 		// If execve fails
 		std::cerr << "CGI: execve failed for: " << interpreter << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;
-		exit(1);
+		std::exit(1);
 	}
 
 	// Parent process

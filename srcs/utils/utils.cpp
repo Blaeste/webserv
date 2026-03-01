@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/05 13:12:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:59:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -341,7 +341,7 @@ int parseIntSafe(const std::string &str, const std::string &context)
 	// Use strtol for convert with overflow detection
 	char *endptr;
 	errno = 0;
-	long val = strtol(str.c_str(), &endptr, 10);
+	long val = std::strtol(str.c_str(), &endptr, 10);
 
 	// Check errors
 	if (errno == ERANGE || val > INT_MAX || val < INT_MIN)
@@ -391,7 +391,7 @@ std::string urlDecode(const std::string &url)
 			// Decode %XX
 			char hex[3] = {url[i + 1], url[i + 2], '\0'};
 			char *endptr;
-			long value = strtol(hex, &endptr, 16);
+			long value = std::strtol(hex, &endptr, 16);
 
 			// Valid hex
 			if (*endptr == '\0')
@@ -426,9 +426,11 @@ std::string toUpperString(const std::string &str)
 
 std::string getHttpDate()
 {
-	time_t now = time(NULL);
-	struct tm *gmt = gmtime(&now);
+	time_t now = std::time(NULL);
+	struct tm *gmt = std::gmtime(&now);
+	if (!gmt)
+        return "";
 	char buffer[100];
-	strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 	return std::string(buffer);
 }

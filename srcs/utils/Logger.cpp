@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:12:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:33:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,11 +39,12 @@ int Logger::_currentLine = 0;
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
 {
-	time_t now = std::time(NULL);
-	struct tm *tm_info = std::localtime(&now);
-	char buffer[9];
-
-	std::strftime(buffer, 9, "%H:%M:%S", tm_info);
+	std::time_t now = std::time(NULL);
+	std::tm *tm_info = std::localtime(&now);
+	if (!tm_info)
+		return "00:00:00";
+	char buffer[10];
+	std::strftime(buffer, sizeof(buffer), "%H:%M:%S", tm_info);
 	return std::string(buffer);
 }
 

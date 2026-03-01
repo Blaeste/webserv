@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 16:29:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:58:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -73,7 +73,7 @@ Server::~Server()
 void Server::run()
 {
 	_running = true;
-	std::cout << "Server running... (Ctrl+C to stop)" << std::endl;
+	std::cout << "Press Ctrl+C to stop" << std::endl;
 
 	while (_running)
 	{
@@ -544,7 +544,7 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 
 void Server::handleCGITimeouts()
 {
-	time_t now = time(NULL);
+	time_t now = std::time(NULL);
 
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
@@ -783,15 +783,15 @@ void Server::handleCGIPipe(size_t pipeIndex)
 void Server::handleSessionTimeouts()
 {
 	// Check cleanup interval
-	if (time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
+	if (std::time(NULL) - _lastSessionCleanup <= SESSION_CLEANUP_INTERVAL)
 		return;
-	_lastSessionCleanup = time(NULL);
+	_lastSessionCleanup = std::time(NULL);
 
 	// Remove expired sessions
 	std::map<std::string, SessionData>::iterator it = _sessions.begin();
 	while (it != _sessions.end())
 	{
-		if (time(NULL) - it->second.lastActive > SESSION_TIMEOUT)
+		if (std::time(NULL) - it->second.lastActive > SESSION_TIMEOUT)
 		{
 			std::map<std::string, SessionData>::iterator toErase = it;
 			it++;
@@ -841,13 +841,9 @@ void Server::installSignals()
 	addSignalPipeToPoll();
 
 	// Register signal handlers for graceful shutdown
-	struct sigaction sa;
-	memset(&sa, 0, sizeof(sa));
-	sa.sa_handler = &Server::signalHandler;
-	sigemptyset(&sa.sa_mask);
-	sigaction(SIGINT, &sa, 0);
-	sigaction(SIGQUIT, &sa, 0);
-	sigaction(SIGTERM, &sa, 0);
+	signal(SIGINT, Server::signalHandler);
+	signal(SIGQUIT, Server::signalHandler);
+	signal(SIGTERM, Server::signalHandler);
 
 	// Ignore SIGPIPE to prevent termination on broken socket writes
 	signal(SIGPIPE, SIG_IGN);
@@ -855,8 +851,8 @@ void Server::installSignals()
 
 void Server::logClientResponse(Client &client)
 {
-	time_t end = time(NULL);
-	time_t responseTime = static_cast<time_t>(difftime(end, client.getRequestStartTime()));
+	time_t end = std::time(NULL);
+	time_t responseTime = end - client.getRequestStartTime();
 
 	const std::string &method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");

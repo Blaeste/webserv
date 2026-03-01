@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:54:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:58:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,7 +74,7 @@ public:
 	time_t getRequestStartTime() const { return _requestStartTime; }
 
 	// Setter(s) -----------------------------------------------------------
-	void updateActivity() { _lastActivity = time(NULL); }
+	void updateActivity() { _lastActivity = std::time(NULL); }
 	void setState(ClientState state) { _state = state; }
 	void setCGIProcess(CGIProcess *cgi) { _cgiProcess = cgi; }
 
