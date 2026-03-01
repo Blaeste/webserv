@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 16:20:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:34:43 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,10 +22,9 @@ std::map<int, RequestData> Logger::_activeRequests;
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";
 std::string Logger::_lastClientIP = "";
-size_t Logger::_lastSize = 0;
 size_t Logger::_requestCount = 0;
-double Logger::_minTime = std::numeric_limits<double>::max();
-double Logger::_maxTime = 0.0;
+time_t Logger::_minTime = std::numeric_limits<time_t>::max();
+time_t Logger::_maxTime = 0;
 std::string Logger::_lastServerName = "";
 int Logger::_lastServerPort = 0;
 size_t Logger::_lastEndRequestSize = std::numeric_limits<size_t>::max();
@@ -157,10 +156,10 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	// Format timing (only if completion)
 	std::stringstream timingStr;
 
-	if (includeCompletion) {
+	if (includeCompletion && _maxTime) {
 		if (_requestCount > 1 && _minTime != _maxTime)
-			timingStr << std::fixed << std::setprecision(0) << (_minTime / 1000.0) << "-";
-		timingStr << std::fixed << std::setprecision(0) << (_maxTime / 1000.0) << "s";
+			timingStr << _minTime << "-";
+		timingStr << _maxTime << "s";
 	}
 
 	// Compute upload size hint to show after URI
@@ -261,8 +260,8 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	if (_pendingRequest && !isGroupableRequest) {
 		std::cout << std::endl;
 		_currentLine++;
-		_minTime = std::numeric_limits<double>::max();
-		_maxTime = 0.0;
+		_minTime = std::numeric_limits<time_t>::max();
+		_maxTime = 0;
 		_lastEndRequestSize = std::numeric_limits<size_t>::max();
 		_lastEndStatus = -1;
 		_groupEndCount = 0;
@@ -291,12 +290,10 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 	flushRequestLine(requestId, false, 0, 0, 0);
 }
 
-void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime)
+void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime)
 {
 	if (!_pendingRequest)
 		return;
-
-	_lastSize = responseSize;
 
 	// Check if this request is part of the currently displayed group
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
@@ -317,8 +314,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		std::cout << std::endl;
 		_currentLine++;
 		_requestCount = 1;
-		_minTime = std::numeric_limits<double>::max();
-		_maxTime = 0.0;
+		_minTime = std::numeric_limits<time_t>::max();
+		_maxTime = 0;
 		_groupEndCount = 0;
 	}
 
@@ -337,8 +334,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 
 		// Save current group state
 		size_t savedCount = _requestCount;
-		double savedMin = _minTime;
-		double savedMax = _maxTime;
+		time_t savedMin = _minTime;
+		time_t savedMax = _maxTime;
 
 		// Set state for this individual request
 		_requestCount = 1;

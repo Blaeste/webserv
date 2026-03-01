@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 15:54:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:29:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,11 +20,12 @@
 #include <arpa/inet.h> // IP client
 #include <cerrno>
 #include <cstring>
+#include <ctime>
 #include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <unistd.h>
-#include <sys/wait.h>
+#include <sys/wait.h> // waitpid()
 
 // Define(s) -------------------------------------------------------------------
 # define CURSOR_HIDE "\033[?25l"
@@ -855,7 +856,7 @@ void Server::installSignals()
 void Server::logClientResponse(Client &client)
 {
 	time_t end = time(NULL);
-	double responseTime = difftime(end, client.getRequestStartTime()) * 1000.0;
+	time_t responseTime = static_cast<time_t>(difftime(end, client.getRequestStartTime()));
 
 	const std::string &method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");

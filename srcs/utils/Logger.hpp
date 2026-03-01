@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 16:20:45 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 16:34:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,10 +52,9 @@ class Logger {
 		static std::string _lastMethod; // Last logged HTTP method
 		static std::string _lastUri; // Last logged URI
 		static std::string _lastClientIP; // Last logged client IP address
-		static size_t _lastSize; // Last logged response size
 		static size_t _requestCount; // Number of grouped identical requests
-		static double _minTime; // Minimum response time in group
-		static double _maxTime; // Maximum response time in group
+		static time_t _minTime; // Minimum response time in group
+		static time_t _maxTime; // Maximum response time in group
 		static std::string _lastServerName; // Last logged server name
 		static int _lastServerPort; // Last logged server port
 		static size_t _lastEndRequestSize; // Last completed request body size
@@ -79,6 +78,6 @@ class Logger {
 		static void logRequestStart(int requestId, const std::string &method, const std::string &uri,
 							const std::string &clientIP, std::string serverName, int port,
 							size_t declaredSize = std::numeric_limits<size_t>::max());
-		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, double responseTime);
+		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime);
 		static void logMessage(const std::string &message);
 };
