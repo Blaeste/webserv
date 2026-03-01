@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 15:33:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,20 +56,16 @@ std::string Logger::formatSize(size_t bytes)
 	const size_t TB = GB * 1024;
 
 	std::stringstream ss;
-	if (bytes == std::numeric_limits<size_t>::max())
-		ss << std::string(4, ' ');
-	else if (bytes == 0)
-		ss << "  0B";
-	else if (bytes < KB)
-		ss << std::setw(3) << std::right << bytes << "B";
+	if (bytes < KB)
+		ss << bytes << "B";
 	else if (bytes < MB)
-		ss << std::setw(3) << std::right << (bytes / KB) << "K";
+		ss << (bytes / KB) << "K";
 	else if (bytes < GB)
-		ss << std::setw(3) << std::right << (bytes / MB) << "M";
+		ss << (bytes / MB) << "M";
 	else if (bytes < TB)
-		ss << std::setw(3) << std::right << (bytes / GB) << "G";
+		ss << (bytes / GB) << "G";
 	else
-		ss << std::setw(3) << std::right << (bytes / TB) << "T";
+		ss << (bytes / TB) << "T";
 	return ss.str();
 }
 
@@ -216,9 +212,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 			displayUploadSize = requestSize;
 		if (displayUploadSize != std::numeric_limits<size_t>::max()) {
 			std::string sizeStr = formatSize(displayUploadSize);
-			size_t pos = sizeStr.find_first_not_of(' ');
-			if (pos != std::string::npos)
-				sizeStr = sizeStr.substr(pos);
 			uploadHint = std::string(YELLOW) + "(" + sizeStr + ")" + RESET;
 			uploadHintPlainLen = 2 + sizeStr.length();
 		}
@@ -268,7 +261,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		output << GREY << "|" << RESET
 			   << " " << "    "
 			   << GREY << " | " << RESET
-			   << formatSize(responseSize)
+			   << std::setw(4) << std::right << formatSize(responseSize)
 			   << GREY << " | " << RESET
 			   << GREY << "→ " << RESET
 			   << statusColor << BOLD << status << RESET
