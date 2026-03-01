@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 20:59:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 21:05:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -323,7 +323,8 @@ void Server::handleClientRead(size_t clientIndex)
 		if (earlyMatch.location && earlyMatch.location->getMaxBodySize() > 0)
 			maxBodySize = earlyMatch.location->getMaxBodySize();
 
-		if (client.getRequest().getBody().size() > maxBodySize)
+		if (client.getRequest().getBody().size() > maxBodySize
+			|| (!client.getRequest().isChunked() && client.getRequest().getContentLength() > maxBodySize))
 		{
 			client.buildErrorResponse(413);
 			client.markCloseAfterResponse();
