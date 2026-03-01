@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 17:11:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 17:39:10 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -79,23 +79,41 @@ std::string Logger::getStatusColor(int statusCode)
 
 void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize)
 {
-	std::stringstream output;
-
 	// Look up request data for this specific request
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
 
 	// Get request-specific data or fall back to static variables for display
-	std::string method = (it != _activeRequests.end()) ? it->second.method : _lastMethod;
-	std::string uri = (it != _activeRequests.end()) ? it->second.uri : _lastUri;
-	std::string clientIP = (it != _activeRequests.end()) ? it->second.clientIP : _lastClientIP;
-	std::string serverName = (it != _activeRequests.end()) ? it->second.serverName : _lastServerName;
-	int serverPort = (it != _activeRequests.end()) ? it->second.serverPort : _lastServerPort;
+	std::string method = it->second.method;
+	std::string uri = it->second.uri;
+	std::string clientIP = it->second.clientIP;
+	std::string serverName = it->second.serverName;
+	int serverPort = it->second.serverPort;
 	std::string requestStartTime = _lastRequestStartTime;
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
 							  (method == "HEAD") ? CYAN : 
 							  (method == "POST") ? YELLOW : 
 							  (method == "DELETE") ? RED : GREY;
+
+	// Format server:port (right-align)
+	std::stringstream portStr;
+	portStr << ":" << serverPort;
+	std::string portPart = portStr.str();
+	size_t maxServerNameLen = 0;
+	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
+		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
+	std::string displayServerName = serverName;
+	if (displayServerName.length() > maxServerNameLen) {
+		if (maxServerNameLen < 2)
+			displayServerName = displayServerName.substr(0, maxServerNameLen);
+		else
+			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
+	}
+	std::string serverPortStr = displayServerName + portPart;
+	size_t serverPad = 0;
+	if (serverPortStr.length() < SERVER_PORT_FIELD_WIDTH)
+		serverPad = SERVER_PORT_FIELD_WIDTH - serverPortStr.length();
+	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
 
 	// Format count suffix
 	std::stringstream countStr;
@@ -113,11 +131,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		maxUriLen--;
 	if (maxUriLen < 2) maxUriLen = 2;
 
-	// Left-align client IP
-	int ipFieldWidth = 15;
-	int ipLen = clientIP.length();
-	std::string leftAlignedIP = clientIP + std::string(ipFieldWidth - ipLen > 0 ? ipFieldWidth - ipLen : 0, ' ');
-
 	// Clean URI: replace non-printable characters with '?'
 	std::string displayUri = uri;
 	for (size_t i = 0; i < displayUri.length(); i++) {
@@ -132,27 +145,6 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		else
 			displayUri = "…";
 	}
-
-	// Format server:port
-	std::stringstream portStr;
-	portStr << ":" << serverPort;
-	std::string portPart = portStr.str();
-	size_t maxServerNameLen = 0;
-	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
-		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
-	std::string displayServerName = serverName;
-	if (displayServerName.length() > maxServerNameLen) {
-		if (maxServerNameLen < 2)
-			displayServerName = displayServerName.substr(0, maxServerNameLen);
-		else
-			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
-	}
-	std::string serverPortStr = displayServerName + portPart;
-	// Right-align serverPortStr within SERVER_PORT_FIELD_WIDTH
-	size_t serverPad = 0;
-	if (serverPortStr.length() < SERVER_PORT_FIELD_WIDTH)
-		serverPad = SERVER_PORT_FIELD_WIDTH - serverPortStr.length();
-	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
@@ -213,11 +205,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	}
 
 	// Build output
-	output << "\r";
-	output << "[" << requestStartTime << "] " << GREY << "| "
-		   << CYAN << rightAlignedServerPort << RESET << " >-< "
-		   << CYAN << leftAlignedIP << GREY << " | " << RESET
-		   << methodColor << BOLD << std::setw(7) << std::right << method << RESET << " "
+	std::stringstream output;
+	output << "\r" << "[" << requestStartTime << "] " << GREY << "| "
+		   << CYAN << std::setw(SERVER_PORT_FIELD_WIDTH) << std::right << serverPortStr << RESET << " >-< "
+		   << CYAN << std::setw(IP_FIELD_WIDTH) << std::left << clientIP << GREY << " | " << RESET
+		   << methodColor << BOLD << std::setw(METHOD_FIELD_WIDTH) << std::right << method << RESET << " "
 		   << uriField.str();
 	if (includeCompletion) {
 		output << GREY << " | " << RESET
@@ -298,16 +290,13 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 
 	// Check if this request is part of the currently displayed group
 	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
-	bool isGroupedRequest = false;
-	if (it != _activeRequests.end()) {
-		isGroupedRequest = (it->second.method == _lastMethod &&
+	if (it == _activeRequests.end())
+		return; // already logged or unknown request
+	bool isGroupedRequest = (it->second.method == _lastMethod &&
 							it->second.uri == _lastUri &&
 							it->second.clientIP == _lastClientIP &&
 							it->second.serverName == _lastServerName &&
 							it->second.serverPort == _lastServerPort);
-	} else {
-		isGroupedRequest = true;
-	}
 
 	// Break the group if request body size or status differs from previous completion
 	if (isGroupedRequest && _groupEndCount > 0
