@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:58:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 19:21:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,13 @@
 #include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <arpa/inet.h> // IP client
+#include <netinet/in.h> // sockaddr_in, htons, INADDR_ANY
 #include <cerrno>
 #include <cstring>
 #include <ctime>
 #include <iostream>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <unistd.h>
 #include <sys/wait.h> // waitpid()
@@ -220,8 +221,11 @@ void Server::acceptNewClient(int listenSocket)
 	}
 
 	// Get client IP
-	char clientIp[INET_ADDRSTRLEN];
-	inet_ntop(AF_INET, &clientAddr.sin_addr, clientIp, INET_ADDRSTRLEN);
+	unsigned char *ip = reinterpret_cast<unsigned char *>(&clientAddr.sin_addr);
+	std::stringstream ipStream;
+	ipStream << static_cast<int>(ip[0]) << "." << static_cast<int>(ip[1]) << "."
+			 << static_cast<int>(ip[2]) << "." << static_cast<int>(ip[3]);
+	std::string clientIp = ipStream.str();
 
 	// Set the client socket to non-blocking mode
 	try
