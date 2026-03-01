@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 17:34:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/01 18:14:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,10 +47,13 @@ struct RequestData {
 class Logger {
 	private:
 		// Attribute(s) --------------------------------------------------------
-		static const size_t URI_FIELD_WIDTH = 55;
 		static const size_t SERVER_PORT_FIELD_WIDTH = 20;
 		static const size_t IP_FIELD_WIDTH = 15;
 		static const size_t METHOD_FIELD_WIDTH = 7;
+		static const size_t URI_FIELD_WIDTH = 55;
+		static const size_t RESPONSE_SIZE_FIELD_WIDTH = 4;
+		static const size_t STATUS_FIELD_WIDTH = 5;
+
 		static std::map<int, RequestData> _activeRequests; // Track each request's data by socket
 		static std::string _lastMethod; // Last logged HTTP method
 		static std::string _lastUri; // Last logged URI
