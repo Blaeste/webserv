@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 11:33:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -342,7 +342,7 @@ void Server::handleClientRead(size_t clientIndex)
 		if (client.getRequest().getBody().size() > maxBodySize
 			|| (!client.getRequest().isChunked() && client.getRequest().getContentLength() > maxBodySize))
 		{
-			client.buildErrorResponse(413);
+			client.buildErrorResponse(413, earlyCfg);
 			client.markCloseAfterResponse();
 			// Log the oversized request early rejection
 			if (earlyCfg)
@@ -368,7 +368,7 @@ void Server::handleClientRead(size_t clientIndex)
 		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
 		if (!config)
 		{
-			client.buildErrorResponse(500);
+			client.buildErrorResponse(500, NULL);
 			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 			return;
@@ -384,7 +384,7 @@ void Server::handleClientRead(size_t clientIndex)
 		// Enforce configured body size limit before routing/CGI
 		if (request.getBody().size() > maxBodySize)
 		{
-			client.buildErrorResponse(413);
+			client.buildErrorResponse(413, config);
 			client.markCloseAfterResponse();
 			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = POLLOUT;
@@ -413,7 +413,7 @@ void Server::handleClientRead(size_t clientIndex)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
 			else
 			{
-				client.buildErrorResponse(500);
+				client.buildErrorResponse(500, config);
 				client.setState(STATE_KEEPALIVE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 				return;
@@ -510,7 +510,7 @@ void Server::handleClientWrite(size_t clientIndex)
 		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
 		if (!cfg)
 		{
-			client.buildErrorResponse(500);
+			client.buildErrorResponse(500, NULL);
 			client.markCloseAfterResponse();
 			_pollFds[clientIndex].events = POLLIN | POLLOUT;
 			return;
@@ -600,10 +600,10 @@ void Server::handleCGITimeouts()
 			}
 
 			// Build 504 Gateway Timeout response
-			client.buildErrorResponse(504);
+			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+			client.buildErrorResponse(504, cfg);
 
 			// Log the timeout event so it appears in server logs
-			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
 			if (cfg)
 				Server::logClientResponse(client);
 
@@ -731,7 +731,10 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
 
 				if (cgiError)
-					client.buildErrorResponse(500);
+				{
+					const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+					client.buildErrorResponse(500, cfg);
+				}
 				else
 				{
 					CGIResult result;

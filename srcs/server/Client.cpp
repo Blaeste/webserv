@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:58:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,7 @@ bool Client::readData(const ServerConfig *config)
 		_requestComplete = true;
 		if (_request.getErrorCode())
 		{
-			buildErrorResponse(_request.getErrorCode());
+			buildErrorResponse(_request.getErrorCode(), config);
 			markCloseAfterResponse();
 			_responseReady = true;
 
@@ -123,7 +123,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	if (_request.getBody().size() > maxBodySize)
 	{
-		buildErrorResponse(413);
+		buildErrorResponse(413, &config);
 		markCloseAfterResponse();
 		_responseReady = true;
 		applyConnectionHeader();
@@ -210,11 +210,39 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	applyConnectionHeader();
 }
 
-void Client::buildErrorResponse(int statusCode)
+void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
-	std::string errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+
+	std::string errorPage;
+
+	// 1. Check custom error page from server configuration
+	if (config)
+	{
+		std::string customPath = config->getErrorPage(statusCode);
+		if (!customPath.empty())
+		{
+			// Resolve against the root of the first location (typically "/")
+			const std::vector<Location> &locations = config->getLocations();
+			for (size_t i = 0; i < locations.size(); ++i)
+			{
+				if (locations[i].getPath() == "/")
+				{
+					errorPage = locations[i].getRoot() + customPath;
+					break;
+				}
+			}
+			// If no "/" location found, try with customPath as-is (relative)
+			if (errorPage.empty())
+				errorPage = "." + customPath;
+		}
+	}
+
+	// 2. Fallback to default hardcoded path
+	if (errorPage.empty())
+		errorPage = "www/error_pages/" + intToString(statusCode) + ".html";
+
 	if (fileExists(errorPage))
 	{
 		try

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:58:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -121,8 +121,9 @@ public:
 	/**
 	 * @brief Builds an HTTP error response with the specified status code
 	 * @param statusCode HTTP status code for the error response
+	 * @param config Optional server config to resolve custom error pages
 	 */
-	void buildErrorResponse(int statusCode);
+	void buildErrorResponse(int statusCode, const ServerConfig *config = NULL);
 
 	/**
 	 * @brief Sends the HTTP response to the client socket
