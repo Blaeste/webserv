@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 21:14:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,13 +19,8 @@
 #include <ctime>
 #include <map>
 #include <poll.h>
-#include <csignal>
 #include <string>
 #include <vector>
-#include <algorithm>
-
-// Forward declaration(s) ------------------------------------------------------
-class HttpRequest;
 
 // Structure(s) ****************************************************************
 struct SessionData {

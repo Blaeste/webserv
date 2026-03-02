@@ -6,16 +6,15 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 12:41:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Logger.hpp"
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
-#include <limits>
 
 // Static variables initialization ---------------------------------------------
 std::map<int, RequestData> Logger::_activeRequests;

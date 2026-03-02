@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 21:13:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,13 +18,11 @@
 #include "../utils/Logger.hpp"
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <fcntl.h>
 #include <iostream>
 #include <csignal>
 #include <sys/wait.h>
 #include <unistd.h>
-#include <vector>
 #include <cerrno>
 
 // Private method(s) -----------------------------------------------------------

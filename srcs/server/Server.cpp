@@ -6,22 +6,21 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Server.hpp"
 #include "../cgi/CGI.hpp"
-#include "../http/HttpRequest.hpp"
-#include "../http/HttpResponse.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <netinet/in.h> // sockaddr_in, htons, INADDR_ANY
+#include <algorithm>
 #include <cerrno>
+#include <csignal>
 #include <cstring>
-#include <ctime>
 #include <iostream>
+#include <netinet/in.h> // sockaddr_in, htons, INADDR_ANY
 #include <limits>
 #include <sstream>
 #include <stdexcept>
