@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:15:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,12 +88,12 @@ void Server::run()
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size();) // Pas de i++ ici !
+		for (size_t i = 0; i < _pollFds.size();) // no i++ here !
 		{
 			int revents = _pollFds[i].revents;
 			if (!revents)
 			{
-				i++; // Seulement si pas d'événement
+				i++; // Only if no event
 				continue;
 			}
 			int fd = _pollFds[i].fd;
@@ -275,7 +275,7 @@ void Server::handleClientTimeouts()
 			int fd = it->first;
 
 			Client &client = it->second;
-			Server::logClientResponse(client); // AJOUT LOG ICI (POSSIBLE DOUBLONS)
+			Server::logClientResponse(client);
 
 			++it;
 			for (size_t j = 0; j < _pollFds.size(); j++)

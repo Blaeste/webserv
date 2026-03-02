@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: lmarck <lmarck@42.fr>                      +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/22 14:03:56 by lmarck           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:22:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,12 +212,10 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 			for (size_t i = 0; i < key.length(); i++)
 			{
 				unsigned char c = static_cast<unsigned char>(key[i]);
-				bool isValid = (c >= 'a' && c <= 'z') || // lettres minuscules
-							   (c >= 'A' && c <= 'Z') || // lettres majuscules
-							   (c >= '0' && c <= '9') || // chiffres
-							   c == '!' || c == '#' || c == '$' || c == '%' || c == '&' ||
-							   c == '\'' || c == '*' || c == '+' || c == '-' || c == '.' ||
-							   c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
+				bool isValid = std::isalnum(c)
+					|| c == '!' || c == '#' || c == '$' || c == '%' || c == '&'
+					|| c == '\'' || c == '*' || c == '+' || c == '-' || c == '.'
+					|| c == '^' || c == '_' || c == '`' || c == '|' || c == '~';
 
 				if (!isValid)
 					return setError(400); // Bad request
@@ -295,7 +293,7 @@ bool HttpRequest::parseChunked()
 			_chunkParsePos = pos + 2;
 			_chunkDone = true;
 			_isComplete = true;
-			_consumedBytes = _chunkParsePos; // Fin exacte après "0\r\n\r\n"
+			_consumedBytes = _chunkParsePos; // Exact end after "0\r\n\r\n"
 			return true;
 		}
 

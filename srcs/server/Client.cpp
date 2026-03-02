@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:16:04 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -318,7 +318,7 @@ void Client::resetForNextRequest()
 	_bytesSent = 0;
 	_requestStartTime = 0;
 
-	// Réinjecte les octets déjà reçus pour la requête suivante
+	// Re-inject already received bytes for next request
 	std::string tmp = _pendingInput;
 	_pendingInput.clear();
 	if (!tmp.empty())
@@ -333,7 +333,7 @@ void Client::resetForNextRequest()
 
 void Client::applyConnectionHeader()
 {
-	// Si déjà marqué pour fermeture, force le header close
+	// If already marked for closure, force close header
 	if (_closeAfterResponse)
 	{
 		_response.setHeader("Connection", "close");
@@ -342,9 +342,9 @@ void Client::applyConnectionHeader()
 
 	std::string conn = toLowercase(trim(_request.getHeader("connection")));
 	if (_request.getVersion() == "HTTP/1.1")
-		_closeAfterResponse = (conn == "close"); // keep-alive par défaut
+		_closeAfterResponse = (conn == "close"); // keep-alive by default
 	else
-		_closeAfterResponse = (conn != "keep-alive"); // HTTP/1.0 => close par défaut
+		_closeAfterResponse = (conn != "keep-alive"); // HTTP/1.0 => close by default
 
 	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
 }

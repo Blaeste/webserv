@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 12:10:58 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/02 14:23:37 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,7 +35,7 @@ YELLOW = '\033[93m'
 BLUE = '\033[94m'
 RESET = '\033[0m'
 
-# Dictionnaire pour stocker les resultats des tests
+# Dictionary to store test results
 test_results = {}
 
 def check_and_install_dependencies():
