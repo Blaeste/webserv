@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 11:22:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 11:33:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,7 +102,7 @@ void Server::run()
 
 			// Handle unexpected disconnection / socket errors early
 			// POLLERR/POLLHUP without POLLIN could cause a busy-loop
-			if ((revents & (POLLERR | POLLHUP | POLLNVAL)) && !(revents & (POLLIN | POLLOUT)))
+			if ((revents & (POLLERR | POLLHUP | POLLNVAL)) && !(revents & POLLIN))
 			{
 				if (type == SOCKET_CLIENT)
 				{
@@ -313,6 +313,7 @@ void Server::handleClientRead(size_t clientIndex)
 	// Read data from socket
 	if (!client.readData(config))
 	{
+		Server::logClientResponse(client);
 		removeClient(clientFd, clientIndex);
 		return;
 	}
