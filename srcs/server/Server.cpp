@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 21:05:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 11:22:01 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,6 +99,21 @@ void Server::run()
 			}
 			int fd = _pollFds[i].fd;
 			SocketType type = _socketTypes[fd];
+
+			// Handle unexpected disconnection / socket errors early
+			// POLLERR/POLLHUP without POLLIN could cause a busy-loop
+			if ((revents & (POLLERR | POLLHUP | POLLNVAL)) && !(revents & (POLLIN | POLLOUT)))
+			{
+				if (type == SOCKET_CLIENT)
+				{
+					std::map<int, Client>::iterator it = _clients.find(fd);
+					if (it != _clients.end())
+						Server::logClientResponse(it->second);
+					removeClient(fd, i);
+					continue;
+				}
+				// SOCKET_CGI: handled below by handleCGIPipe() which already checks POLLHUP/POLLERR
+			}
 
 			size_t oldSize = _pollFds.size(); // Remember size
 
@@ -711,7 +726,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				}
 
 				bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos) || 
-				                      (cgi->output.find("Content-type:") != std::string::npos);
+									  (cgi->output.find("Content-type:") != std::string::npos);
 				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
 
 				if (cgiError)
