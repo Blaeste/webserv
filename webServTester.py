@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 14:23:37 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/02 14:40:14 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -39,7 +39,7 @@ RESET = '\033[0m'
 test_results = {}
 
 def check_and_install_dependencies():
-	"""Check dependencies and install it"""
+	"""Check dependencies and install them if missing"""
 	tools = {
 		'netstat': 'net-tools',
 		'siege': 'siege',
@@ -76,7 +76,7 @@ def test(name, condition, details=""):
 		test_results[name] = {"status": "failed", "details": details}
 
 def test_error(name, error_msg=""):
-	"""Test who cause timeout or exception"""
+	"""Record a test that caused a timeout or exception"""
 	global FAILED, test_results
 	print(f"{YELLOW}⚠{RESET} {name} (error/timeout)")
 	if error_msg:
@@ -85,55 +85,55 @@ def test_error(name, error_msg=""):
 	test_results[name] = {"status": "error", "details": error_msg}
 
 def safe_get(url, **kwargs):
-	"""GET avec timeout par défaut"""
+	"""GET with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.get(url, **kwargs)
 
 def safe_post(url, **kwargs):
-	"""POST avec timeout par défaut"""
+	"""POST with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.post(url, **kwargs)
 
 def safe_delete(url, **kwargs):
-	"""DELETE avec timeout par défaut"""
+	"""DELETE with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.delete(url, **kwargs)
 
 def safe_put(url, **kwargs):
-	"""PUT avec timeout par défaut"""
+	"""PUT with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.put(url, **kwargs)
 
 def safe_head(url, **kwargs):
-	"""HEAD avec timeout par défaut"""
+	"""HEAD with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.head(url, **kwargs)
 
 def safe_options(url, **kwargs):
-	"""OPTIONS avec timeout par défaut"""
+	"""OPTIONS with default timeout"""
 	kwargs.setdefault('timeout', TIMEOUT)
 	return requests.options(url, **kwargs)
 
 def run_test(func):
-	"""Wrapper pour exécuter un test avec gestion d'erreur"""
+	"""Wrapper to execute a test with error handling"""
 	try:
 		func()
 	except Exception as e:
 		test_error(f"{func.__name__} - Exception: {str(e)[:50]}")
 
 # ============================================================================
-# PARTIE 1: MANDATORY PART - CODE CHECKS
+# PART 1: MANDATORY PART - CODE CHECKS
 # ============================================================================
 
 def test_code_poll_in_loop():
-	"""Check poll() dans la boucle principale"""
+	"""Check poll() is used in the main loop"""
 	result = subprocess.run(['grep', '-n', 'poll(', 'srcs/server/Server.cpp'],
 						  capture_output=True, text=True)
 	test("poll() found in Server.cpp", len(result.stdout) > 0,
 		 f"Found {len(result.stdout.splitlines())} occurrences")
 
 def test_code_poll_read_write():
-	"""Check poll() vérifie READ et WRITE simultanément"""
+	"""Check poll() monitors both READ and WRITE simultaneously"""
 	result = subprocess.run(['grep', '-E', 'POLLIN|POLLOUT', 'srcs/server/Server.cpp'],
 						  capture_output=True, text=True)
 	has_pollin = 'POLLIN' in result.stdout
@@ -142,12 +142,12 @@ def test_code_poll_read_write():
 		 f"POLLIN: {has_pollin}, POLLOUT: {has_pollout}")
 
 def test_code_compilation():
-	"""Test compilation sans re-link"""
+	"""Test compilation without re-link"""
 	import os
 	# Clean first to ensure we actually compile
 	subprocess.run(['make', 'fclean'], capture_output=True, text=True, cwd='.')
 
-	# Première compilation
+	# First compilation
 	result1 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
 
 	# Get timestamp of executable after first compilation
@@ -160,7 +160,7 @@ def test_code_compilation():
 	# Wait a bit to ensure timestamp would change if relinked
 	time.sleep(0.1)
 
-	# Deuxième make (ne devrait rien faire)
+	# Second make (should be a no-op)
 	result2 = subprocess.run(['make'], capture_output=True, text=True, cwd='.')
 
 	# Get timestamp after second make
@@ -173,11 +173,11 @@ def test_code_compilation():
 	test("Compilation without re-link", result1.returncode == 0 and no_relink, details)
 
 # ============================================================================
-# PARTIE 2: CONFIGURATION
+# PART 2: CONFIGURATION
 # ============================================================================
 
 def test_config_multiple_ports():
-	"""Test multiple ports avec différents sites"""
+	"""Test multiple ports with different sites"""
 	ports = [8080, 8081, 8082]
 	for port in ports:
 		try:
@@ -187,21 +187,21 @@ def test_config_multiple_ports():
 			test(f"Port {port} is accessible", False, f"Port {port} not responding")
 
 def test_config_virtual_hosts():
-	"""Test virtual hosts avec Host header différent"""
-	# Test avec Host header custom
+	"""Test virtual hosts with different Host headers"""
+	# Test with custom Host header
 	headers = {'Host': 'example.com'}
 	r = safe_get(f"{BASE_URL}/", headers=headers)
 	test("Virtual host with custom Host header", r.status_code in [200, 404],
 		 f"Got {r.status_code}")
 
-	# Test avec Host header normal
+	# Test with normal Host header
 	headers = {'Host': 'localhost'}
 	r2 = safe_get(f"{BASE_URL}/", headers=headers)
 	test("Virtual host with localhost Host header", r2.status_code == 200,
 		 f"Got {r2.status_code}")
 
 def test_config_routes_directories():
-	"""Test routes vers différents répertoires"""
+	"""Test routes to different directories"""
 	routes = [
 		('/', 'www/'),
 		('/uploads/', 'uploads/'),
@@ -242,7 +242,7 @@ def test_get_pages():
 		test(f"GET /{page} return 200", r.status_code == 200)
 
 def test_response_body_content():
-	# Test aue le body contient biend u contenu
+	# Test that the body actually contains content
 	r = safe_get(f"{BASE_URL}/")
 	test("GET / body is not empty", len(r.text) > 0)
 	test("GET / body contains 'webserv' or title", any(word in r.text.lower() for word in ['webserv', 'title', 'html']))
@@ -254,26 +254,26 @@ def test_response_body_content():
 
 
 def test_post_upload():
-	# Upload un fichier texte
+	# Upload a text file
 	files = {'file': ('test_upload.txt', 'Hello form tester!', 'text/plain')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
 	test("POST file upload return 200 or 201", r.status_code in [200, 201], f"Got {r.status_code}")
 
-	# Verifie aue le fichier existe
+	# Verify the file exists
 	r = safe_get(f"{BASE_URL}/uploads/test_upload.txt")
 	test("Upload file is accessible", r.status_code == 200)
-	# Note: pas de delete ici, test_delete() va le supprimer
+	# Note: no delete here, test_delete() will remove it
 
 def test_post_cgi_python():
 	r = safe_post(f"{BASE_URL}/cgi-bin/py/contact.py", data={'name': 'Test', 'email': 'test@test.com', 'message': 'Hello world form contact cgi test'})
 	test("POST CGI Python return 200", r.status_code == 200)
 
 def test_delete():
-	# supprime le texte du test upload avant
+	# Delete the file from upload test first
 	r = safe_delete(f"{BASE_URL}/uploads/test_upload.txt")
 	test("DELETE file return 200 or 204", r.status_code in [200, 204], f"Got {r.status_code}")
 
-	# Verifie au'il est bien supprimer
+	# Verify it is actually deleted
 	r = safe_get(f"{BASE_URL}/uploads/test_upload.txt")
 	test("Deleted file return 404", r.status_code == 404)
 
@@ -286,7 +286,7 @@ def test_method_not_allowed():
 		test("405 response has Allow header", "Allow" in r.headers, f"Headers: {r.headers}")
 
 def test_unknown_method_no_crash():
-	"""Test méthode UNKNOWN (FOOBAR) et vérifier pas de crash"""
+	"""Test UNKNOWN method (FOOBAR) and verify no crash"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -298,7 +298,7 @@ def test_unknown_method_no_crash():
 		test("UNKNOWN method returns 501 or 405", b"501" in response or b"405" in response,
 			 f"Response: {response[:100]}")
 
-		# Vérifier que le serveur répond toujours
+		# Verify the server still responds
 		time.sleep(0.5)
 		r = safe_get(f"{BASE_URL}/")
 		test("Server still running after UNKNOWN method", r.status_code == 200,
@@ -307,7 +307,7 @@ def test_unknown_method_no_crash():
 		test_error("UNKNOWN method test", str(e)[:50])
 
 def test_autoindex():
-	# Test autoindex on ulpoads
+	# Test autoindex on uploads
 	r = safe_get(f"{BASE_URL}/uploads/")
 	test("GET /uploads/ with autoindex return 200", r.status_code == 200)
 	test("Autoindex contains directory listing", "index of" in r.text.lower() or "directory" in r.text.lower())
@@ -323,7 +323,7 @@ def test_http_headers():
 	test("Response has Connection header", "Connection" in r.headers)
 
 def test_keep_alive():
-	# Session pour garder la co
+	# Session to keep the connection alive
 	session = requests.Session()
 
 	r1 = session.get(f"{BASE_URL}/")
@@ -335,7 +335,7 @@ def test_keep_alive():
 	session.close()
 
 def test_cgi_errors():
-	#Test CGI qui timeout
+	#Test CGI that times out
 	r =safe_get(f"{BASE_URL}/cgi-bin/py/timeout.py", timeout=10)
 	test("CGI timeout return 504", r.status_code == 504, f"Got {r.status_code}")
 
@@ -344,12 +344,12 @@ def test_cgi_errors():
 	test("CGI error return 500", r.status_code == 500, f"Got {r.status_code} (TODO: fix server)")
 
 # ============================================================================
-# PARTIE 4: CHECK CGI - ADVANCED TESTS
+# PART 4: CHECK CGI - ADVANCED TESTS
 # ============================================================================
 
 def test_cgi_working_directory():
-	"""Test CGI s'exécute dans le bon répertoire"""
-	# Créer un script qui affiche son pwd
+	"""Test CGI runs in the correct directory"""
+	# Create a script that prints its pwd
 	script_content = '''#!/usr/bin/env python3
 import os
 print("Content-Type: text/plain\\r")
@@ -374,8 +374,8 @@ print(f"PWD: {os.getcwd()}")
 		pass
 
 def test_cgi_syntax_error():
-	"""Test CGI avec erreur de syntaxe"""
-	# Créer un script avec erreur de syntaxe
+	"""Test CGI with syntax error"""
+	# Create a script with a syntax error
 	script_content = '''#!/usr/bin/env python3
 print("Content-Type: text/plain\\r")
 print("\\r")
@@ -390,7 +390,7 @@ print("Should not reach here")
 	r = safe_get(f"{BASE_URL}/cgi-bin/py/test_syntax_error.py")
 	test("CGI syntax error returns 500", r.status_code == 500, f"Got {r.status_code}")
 
-	# Vérifier que le serveur répond toujours
+	# Verify the server still responds
 	r2 = safe_get(f"{BASE_URL}/")
 	test("Server still running after CGI syntax error", r2.status_code == 200)
 
@@ -401,7 +401,7 @@ print("Should not reach here")
 		pass
 
 def test_cgi_runtime_error():
-	"""Test CGI avec erreur runtime (division by zero)"""
+	"""Test CGI with runtime error (division by zero)"""
 	script_content = '''#!/usr/bin/env python3
 print("Content-Type: text/plain\\r")
 print("\\r")
@@ -417,7 +417,7 @@ print("After crash")
 	r = safe_get(f"{BASE_URL}/cgi-bin/py/test_runtime_error.py")
 	test("CGI runtime error returns 500", r.status_code == 500, f"Got {r.status_code}")
 
-	# Vérifier que le serveur répond toujours
+	# Verify the server still responds
 	r2 = safe_get(f"{BASE_URL}/")
 	test("Server still running after CGI runtime error", r2.status_code == 200)
 
@@ -428,7 +428,7 @@ print("After crash")
 		pass
 
 def test_cgi_missing_shebang():
-	"""Test CGI sans shebang"""
+	"""Test CGI without shebang"""
 	script_content = '''print("Content-Type: text/plain\\r")
 print("\\r")
 print("No shebang")
@@ -528,7 +528,7 @@ server {{
 		shutil.rmtree(tmpdir, ignore_errors=True)
 
 def test_cgi_get_with_query():
-	"""Test CGI avec paramètres GET détaillés"""
+	"""Test CGI with detailed GET parameters"""
 	script_content = '''#!/usr/bin/env python3
 import os
 print("Content-Type: text/plain\\r")
@@ -554,7 +554,7 @@ print(f"REQUEST_METHOD: {os.environ.get('REQUEST_METHOD', 'None')}")
 		pass
 
 def test_cgi_post_with_body():
-	"""Test CGI POST reçoit bien le body"""
+	"""Test CGI POST properly receives the body"""
 	script_content = '''#!/usr/bin/env python3
 import sys
 import os
@@ -612,7 +612,7 @@ def test_chunked_encoding():
 		test_error("test_chunked_encoding", str(e)[:100])
 
 def test_large_file_upload():
-	# Upload un fichier plus gros (1MB)
+	# Upload a bigger file (1MB)
 	big_content = 'x' * (1024 * 1024) # 1 MB
 	files = {'file': ('big_file.txt', big_content, 'text/plain')}
 
@@ -624,7 +624,7 @@ def test_large_file_upload():
 		safe_delete(f"{BASE_URL}/uploads/big_file.txt")
 
 def test_multiple_requests():
-	# Test plusieurs requetes rapides
+	# Test multiple rapid requests
 	for i in range(5):
 		r = safe_get(f"{BASE_URL}/")
 		test(f"Rapid request #{i+1} return 200", r.status_code == 200)
@@ -638,7 +638,7 @@ def test_security_path_traversal():
 	test("Config file not accessible via path traversal", r.status_code in [403, 404])
 
 def test_malformed_requests():
-	# Requête sans Host header (HTTP/1.1 require Host)
+	# Request without Host header (HTTP/1.1 requires Host)
 	try:
 		import socket
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -652,11 +652,11 @@ def test_malformed_requests():
 		test("Malformed request test failed (connection issue)", False)
 
 def test_empty_requests():
-	# Body vide
+	# Empty body
 	r = safe_post(f"{BASE_URL}/", data="")
 	test("POST with empty body returns 200", r.status_code in [200, 201])
 
-	# GET avec query string vide
+	# GET with empty query string
 	r = safe_get(f"{BASE_URL}/?")
 	test("GET with empty query string returns 200", r.status_code == 200)
 
@@ -665,7 +665,7 @@ def test_special_characters():
 	r = safe_get(f"{BASE_URL}/text/test.txt?param=hello%20world")
 	test("URL with encoded spaces returns 200", r.status_code == 200)
 
-	# Caractères spéciaux dans filename
+	# Special characters in filename
 	files = {'file': ('test file with spaces.txt', 'content', 'text/plain')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
 	test("Upload file with spaces in name", r.status_code in [200, 201])
@@ -678,7 +678,7 @@ def test_special_characters():
 			safe_delete(f"{BASE_URL}/uploads/test%20file%20with%20spaces.txt")
 
 def test_multiple_file_upload():
-	# Upload plusieurs fichiers
+	# Upload multiple files
 	files = [
 		('file', ('file1.txt', 'Content 1', 'text/plain')),
 		('file', ('file2.txt', 'Content 2', 'text/plain'))
@@ -692,7 +692,7 @@ def test_multiple_file_upload():
 		safe_delete(f"{BASE_URL}/uploads/file2.txt")
 
 def test_concurrent_requests():
-	# Test requêtes concurrentes avec threads
+	# Test concurrent requests with threads
 	import threading
 	results = []
 
@@ -712,13 +712,13 @@ def test_concurrent_requests():
 	test("10 concurrent requests all succeed", all(results))
 
 def test_long_url():
-	# URL très longue
+	# Very long URL
 	long_path = "/text/" + "a" * 1000 + ".txt"
 	r = safe_get(f"{BASE_URL}{long_path}")
 	test("Long URL returns 404 or 414", r.status_code in [404, 414])
 
 def test_post_without_content_type():
-	# POST sans Content-Type
+	# POST without Content-Type
 	r = safe_post(f"{BASE_URL}/", data="raw data")
 	test("POST without explicit Content-Type handled", r.status_code in [200, 201, 400])
 
@@ -749,7 +749,7 @@ def test_cgi_get_params():
 	test("CGI with GET params returns 200", r.status_code == 200)
 
 def test_binary_file():
-	# Upload fichier binaire
+	# Upload binary file
 	binary_content = bytes(range(256))
 	files = {'file': ('binary.bin', binary_content, 'application/octet-stream')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
@@ -760,23 +760,23 @@ def test_binary_file():
 		safe_delete(f"{BASE_URL}/uploads/binary.bin")
 
 def test_error_pages_custom():
-	# Test que les pages d'erreur personnalisées sont bien servies
+	# Test that custom error pages are properly served
 	r = safe_get(f"{BASE_URL}/page_inexistante.html")
 	test("Custom 404 error page served", r.status_code == 404, f"Got {r.status_code}")
 	test("Custom 404 contains custom content", "404" in r.text or "not found" in r.text.lower())
 
 def test_post_max_body():
-	# Test avec fichier juste sous la limite (10M dans config)
+	# Test with a file just under the limit (10M in config)
 	medium_data = 'x' * (9 * 1024 * 1024)  # 9MB
 	r = safe_post(f"{BASE_URL}/", data=medium_data, timeout=15)
 	test("POST with 9MB (under limit) succeeds", r.status_code in [200, 201], f"Got {r.status_code}")
 
 def test_persistent_upload():
-	# Vérifie que les fichiers uploadés persistent
+	# Verify that uploaded files persist
 	files = {'file': ('persistent.txt', 'Should persist', 'text/plain')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
 
-	# Deuxième GET pour vérifier persistence
+	# Second GET to verify persistence
 	r = safe_get(f"{BASE_URL}/uploads/persistent.txt")
 	test("Uploaded file persists", r.status_code == 200, f"Got {r.status_code}")
 	test("File content is correct", "Should persist" in r.text)
@@ -795,7 +795,7 @@ def test_persistent_upload():
 		test_error("Invalid HTTP version test", str(e)[:50])
 
 def test_large_headers():
-	# Headers très longs
+	# Very long headers
 	long_header = 'x' * 8000
 	headers = {'X-Custom-Header': long_header}
 	r = safe_get(f"{BASE_URL}/", headers=headers)
@@ -816,13 +816,13 @@ def test_invalid_http_version():
 		test_error("Invalid HTTP version rejected", str(e))
 
 def test_multiple_cookies():
-	# Test avec plusieurs cookies
+	# Test with multiple cookies
 	cookies = {'session': 'abc123', 'user': 'test', 'lang': 'fr'}
 	r = safe_get(f"{BASE_URL}/", cookies=cookies)
 	test("Multiple cookies handled", r.status_code == 200, f"Got {r.status_code}")
 
 def test_post_json():
-	# Test POST avec JSON
+	# Test POST with JSON
 	import json
 	data = json.dumps({'key': 'value', 'number': 42})
 	headers = {'Content-Type': 'application/json'}
@@ -830,7 +830,7 @@ def test_post_json():
 	test("POST JSON data handled", r.status_code in [200, 201, 415], f"Got {r.status_code}")
 
 def test_empty_file_upload():
-	# Upload fichier vide
+	# Upload empty file
 	files = {'file': ('empty.txt', '', 'text/plain')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
 	test("Empty file upload handled", r.status_code in [200, 201, 400], f"Got {r.status_code}")
@@ -840,12 +840,12 @@ def test_empty_file_upload():
 		safe_delete(f"{BASE_URL}/uploads/empty.txt")
 
 def test_filename_security():
-	# Upload avec nom de fichier dangereux
+	# Upload with dangerous filename
 	files = {'file': ('../../../etc/passwd', 'hacked', 'text/plain')}
 	r = safe_post(f"{BASE_URL}/uploads", files=files)
 	test("Dangerous filename rejected or sanitized", r.status_code in [200, 201, 400, 403], f"Got {r.status_code}")
 
-	# Cleanup - essayer de supprimer les noms possibles
+	# Cleanup - try to delete possible filenames
 	if r.status_code in [200, 201]:
 		try:
 			safe_delete(f"{BASE_URL}/uploads/_________etc_passwd")
@@ -853,23 +853,23 @@ def test_filename_security():
 			pass
 
 def test_query_string_complex():
-	# Query string avec caractères spéciaux
+	# Query string with special characters
 	r = safe_get(f"{BASE_URL}/?param1=value1&param2=hello%20world&param3=a%26b")
 	test("Complex query string handled", r.status_code == 200, f"Got {r.status_code}")
 
 def test_fragment_in_url():
-	# Fragment dans URL (après #)
+	# Fragment in URL (after #)
 	r = safe_get(f"{BASE_URL}/index.html#section1")
 	test("URL with fragment handled", r.status_code == 200, f"Got {r.status_code}")
 
 def test_trailing_slash_redirect():
-	# Test comportement avec/sans trailing slash
+	# Test behavior with/without trailing slash
 	r1 = safe_get(f"{BASE_URL}/uploads")
 	r2 = safe_get(f"{BASE_URL}/uploads/")
 	test("Trailing slash consistency", r1.status_code in [200, 301, 302, 404] and r2.status_code in [200, 301, 302, 404])
 
 def test_different_line_endings():
-	# Test requête avec LF au lieu de CRLF
+	# Test request with LF instead of CRLF
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -885,18 +885,18 @@ def test_different_line_endings():
 		test_error("Line endings test", str(e)[:50])
 
 def test_request_with_body_on_get():
-	# GET avec body (techniquement permis mais inhabituel)
+	# GET with body (technically allowed but unusual)
 	r = safe_get(f"{BASE_URL}/", data="unexpected body")
 	test("GET with body handled", r.status_code in [200, 400], f"Got {r.status_code}")
 
 def test_zero_content_length():
-	# POST avec Content-Length: 0
+	# POST with Content-Length: 0
 	headers = {'Content-Length': '0'}
 	r = safe_post(f"{BASE_URL}/", headers=headers)
 	test("POST with Content-Length 0 handled", r.status_code in [200, 201, 400], f"Got {r.status_code}")
 
 def test_duplicate_headers():
-	# Headers dupliqués
+	# Duplicate headers
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -910,14 +910,14 @@ def test_duplicate_headers():
 		test_error("Duplicate headers test", str(e)[:50])
 
 def test_missing_crlf():
-	# Requête sans double CRLF à la fin
+	# Request without double CRLF at the end
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		s.settimeout(2)
 		s.connect(('localhost', 8080))
 		s.send(b"GET / HTTP/1.1\r\nHost: localhost\r\n")
-		# Pas de \r\n\r\n final
+		# No final \r\n\r\n
 		response = s.recv(1024)
 		s.close()
 		test("Missing final CRLF handled", len(response) > 0 or True)
@@ -927,13 +927,13 @@ def test_missing_crlf():
 		test_error("Missing CRLF test", str(e)[:50])
 
 def test_very_long_uri():
-	# URI extrêmement long (>8KB)
+	# Extremely long URI (>8KB)
 	long_uri = "/text/" + "a" * 10000 + ".txt"
 	r = safe_get(f"{BASE_URL}{long_uri}")
 	test("Very long URI returns 414 or 404", r.status_code in [414, 404], f"Got {r.status_code}")
 
 def test_null_byte_in_url():
-	# Null byte dans URL
+	# Null byte in URL
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -960,7 +960,7 @@ def test_expect_100_continue():
 	test("Expect: 100-continue handled", r.status_code in [100, 200, 201, 417], f"Got {r.status_code}")
 
 def test_range_request():
-	# Test requête avec Range header (si supporté)
+	# Test request with Range header (if supported)
 	headers = {'Range': 'bytes=0-100'}
 	r = safe_get(f"{BASE_URL}/text/test.txt", headers=headers)
 	test("Range request handled", r.status_code in [200, 206, 416], f"Got {r.status_code}")
@@ -972,7 +972,7 @@ def test_if_modified_since():
 	test("If-Modified-Since handled", r.status_code in [200, 304], f"Got {r.status_code}")
 
 def test_slow_client():
-	# Client qui envoie très lentement
+	# Client that sends very slowly
 	import socket
 	import time
 	try:
@@ -989,7 +989,7 @@ def test_slow_client():
 		test_error("Slow client test", str(e)[:50])
 
 def test_pipelined_requests():
-	# Requêtes HTTP pipelinées (plusieurs requêtes d'un coup)
+	# HTTP pipelined requests (multiple requests at once)
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1004,7 +1004,7 @@ def test_pipelined_requests():
 		test_error("Pipelined requests test", str(e)[:50])
 
 def test_two_requests_same_buffer():
-	"""Deux requêtes envoyées dans le même buffer de lecture"""
+	"""Two requests sent in the same read buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1026,13 +1026,13 @@ def test_two_requests_same_buffer():
 		status_count = response.count(b"HTTP/1.")
 		first_ok = b"HTTP/1.1 200" in response or b"HTTP/1.0 200" in response
 		second_ok = b"HTTP/1.1 404" in response or b"HTTP/1.0 404" in response or status_count >= 2
-		test("Deux requetes dans un buffer", status_count >= 2 and first_ok and second_ok,
+		test("Two requests in one buffer", status_count >= 2 and first_ok and second_ok,
 			 f"Statuses: {status_count}, snippet: {response[:200]}")
 	except Exception as e:
-		test_error("Deux requetes meme buffer", str(e)[:50])
+		test_error("Two requests same buffer", str(e)[:50])
 
 def test_pipelined_get_head():
-	"""GET suivi de HEAD dans le même buffer"""
+	"""GET followed by HEAD in the same buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1053,13 +1053,13 @@ def test_pipelined_get_head():
 		resp = b"".join(data)
 		status_count = resp.count(b"HTTP/1.")
 		second_is_head = b"HEAD /about.html" not in resp and status_count >= 2
-		test("GET puis HEAD pipelines", status_count >= 2 and b"200" in resp and second_is_head,
+		test("GET then HEAD pipelined", status_count >= 2 and b"200" in resp and second_is_head,
 			 f"Statuses: {status_count}, snippet: {resp[:200]}")
 	except Exception as e:
 		test_error("GET+HEAD pipeline", str(e)[:50])
 
 def test_pipelined_post_then_get():
-	"""POST avec Content-Length suivi d'un GET dans le même buffer"""
+	"""POST with Content-Length followed by GET in the same buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1089,7 +1089,7 @@ def test_pipelined_post_then_get():
 		status_count = resp.count(b"HTTP/1.")
 		post_ok = b"201" in resp or b"200" in resp
 		get_ok = resp.find(b"HTTP/1.", resp.find(b"HTTP/1.")+1) != -1
-		test("POST puis GET dans buffer", status_count >= 2 and post_ok and get_ok,
+		test("POST then GET in buffer", status_count >= 2 and post_ok and get_ok,
 			 f"Statuses: {status_count}, snippet: {resp[:200]}")
 		# Cleanup uploaded test file
 		try:
@@ -1100,7 +1100,7 @@ def test_pipelined_post_then_get():
 		test_error("POST+GET pipeline", str(e)[:50])
 
 def test_pipelined_chunked_then_get():
-	"""POST chunked suivi d'un GET dans le même buffer"""
+	"""Chunked POST followed by GET in the same buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1130,7 +1130,7 @@ def test_pipelined_chunked_then_get():
 		status_count = resp.count(b"HTTP/1.")
 		post_ok = b"201" in resp or b"200" in resp
 		get_ok = resp.find(b"HTTP/1.", resp.find(b"HTTP/1.")+1) != -1
-		test("POST chunked puis GET", status_count >= 2 and post_ok and get_ok,
+		test("POST chunked then GET", status_count >= 2 and post_ok and get_ok,
 			 f"Statuses: {status_count}, snippet: {resp[:200]}")
 		try:
 			safe_delete(f"{BASE_URL}/uploads/test-chunked-buffer.txt")
@@ -1140,7 +1140,7 @@ def test_pipelined_chunked_then_get():
 		test_error("POST chunked+GET pipeline", str(e)[:50])
 
 def test_connection_close_then_next_request():
-	"""GET avec Connection: close suivi d'un GET dans le même buffer"""
+	"""GET with Connection: close followed by GET in the same buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1163,13 +1163,13 @@ def test_connection_close_then_next_request():
 		s.close()
 		status_count = resp.count(b"HTTP/1.")
 		conn_close = b"Connection: close" in resp
-		test("Connection close stoppe pipeline", status_count == 1 and conn_close,
+		test("Connection close stops pipeline", status_count == 1 and conn_close,
 			 f"Statuses: {status_count}, snippet: {resp[:200]}")
 	except Exception as e:
 		test_error("Connection close pipeline", str(e)[:50])
 
 def test_three_requests_pipeline():
-	"""Trois requêtes consécutives dans le même buffer"""
+	"""Three consecutive requests in the same buffer"""
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1195,13 +1195,13 @@ def test_three_requests_pipeline():
 		status_count = resp.count(b"HTTP/1.")
 		ok_200 = resp.count(b" 200") >= 2
 		ok_404 = b" 404" in resp
-		test("Trois requetes pipeline", status_count >= 3 and ok_200 and ok_404,
+		test("Three requests pipeline", status_count >= 3 and ok_200 and ok_404,
 			 f"Statuses: {status_count}, snippet: {resp[:200]}")
 	except Exception as e:
 		test_error("Pipeline triple", str(e)[:50])
 
 def test_very_small_timeout():
-	# Test avec timeout très court
+	# Test with very short timeout
 	try:
 		r = safe_get(f"{BASE_URL}/", timeout=0.001)	
 		test("Very short timeout handled", r.status_code == 200)
@@ -1209,7 +1209,7 @@ def test_very_small_timeout():
 		test("Very short timeout causes exception (expected)", True)
 
 def test_post_multipart_boundary():
-	# Test multipart avec boundary custom
+	# Test multipart with custom boundary
 	boundary = "----CustomBoundary123"
 	headers = {'Content-Type': f'multipart/form-data; boundary={boundary}'}
 	body = f'--{boundary}\r\nContent-Disposition: form-data; name="file"; filename="test.txt"\r\n\r\ntest content\r\n--{boundary}--\r\n'
@@ -1227,7 +1227,7 @@ def test_post_multipart_boundary():
 				pass
 
 def test_upload_during_delete():
-	# Upload et delete simultanés
+	# Simultaneous upload and delete
 	import threading
 	uploaded = [False]
 	deleted = [False]
@@ -1251,14 +1251,14 @@ def test_upload_during_delete():
 	t2.join()
 	test("Concurrent upload/delete handled", True)
 
-	# Cleanup si le fichier existe encore
+	# Cleanup if the file still exists
 	if uploaded[0] and not deleted[0]:
 		try:
 			safe_delete(f"{BASE_URL}/uploads/concurrent.txt")
 		except:
 			pass
 def test_cgi_environment_vars():
-	# Test que les variables CGI sont correctes
+	# Test that CGI environment variables are correct
 	r = safe_get(f"{BASE_URL}/cgi-bin/py/contact.py?test=value")
 	test("CGI with query params returns 200", r.status_code == 200, f"Got {r.status_code}")
 
@@ -1346,12 +1346,12 @@ def test_cgi_concurrent_ordering():
 		print(f"  {YELLOW}⚠ {php_detail}{RESET}")
 
 def test_multiple_slashes():
-	# Multiples slashes consécutifs
+	# Multiple consecutive slashes
 	r = safe_get(f"{BASE_URL}///index.html")
 	test("Multiple slashes handled", r.status_code in [200, 301, 404], f"Got {r.status_code}")
 
 def test_dot_segments():
-	# Segments avec points dans URL
+	# Segments with dots in URL
 	r = safe_get(f"{BASE_URL}/./index.html")
 	test("Dot segment (./) handled", r.status_code in [200, 404], f"Got {r.status_code}")
 
@@ -1359,12 +1359,12 @@ def test_dot_segments():
 	test("Parent segment (../) handled", r.status_code in [200, 403, 404], f"Got {r.status_code}")
 
 def test_percent_encoding():
-	# Encodage URL avec différents caractères
+	# URL encoding with different characters
 	r = safe_get(f"{BASE_URL}/text/test.txt?param=%2F%2E%2E")
 	test("Percent encoding handled", r.status_code in [200, 400], f"Got {r.status_code}")
 
 def test_post_no_content_length():
-	# POST sans Content-Length (requiert chunked ou connection close)
+	# POST without Content-Length (requires chunked or connection close)
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1379,7 +1379,7 @@ def test_post_no_content_length():
 		test_error("POST no Content-Length test", str(e)[:50])
 
 def test_absolute_uri():
-	# Requête avec URI absolue (http://host/path)
+	# Request with absolute URI (http://host/path)
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1393,13 +1393,13 @@ def test_absolute_uri():
 		test_error("Absolute URI test", str(e)[:50])
 
 def test_case_insensitive_headers():
-	# Headers en différentes casses
+	# Headers in different cases
 	headers = {'host': 'localhost', 'CoNtEnT-TyPe': 'text/plain'}
 	r = safe_get(f"{BASE_URL}/", headers=headers)
 	test("Case-insensitive headers handled", r.status_code == 200, f"Got {r.status_code}")
 
 def test_whitespace_in_headers():
-	# Espaces dans les headers
+	# Whitespace in headers
 	import socket
 	try:
 		s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -1413,7 +1413,7 @@ def test_whitespace_in_headers():
 		test_error("Whitespace in headers test", str(e)[:50])
 
 def test_upload_special_extensions():
-	# Upload fichiers avec extensions variées
+	# Upload files with various extensions
 	extensions = ['.jpg', '.png', '.pdf', '.zip', '.json', '.xml']
 	for ext in extensions:
 		files = {'file': (f'test{ext}', b'binary data', 'application/octet-stream')}
@@ -1428,12 +1428,12 @@ def test_upload_special_extensions():
 				pass
 
 # ============================================================================
-# PARTIE 6: PORT ISSUES
+# PART 6: PORT ISSUES
 # ============================================================================
 
 def test_port_multiple_configs():
-	"""Test que différents ports servent différents contenus"""
-	# Note: Nécessite une config avec plusieurs ports
+	"""Test that different ports serve different content"""
+	# Note: Requires a config with multiple ports
 	result = subprocess.run(['netstat', '-tulpn'], capture_output=True, text=True)
 	ports_found = []
 	for line in result.stdout.split('\n'):
@@ -1449,43 +1449,43 @@ def test_port_multiple_configs():
 		 f"Ports found: {set(ports_found)}")
 
 def test_port_same_port_twice():
-	"""Info: Test que le même port en double est géré (config check)"""
-	# Ce test est informatif - il faut vérifier manuellement la config
+	"""Info: Test that duplicate port is handled (config check)"""
+	# This test is informational - manual config verification needed
 	test("Port duplication check (manual verification needed)", True,
 		 "Verify in config that duplicate ports are handled (virtual hosts or error)")
 
 def test_port_cannot_bind_twice():
-	"""Test qu'on ne peut pas lancer 2 instances sur le même port"""
-	# Vérifier qu'une seule instance tourne
+	"""Test that two instances cannot bind the same port"""
+	# Verify only one instance is running
 	result = subprocess.run(['pgrep', '-c', 'webserv'], capture_output=True, text=True)
 	count = int(result.stdout.strip()) if result.stdout.strip().isdigit() else 0
 	test("Only one webserv instance running", count == 1,
 		 f"Found {count} instances (try: pgrep webserv)")
 
 # ============================================================================
-# PARTIE 7: SIEGE & STRESS TEST
+# PART 7: SIEGE & STRESS TEST
 # ============================================================================
 
 def test_siege_availability():
-	"""Test availability avec siege (nécessite siege installé)"""
-	# Vérifier que siege est installé
+	"""Test availability with siege (requires siege installed)"""
+	# Verify siege is installed
 	result = subprocess.run(['which', 'siege'], capture_output=True)
 	if result.returncode != 0:
 		test("Siege is installed", False, "Install with: brew install siege")
 		return
 
-	# Créer une page simple pour le test
+	# Create a simple page for the test
 	test_page = 'www/siege_test.html'
 	with open(test_page, 'w') as f:
 		f.write('')
 
-	# Lancer siege (courte durée pour le test)
+	# Run siege (short duration for test)
 	result = subprocess.run(
 		['siege', '-b', '-c', '20', '-t', '20s', f'{BASE_URL}/siege_test.html'],
 		capture_output=True, text=True, timeout=30
 	)
 
-	# Parser le résultat (stdout et stderr, case-insensitive)
+	# Parse result (stdout and stderr, case-insensitive)
 	availability = None
 	output = (result.stdout or '') + '\n' + (result.stderr or '')
 	for line in output.split('\n'):
@@ -1512,8 +1512,8 @@ def test_siege_availability():
 		pass
 
 def test_memory_stability():
-	"""Test que la mémoire ne fuit pas (check basique)"""
-	# Récupérer le PID du serveur
+	"""Test that memory does not leak (basic check)"""
+	# Get the server PID
 	result = subprocess.run(['pgrep', 'webserv'], capture_output=True, text=True)
 	if not result.stdout.strip():
 		test("Memory stability check", False, "webserv process not found")
@@ -1521,11 +1521,11 @@ def test_memory_stability():
 
 	pid = result.stdout.strip().split()[0]
 
-	# Première mesure mémoire
+	# First memory measurement
 	result1 = subprocess.run(['ps', '-o', 'rss=', '-p', pid], capture_output=True, text=True)
 	mem1 = int(result1.stdout.strip()) if result1.stdout.strip() else 0
 
-	# Faire quelques requêtes
+	# Make some requests
 	for _ in range(50):
 		try:
 			safe_get(f"{BASE_URL}/")
@@ -1534,24 +1534,24 @@ def test_memory_stability():
 
 	time.sleep(1)
 
-	# Deuxième mesure mémoire
+	# Second memory measurement
 	result2 = subprocess.run(['ps', '-o', 'rss=', '-p', pid], capture_output=True, text=True)
 	mem2 = int(result2.stdout.strip()) if result2.stdout.strip() else 0
 
-	# La mémoire ne devrait pas augmenter de plus de 10MB
+	# Memory should not increase by more than 10MB
 	mem_increase = (mem2 - mem1) / 1024  # en MB
 	test("Memory stable after 50 requests", mem_increase < 10,
 		 f"Memory increased by {mem_increase:.2f} MB (from {mem1/1024:.1f}MB to {mem2/1024:.1f}MB)")
 
 def test_no_hanging_connections():
-	"""Test qu'il n'y a pas de connexions qui traînent"""
-	# Faire quelques requêtes
+	"""Test that no connections are left hanging"""
+	# Make some requests
 	for _ in range(10):
 		safe_get(f"{BASE_URL}/")
 
 	time.sleep(2)
 
-	# Vérifier les connexions ESTABLISHED
+	# Verify ESTABLISHED connections
 	result = subprocess.run(['netstat', '-an'], capture_output=True, text=True)
 	established_count = 0
 	for line in result.stdout.split('\n'):
@@ -1566,11 +1566,11 @@ def test_no_hanging_connections():
 # ============================================================================
 
 def test_bonus_cookies_session():
-	"""Test cookies et sessions"""
+	"""Test cookies and sessions"""
 	r = safe_get(f"{BASE_URL}/counter.html")
 	test("Counter page accessible", r.status_code == 200, f"Got {r.status_code}")
 
-	# Vérifier Set-Cookie dans les headers
+	# Verify Set-Cookie in headers
 	has_cookie = 'Set-Cookie' in r.headers or 'set-cookie' in r.headers
 	test("Server sets cookies", has_cookie,
 		 f"Cookies: {r.headers.get('Set-Cookie', 'None')}")
@@ -1590,7 +1590,7 @@ def test_bonus_multiple_cgi():
 	r_php = safe_get(f"{BASE_URL}/cgi-bin/php/qrcode.php")
 	test("PHP CGI works", r_php.status_code == 200, f"Got {r_php.status_code}")
 
-	# Les deux doivent fonctionner
+	# Both must work
 	test("Multiple CGI systems working", r_py.status_code == 200 and r_php.status_code == 200,
 		 "Both Python and PHP CGI should work")
 
@@ -1598,7 +1598,7 @@ def summary():
 	print(f"\n{PASSED} passed, {FAILED} failed")
 
 def save_results():
-	"""Sauvegarde les resultats dans un fichier JSON"""
+	"""Save results to a JSON file"""
 	data = {
 		"timestamp": datetime.now().isoformat(),
 		"passed": PASSED,
@@ -1610,7 +1610,7 @@ def save_results():
 	print(f"\n{BLUE}ℹ{RESET} Results saved to {LOG_FILE}")
 
 def load_previous_results():
-	"""Charge les resultats precedents s'ils existent"""
+	"""Load previous results if they exist"""
 	if os.path.exists(LOG_FILE):
 		try:
 			with open(LOG_FILE, 'r') as f:
@@ -1620,18 +1620,18 @@ def load_previous_results():
 	return None
 
 def compare_results(previous):
-	"""Compare les resultats actuels avec les precedents"""
+	"""Compare current results with previous ones"""
 	if not previous:
 		print(f"\n{BLUE}ℹ{RESET} No previous results to compare")
 		return
 
 	prev_tests = previous.get("tests", {})
 
-	# Nouveaux fails
+	# New failures
 	new_fails = []
-	# Nouveaux succes
+	# New passes
 	new_passes = []
-	# Inchanges
+	# Unchanged
 	unchanged_pass = 0
 	unchanged_fail = 0
 
@@ -1681,7 +1681,7 @@ def compare_results(previous):
 		print(f"\n{GREEN}✓ No changes in test results{RESET}")
 
 def check_server_running():
-	"""Verifie que webserv est bien lance"""
+	"""Verify that webserv is running"""
 	print("Checking if webserv is running...")
 	try:
 		r = requests.get(BASE_URL, timeout=2)
@@ -1693,7 +1693,7 @@ def check_server_running():
 		return False
 
 def stop_server():
-	"""Arrete le serveur webserv"""
+	"""Stop the webserv server"""
 	print("\nStopping webserv...")
 	try:
 		subprocess.run(['pkill', '-SIGTERM', 'webserv'], capture_output=True)
@@ -1709,20 +1709,20 @@ if __name__ == "__main__":
 		if not check_server_running():
 			sys.exit(1)
 
-		# Charger les resultats precedents
+		# Load previous results
 		previous_results = load_previous_results()
 
 		print("Starting webserv tests...\n")
 
 		print("=" * 70)
-		print("PARTIE 1: MANDATORY PART - CODE CHECKS")
+		print("PART 1: MANDATORY PART - CODE CHECKS")
 		print("=" * 70)
 		run_test(test_code_poll_in_loop)
 		run_test(test_code_poll_read_write)
 		run_test(test_code_compilation)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 2: CONFIGURATION")
+		print("PART 2: CONFIGURATION")
 		print("=" * 70)
 		run_test(test_config_multiple_ports)
 		run_test(test_config_virtual_hosts)
@@ -1733,7 +1733,7 @@ if __name__ == "__main__":
 		run_test(test_method_not_allowed)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 3: BASIC CHECKS")
+		print("PART 3: BASIC CHECKS")
 		print("=" * 70)
 		# GET requests
 		run_test(test_get_index)
@@ -1755,7 +1755,7 @@ if __name__ == "__main__":
 		run_test(test_keep_alive)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 4: CHECK CGI")
+		print("PART 4: CHECK CGI")
 		print("=" * 70)
 		run_test(test_post_cgi_python)
 		run_test(test_cgi_working_directory)
@@ -1772,7 +1772,7 @@ if __name__ == "__main__":
 		run_test(test_cgi_concurrent_ordering)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 5: ADVANCED TESTS (Browser tests are manual)")
+		print("PART 5: ADVANCED TESTS (Browser tests are manual)")
 		print("=" * 70)
 		run_test(test_chunked_encoding)
 		run_test(test_large_file_upload)
@@ -1830,14 +1830,14 @@ if __name__ == "__main__":
 		run_test(test_upload_special_extensions)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 6: PORT ISSUES")
+		print("PART 6: PORT ISSUES")
 		print("=" * 70)
 		run_test(test_port_multiple_configs)
 		run_test(test_port_same_port_twice)
 		run_test(test_port_cannot_bind_twice)
 
 		print("\n" + "=" * 70)
-		print("PARTIE 7: SIEGE & STRESS TEST")
+		print("PART 7: SIEGE & STRESS TEST")
 		print("=" * 70)
 		run_test(test_siege_availability)
 		run_test(test_memory_stability)
@@ -1854,17 +1854,17 @@ if __name__ == "__main__":
 		save_results()
 		stop_server()
 
-		# Liste des tests échoués
+		# List of failed tests
 		failed_tests_list = [name for name, result in test_results.items() if result["status"] in ["failed", "error"]]
 		if failed_tests_list:
 			print("\n" + "=" * 70)
-			print("TESTS ÉCHOUÉS")
+			print("FAILED TESTS")
 			print("=" * 70)
 			for i, test_name in enumerate(failed_tests_list, 1):
 				print(f"{i}. {test_name}")
 		else:
 			print("\n" + "=" * 70)
-			print("✅ TOUS LES TESTS ONT RÉUSSI!")
+			print("\u2705 ALL TESTS PASSED!")
 			print("=" * 70)
 
 	except KeyboardInterrupt:

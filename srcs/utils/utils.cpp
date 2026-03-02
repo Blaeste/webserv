@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 20:54:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 14:39:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@
 #include <sys/socket.h> // for getsockname()
 #include <netinet/in.h> // for sockaddr_in, ntohs()
 #include <limits>
-#include <cstdio> //snprintf
 
 // Function(s) -----------------------------------------------------------------
 std::string trim(const std::string &str)
