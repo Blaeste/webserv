@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 12:13:16 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/02 13:21:38 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,6 +23,7 @@ include ${MK_DIR}/git.mk
 
 .SILENT:
 .ONESHELL:
+SHELL = /bin/bash
 .PHONY: all clean fclean re run kill test eval clear_eval
 
 # Executable name
@@ -106,10 +107,17 @@ fclean: clean
 # Rebuild everything from scratch
 re: fclean all
 
-# Run the server in a new xterm for interactive local testing
+# Run the server in a new xterm with config file selection
 run: $(NAME)
-	-pkill webserv || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME)" -e "bash -c 'stty -echoctl; ./$(NAME); stty echoctl; read -p \"Press Enter to close window...\"'" &
+	pkill webserv 2>/dev/null || true
+	set -- config/*.conf
+	echo "Select a configuration file:"
+	i=1; for f; do echo "  $$i. $$f"; i=$$((i + 1)); done
+	read -n1 -s choice
+	shift $$((choice - 1))
+	conf="$$1"
+	title="$(NAME) | $$conf"
+	xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$$title" -e "bash -c 'stty -echoctl; ./$(NAME) $$conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 
 # Kill any running instance of the local webserv binary
 kill:
