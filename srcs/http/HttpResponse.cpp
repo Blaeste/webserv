@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:22:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:43:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,11 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
-#include <cstdio>
-#include <fcntl.h>
-#include <iostream>
-#include <unistd.h>
-#include <cerrno>
+#include <cstdio>					// std::remove
+#include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
+#include <iostream>					// std::cerr
+#include <unistd.h>					// write
+#include <cerrno>					// errno
 
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()

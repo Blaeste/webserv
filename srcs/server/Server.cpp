@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:15:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:38:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,21 +15,21 @@
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <algorithm>
-#include <cerrno>
-#include <csignal>
-#include <cstring>
-#include <iostream>
-#include <netinet/in.h> // sockaddr_in, htons, INADDR_ANY
-#include <limits>
-#include <sstream>
-#include <stdexcept>
-#include <unistd.h>
-#include <sys/wait.h> // waitpid()
+#include <algorithm>			// std::find
+#include <cerrno>				// errno
+#include <csignal>				// signal, SIGINT, SIGTERM, SIGPIPE, SIG_IGN, kill
+#include <cstring>				// std::memset, std::strerror
+#include <iostream>				// std::cout, std::cerr
+#include <netinet/in.h>			// sockaddr_in, htons, INADDR_ANY
+#include <limits>				// std::numeric_limits
+#include <sstream>				// std::stringstream
+#include <stdexcept>			// std::runtime_error
+#include <unistd.h>				// read, write, close, pipe
+#include <sys/wait.h>			// waitpid, WNOHANG, WIFEXITED, WEXITSTATUS, WIFSIGNALED
 
 // Define(s) -------------------------------------------------------------------
-# define CURSOR_HIDE "\033[?25l"
-# define CURSOR_SHOW "\033[?25h"
+# define CURSOR_HIDE "\033[?25l"	// Server::Server (constructor)
+# define CURSOR_SHOW "\033[?25h"	// Server::~Server (destructor)
 
 // Static variable initialization ----------------------------------------------
 // Self-pipe for signal handling in poll()

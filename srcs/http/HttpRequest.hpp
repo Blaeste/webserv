@@ -6,16 +6,16 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 11:58:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:44:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>
-#include <vector>
-#include <map>
+#include <string>	// std::string
+#include <vector>	// std::vector
+#include <map>		// std::map
 
 // Only on Linux / Mac
 #ifndef O_NOFOLLOW

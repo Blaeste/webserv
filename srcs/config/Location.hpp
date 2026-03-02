@@ -3,18 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:23:58 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/02 15:45:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>
-#include <vector>
+#include <string>	// std::string
+#include <vector>	// std::vector
 
 // Class ***********************************************************************
 class Location

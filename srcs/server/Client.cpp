@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:16:04 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:42:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,12 +17,11 @@
 #include "../utils/Logger.hpp"
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
-#include <cerrno>
-#include <cstring>
-#include <iostream>
-#include <limits>
-#include <sys/socket.h>
-#include <unistd.h>
+#include <cerrno>				// errno, EAGAIN, EWOULDBLOCK
+#include <cstring>				// strerror
+#include <iostream>				// std::cerr
+#include <limits>				// std::numeric_limits
+#include <sys/socket.h>			// recv, send
 
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp

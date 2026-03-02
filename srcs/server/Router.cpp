@@ -6,14 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/02/08 18:57:30 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:40:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Router.hpp"
 #include "../utils/utils.hpp"
-#include <iostream>
 
 // Private method(s) -----------------------------------------------------------
 // Find location with longest matching path prefix

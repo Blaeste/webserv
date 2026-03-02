@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 11:49:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:42:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,8 +15,8 @@
 // Include(s) ******************************************************************
 #include "../http/HttpRequest.hpp"
 #include "../http/HttpResponse.hpp"
-#include <ctime>
-#include <string>
+#include <ctime>					// time_t, std::time
+#include <string>					// std::string
 
 // Forward declaration(s) ------------------------------------------------------
 class ServerConfig;

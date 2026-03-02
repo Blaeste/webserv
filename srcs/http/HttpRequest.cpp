@@ -6,18 +6,18 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:22:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:44:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
-#include <cstdlib>
-#include <cctype>
-#include <iostream>
-#include <sstream>
-#include <cerrno>
+#include <cstdlib>				// std::strtoul
+#include <cctype>				// std::isalpha, std::isalnum, std::isdigit, std::isxdigit
+#include <iostream>				// std::cerr
+#include <sstream>				// std::istringstream, std::getline
+#include <cerrno>				// errno
 
 // Default constructor ---------------------------------------------------------
 HttpRequest::HttpRequest()

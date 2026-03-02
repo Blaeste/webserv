@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:38:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,11 +16,11 @@
 #include "Client.hpp"
 #include "Router.hpp"
 #include "../config/Config.hpp"
-#include <ctime>
-#include <map>
-#include <poll.h>
-#include <string>
-#include <vector>
+#include <ctime>				// time_t
+#include <map>					// std::map
+#include <poll.h>				// pollfd
+#include <string>				// std::string
+#include <vector>				// std::vector
 
 // Structure(s) ****************************************************************
 struct SessionData {

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:26:32 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/02 15:45:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,8 +14,8 @@
 
 // Include(s) ******************************************************************
 #include "ServerConfig.hpp"
-#include <string>
-#include <vector>
+#include <string>			// std::string
+#include <vector>			// std::vector
 
 /**
  * @brief Represents a configuration block with its content and position.

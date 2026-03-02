@@ -6,25 +6,28 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:39:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:33:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "utils.hpp"
-#include <cerrno>
-#include <cstdlib> // for strtol
-#include <cstring>
-#include <ctime>	// for getHttpDate -> strftime
-#include <dirent.h> // for listDirectory
-#include <fcntl.h>	// open(), O_RDONLY
-#include <iostream>
-#include <sstream>		// for urlDecode
-#include <sys/stat.h>	// stat() => files info
-#include <unistd.h>		// read(), close()
-#include <sys/socket.h> // for getsockname()
-#include <netinet/in.h> // for sockaddr_in, ntohs()
-#include <limits>
+#include <cctype>			// std::tolower
+#include <cerrno>			// errno, ERANGE
+#include <cstdlib>			// std::strtol, std::getenv
+#include <cstring>			// std::strerror
+#include <ctime>			// std::time, std::gmtime, std::strftime
+#include <dirent.h>			// opendir, readdir, closedir, DIR, struct dirent
+#include <fcntl.h>			// open, fcntl, O_RDONLY, O_NONBLOCK, F_GETFL, F_SETFL
+#include <iostream>			// std::cerr
+#include <limits>			// std::numeric_limits
+#include <netinet/in.h>		// sockaddr_in, ntohs
+#include <set>				// std::set
+#include <sstream>			// std::stringstream
+#include <stdexcept>		// std::runtime_error
+#include <sys/socket.h>		// getsockname, socklen_t
+#include <sys/stat.h>		// stat, S_ISDIR, struct stat
+#include <unistd.h>			// read, close, access, F_OK
 
 // Function(s) -----------------------------------------------------------------
 std::string trim(const std::string &str)
@@ -316,10 +319,8 @@ int getSocketPort(int fd)
 }
 
 int parseIntSafe(const std::string &str, const std::string &context)
-{ // Like atoi but better
-
+{
 	// Like atoi but better
-
 	// Check string empty
 	if (str.empty())
 		throw std::runtime_error("parseIntSafe [" + context + "]: empty string");
@@ -354,13 +355,13 @@ int parseIntSafe(const std::string &str, const std::string &context)
 
 std::string toLowercase(const std::string &str)
 {
-	std::string result = str;
-	for (size_t i = 0; i < result.length(); i++)
-	{
-		if (result[i] >= 'A' && result[i] <= 'Z')
-			result[i] += 32;
-	}
-	return result;
+    std::string result = str;
+    for (std::string::size_type i = 0; i < result.size(); ++i)
+    {
+        unsigned char c = static_cast<unsigned char>(result[i]);
+        result[i] = static_cast<char>(std::tolower(c));
+    }
+    return result;
 }
 
 bool isValidHttpMethod(const std::string &method)
@@ -415,14 +416,6 @@ std::string urlDecode(const std::string &url)
 	return decoded;
 }
 
-std::string toUpperString(const std::string &str)
-{
-	std::string result = str;
-	for (size_t i = 0; i < result.size(); i++)
-		result[i] = std::toupper(static_cast<unsigned char>(result[i]));
-	return result;
-}
-
 std::string buildAbsolutePath(const std::string &path)
 {
 	if (!path.empty() && path[0] == '/')
@@ -438,7 +431,7 @@ std::string getHttpDate()
 	time_t now = std::time(NULL);
 	struct tm *gmt = std::gmtime(&now);
 	if (!gmt)
-        return "";
+		return "";
 	char buffer[100];
 	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 	return std::string(buffer);

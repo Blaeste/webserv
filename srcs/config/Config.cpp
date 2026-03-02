@@ -3,19 +3,18 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:04:52 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/02 15:45:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Config.hpp"
 #include "../utils/utils.hpp"
-#include <iostream>
-#include <stdexcept>
-#include <cstdlib>
+#include <iostream>				// std::cerr
+#include <stdexcept>			// std::runtime_error
 
 // Private method(s) -----------------------------------------------------------
 std::string Config::removeComments(const std::string &content) {

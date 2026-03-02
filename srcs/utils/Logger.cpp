@@ -6,17 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:30:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Logger.hpp"
-#include <iomanip>
-#include <iostream>
-#include <sstream>
+#include <iomanip>		// std::setw, std::left, std::right
+#include <iostream>		// std::cout
+#include <sstream>		// std::stringstream
 
-// Static variables initialization ---------------------------------------------
+// Static variable(s) initialization -------------------------------------------
 std::map<int, RequestData> Logger::_activeRequests;
 std::string Logger::_lastMethod = "";
 std::string Logger::_lastUri = "";

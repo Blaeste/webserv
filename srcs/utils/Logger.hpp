@@ -6,32 +6,29 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:14:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:30:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>
-#include <ctime>
-#include <map>
-#include <limits>
+#include <string>		// std::string
+#include <ctime>		// time_t
+#include <map>			// std::map
+#include <limits>		// std::numeric_limits
 
-// Defines *********************************************************************
+// Define(s) -------------------------------------------------------------------
 #define RESET		"\033[0m"
 #define RED			"\033[31m"
 #define GREEN		"\033[32m"
 #define YELLOW		"\033[33m"
-#define BLUE		"\033[34m"
-#define MAGENTA		"\033[35m"
 #define CYAN		"\033[36m"
 #define GREY		"\033[90m"
 #define BOLD		"\033[1m"
-#define NOBOLD		"\033[22m"
 #define CLEARLINE	"\033[K"
 
-// Struct **********************************************************************
+// Structure(s) ****************************************************************
 struct RequestData {
 	std::string method;
 	std::string uri;
@@ -43,7 +40,7 @@ struct RequestData {
 	int displayLine;
 };
 
-// Class ***********************************************************************
+// Class(es) *******************************************************************
 class Logger {
 	private:
 		// Attribute(s) --------------------------------------------------------

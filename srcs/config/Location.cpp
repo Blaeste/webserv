@@ -3,17 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:24:54 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/02 15:45:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Location.hpp"
-#include "../utils/utils.hpp"
-#include <algorithm>
+#include <algorithm>	// std::find, std::transform
 
 // Default constructor ---------------------------------------------------------
 Location::Location() :
@@ -33,7 +32,8 @@ Location::Location() :
 // Setter(s) -------------------------------------------------------------------
 void Location::addAllowedMethod(const std::string &method)
 {
-	std::string m = toUpperString(method);
+	std::string m = method;
+    std::transform(m.begin(), m.end(), m.begin(), ::toupper);
 
 	// Anti double
 	if (isMethodAllowed(m))

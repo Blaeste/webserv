@@ -6,16 +6,15 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:37:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:39:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>
-#include <vector>
-#include <set>
+#include <string>		// std::string - used in all function signatures
+#include <vector>		// std::vector - listDirectory, splitTokens
 
 // Function prototype(s) *******************************************************
 
@@ -173,13 +172,6 @@ std::string toLowercase(const std::string &str);
  * @return true if the method is valid, false otherwise.
  */
 bool isValidHttpMethod(const std::string &method);
-
-/**
- * @brief Converts a string to uppercase.
- * @param str The input string.
- * @return A new string with all characters converted to uppercase.
- */
-std::string toUpperString(const std::string &str);
 
 /**
  * @brief Converts a relative path to absolute using the process working directory.

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 14:04:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 15:47:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,14 +16,12 @@
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <cstdlib>
-#include <cstring>
-#include <fcntl.h>
-#include <iostream>
-#include <csignal>
-#include <sys/wait.h>
-#include <unistd.h>
-#include <cerrno>
+#include <cstdlib>					// std::exit
+#include <cstring>					// std::strcpy, strerror
+#include <fcntl.h>					// fcntl, F_SETFL, O_NONBLOCK
+#include <iostream>					// std::cerr
+#include <unistd.h>					// fork, pipe, close, dup2, access, X_OK, R_OK, chdir, execve, read, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO
+#include <cerrno>					// errno, strerror
 
 // Private method(s) -----------------------------------------------------------
 std::string CGI::readFromPipe(int fd) {

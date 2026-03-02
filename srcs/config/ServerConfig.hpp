@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/11 13:20:42 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/02 15:46:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,9 +14,9 @@
 
 // Include(s) ******************************************************************
 #include "Location.hpp"
-#include <map>
-#include <string>
-#include <vector>
+#include <map>			// std::map
+#include <string>		// std::string
+#include <vector>		// std::vector
 
 // Class ***********************************************************************
 class ServerConfig
