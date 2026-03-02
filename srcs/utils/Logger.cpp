@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/01 18:33:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 12:41:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -204,6 +204,8 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 {
 	if (_firstLog) {
 		printSeparator();
+		std::cout << std::endl;
+		_currentLine++;
 		_firstLog = false;
 	}
 
@@ -321,13 +323,18 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 
 void Logger::logMessage(const std::string &message)
 {
-	// Force finalization to ensure log line is complete
+	// Finalize current line if we're mid-display
 	if (_pendingRequest) {
 		std::cout << std::endl;
 		_currentLine++;
 	}
 
-	Logger::printSeparator();
+	// Opening separator + newline
+	printSeparator();
+	std::cout << std::endl;
+	_currentLine++;
+
+	// Message content
 	std::cout << message;
 	for (size_t i = 0; i < message.length(); i++) {
 		if (message[i] == '\n')
@@ -337,13 +344,14 @@ void Logger::logMessage(const std::string &message)
 		std::cout << std::endl;
 		_currentLine++;
 	}
-	Logger::printSeparator();
+
+	// Closing separator (no trailing newline — next logRequestStart will handle it)
+	printSeparator();
 
 	std::cout.flush();
 }
 
 void Logger::printSeparator()
 {
-	std::cout << GREY << std::string(145, '-') << RESET << std::endl;
-	_currentLine++;
+	std::cout << GREY << std::string(145, '-') << RESET;
 }

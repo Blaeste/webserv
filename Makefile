@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/01 20:12:16 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/02 12:13:16 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -23,7 +23,7 @@ include ${MK_DIR}/git.mk
 
 .SILENT:
 .ONESHELL:
-.PHONY: all clean fclean re kill test eval clear_eval
+.PHONY: all clean fclean re run kill test eval clear_eval
 
 # Executable name
 NAME = webserv
@@ -106,6 +106,11 @@ fclean: clean
 # Rebuild everything from scratch
 re: fclean all
 
+# Run the server in a new xterm for interactive local testing
+run: $(NAME)
+	-pkill webserv || true
+	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME)" -e "bash -c 'stty -echoctl; ./$(NAME); stty echoctl; read -p \"Press Enter to close window...\"'" &
+
 # Kill any running instance of the local webserv binary
 kill:
 	@bin="$$(cd "$(dir $(lastword $(MAKEFILE_LIST)))" && pwd)/$(NAME)"; \
@@ -131,49 +136,6 @@ eval: $(NAME)
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
 	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
 	@chmod +x tester cgi_tester
-	@cat > config/eval.conf <<-'EOF'
-	server {
-	    listen 8080;
-	    server_name 42tester;
-	    error_page 400 /error_pages/400.html;
-	    error_page 403 /error_pages/403.html;
-	    error_page 404 /error_pages/404.html;
-	    error_page 405 /error_pages/405.html;
-	    error_page 413 /error_pages/413.html;
-	    error_page 500 /error_pages/500.html;
-	    error_page 501 /error_pages/501.html;
-	    error_page 504 /error_pages/504.html;
-		client_max_body_size 105M;
-
-	    # / - GET requests ONLY
-	    location / {
-	        root ./www;
-	        index index.html index.htm;
-	        allowed_methods GET;
-	        autoindex on;
-	    }
-
-		# /post_body - POST requests with maxBody of 100 bytes
-		location /post_body {
-		    root ./www;
-		    allowed_methods POST;
-		    client_max_body_size 100;
-		}
-
-		# /directory/
-		location /directory {
-		    root ./YoupiBanane;
-		    index youpi.bad_extension;
-		    allowed_methods GET POST;
-		    autoindex off;
-		    cgi_extension .bla;
-		    cgi_path ./cgi_tester;
-			client_max_body_size 105M;
-		}
-	}
-	EOF
-
-	@echo "✓ Created config/eval.conf"
 	@mkdir -p YoupiBanane/nop
 	@mkdir -p YoupiBanane/Yeah
 	@touch YoupiBanane/youpi.bad_extension
@@ -184,17 +146,12 @@ eval: $(NAME)
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/eval.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/42tester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	@sleep 1
 	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
 	@-pkill webserv 2>/dev/null || true
 
-run: $(NAME)
-	-pkill webserv || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME)" -e "bash -c 'stty -echoctl; ./$(NAME); stty echoctl; read -p \"Press Enter to close window...\"'" &
-
 clear_eval:
 	@rm -rf YoupiBanane
 	@rm -f tester cgi_tester
-	@rm -f config/eval.conf
