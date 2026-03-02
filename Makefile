@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 13:21:38 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/02 13:45:04 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,7 @@ include ${MK_DIR}/git.mk
 .SILENT:
 .ONESHELL:
 SHELL = /bin/bash
-.PHONY: all clean fclean re run kill test eval clear_eval
+.PHONY: all clean fclean re run kill test eval
 
 # Executable name
 NAME = webserv
@@ -102,6 +102,9 @@ clean:
 # Remove object files and executable
 fclean: clean
 	rm -f $(NAME)
+	rm -rf YoupiBanane
+	rm -f tester cgi_tester
+	rm -f test_results.json
 	echo "✓ Executable removed"
 
 # Rebuild everything from scratch
@@ -159,7 +162,3 @@ eval: $(NAME)
 	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."
 	@-pkill webserv 2>/dev/null || true
-
-clear_eval:
-	@rm -rf YoupiBanane
-	@rm -f tester cgi_tester
