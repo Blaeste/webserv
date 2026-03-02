@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:38:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/02 22:48:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,8 +83,7 @@ void Server::run()
 		handleSessionTimeouts();
 
 		// Poll for events on all sockets (1 second timeout)
-		int ret = poll(&_pollFds[0], _pollFds.size(), 1000);
-		if (ret < 0)
+		if (poll(&_pollFds[0], _pollFds.size(), 1000) < 0)
 			continue;
 
 		// Process events on each socket
@@ -111,7 +110,7 @@ void Server::run()
 					removeClient(fd, i);
 					continue;
 				}
-				// SOCKET_CGI: handled below by handleCGIPipe() which already checks POLLHUP/POLLERR
+				// SOCKET_CGI: handled below by handleCGIPipe() which already checks POLLERR/POLLHUP/POLLNVAL
 			}
 
 			size_t oldSize = _pollFds.size(); // Remember size
@@ -119,8 +118,7 @@ void Server::run()
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN)
 			{
-
-				// Handle SIGINT or SIGTERM
+				// Handle SIGINT, SIGQUIT or SIGTERM
 				if (type == SOCKET_SIGNAL)
 				{
 					handleSignalPipeReadable();
@@ -136,27 +134,27 @@ void Server::run()
 					handleClientRead(i);
 			}
 
-		// Re-verify after POLLIN: _pollFds[i] may have changed if client was removed
-		if (_pollFds.size() < oldSize)
-			continue; // Client removed during POLLIN, i now points to next element
+			// Re-verify after POLLIN: _pollFds[i] may have changed if client was removed
+			if (_pollFds.size() < oldSize)
+				continue; // Client removed during POLLIN, i now points to next element
 
-		// Re-read fd and type after potential modifications
-		fd = _pollFds[i].fd;
-		type = _socketTypes[fd];
+			// Re-read fd and type after potential modifications
+			fd = _pollFds[i].fd;
+			type = _socketTypes[fd];
 
-		// Handle POLLOUT (socket ready to write)
-		if (revents & POLLOUT && type == SOCKET_CLIENT)
-			handleClientWrite(i);
+			// Handle POLLOUT (socket ready to write)
+			if (revents & POLLOUT && type == SOCKET_CLIENT)
+				handleClientWrite(i);
 
-		// Handle CGI pipes
-		if (type == SOCKET_CGI)
-			handleCGIPipe(i);
+			// Handle CGI pipes
+			if (type == SOCKET_CGI)
+				handleCGIPipe(i);
 
-		// If size changed (element removed), don't increment i
-		if (_pollFds.size() < oldSize)
-			continue; // Element removed, i already points to next
+			// If size changed (element removed), don't increment i
+			if (_pollFds.size() < oldSize)
+				continue; // Element removed, i already points to next
 
-		i++; // Otherwise move to next
+			i++; // Otherwise move to next
 		}
 	}
 }
@@ -635,7 +633,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			continue;
 
 		// Handle pipeErr (reading CGI stderr)
-		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
+		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)))
 		{
 			char buffer[4096];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
@@ -654,7 +652,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 		}
 
 		// Handle pipeOut (reading CGI output or detecting closure)
-		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR)))
+		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)))
 		{
 			char buffer[4096];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
@@ -765,9 +763,22 @@ void Server::handleCGIPipe(size_t pipeIndex)
 		}
 
 		// Handle pipeIn (writing POST body to CGI)
-		if (cgi->pipeIn == pipeFd && (_pollFds[pipeIndex].revents & POLLOUT))
+		if (cgi->pipeIn == pipeFd)
 		{
-			if (!cgi->inputWritten)
+			// Fatal error on pipeIn: CGI died or pipe broken
+			if ((_pollFds[pipeIndex].revents & (POLLERR | POLLHUP | POLLNVAL))
+				&& !(_pollFds[pipeIndex].revents & POLLOUT))
+			{
+				cgi->inputWritten = true;
+				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				_socketTypes.erase(pipeFd);
+				safeClose(cgi->pipeIn);
+				cgi->pipeIn = -1;
+				return;
+			}
+
+			// Normal write path
+			if ((_pollFds[pipeIndex].revents & POLLOUT) && !cgi->inputWritten)
 			{
 				const std::string &body = client.getRequest().getBody();
 				size_t remaining = body.size() - cgi->bytesWritten;
@@ -799,12 +810,21 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					}
 					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
 					{
-						std::cerr << "[CGI] ❌ ASSERT: Write error to stdin: " << strerror(errno) << std::endl;
+						std::cerr << "[CGI] Write error to stdin: " << strerror(errno) << std::endl;
+						cgi->inputWritten = true;
+						for (size_t i = 0; i < _pollFds.size(); ++i)
+						{
+							if (_pollFds[i].fd == cgi->pipeIn)
+							{
+								_pollFds.erase(_pollFds.begin() + i);
+								_socketTypes.erase(cgi->pipeIn);
+								break;
+							}
+						}
+						safeClose(cgi->pipeIn);
+						cgi->pipeIn = -1;
 					}
-					else if (written < 0)
-					{
-						std::cout << "[CGI] Write would block (EAGAIN), will retry..." << std::endl;
-					}
+					// EAGAIN/EWOULDBLOCK: silent, will retry on next poll cycle
 				}
 			}
 		}
