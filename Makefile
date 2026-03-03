@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
+#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/03 11:50:47 by eschwart         ###   ########.fr        #
+#    Updated: 2026/03/03 20:49:45 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,7 @@ include ${MK_DIR}/git.mk
 .SILENT:
 .ONESHELL:
 SHELL = /bin/bash
-.PHONY: all clean fclean re run kill test eval
+.PHONY: all clean fclean re run kill test eval ensure-xterm
 
 # Executable name
 NAME = webserv
@@ -108,12 +108,17 @@ fclean: clean
 	echo "✓ Executable removed"
 
 # Rebuild everything from scratch
-re:
-	@$(MAKE) --no-print-directory fclean 2>/dev/null
-	@$(MAKE) --no-print-directory all 2>/dev/null
+re: fclean all
+
+# Ensure xterm is installed (WSL2 / Debian-based)
+ensure-xterm:
+	@command -v xterm >/dev/null 2>&1 || { \
+		echo "xterm not found, installing..."; \
+		sudo apt-get update -qq && sudo apt-get install -y -qq xterm; \
+	}
 
 # Run the server in a new xterm with config file selection
-run: $(NAME)
+run: $(NAME) ensure-xterm
 	pkill webserv 2>/dev/null || true
 	set -- config/*.conf
 	echo "Select a configuration file:"
@@ -134,7 +139,7 @@ kill:
 		echo "No running $(NAME) found"; \
 	fi
 
-test: $(NAME)
+test: $(NAME) ensure-xterm
 	-pkill webserv || true
 	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	sleep 1
@@ -145,7 +150,7 @@ test: $(NAME)
 	)
 	python3 webServTester.py
 
-eval: $(NAME)
+eval: $(NAME) ensure-xterm
 	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
 	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
 	@chmod +x tester cgi_tester
