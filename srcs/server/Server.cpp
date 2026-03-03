@@ -184,7 +184,7 @@ void Server::setupListenSockets()
 		std::memset(&addr, 0, sizeof(addr));
 		addr.sin_family = AF_INET;		   // IPv4
 		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
-		addr.sin_port = htons(port[i]);	   // Convert port to network byte order
+		addr.sin_port = htons(_configs[i].getPort());	   // Convert port to network byte order
 		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
 		{
 			safeClose(listenFd);
@@ -205,7 +205,7 @@ void Server::setupListenSockets()
 		pfd.revents = 0;
 		_pollFds.push_back(pfd);
 		_socketTypes[listenFd] = SOCKET_LISTEN;
-		std::cout << "Server " << _configs[i].getServerName() << " listening on port " << port[i] << std::endl;
+		std::cout << "Server " << _configs[i].getServerName() << " listening on port " << _configs[i].getPort() << std::endl;
 	}
 }
 
