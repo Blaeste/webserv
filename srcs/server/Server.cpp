@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/03 12:33:39 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/03 21:55:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -705,22 +705,21 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 
 	// Remove port from Host header if present
 	size_t colonPos = host.find(':');
-
-	const ServerConfig *defaultForPort = NULL;
 	if (colonPos != std::string::npos)
 		host = host.substr(0, colonPos);
 
-	// Find config matching server_name
+	// Virtual host lookup: match server_name against Host header
+	const ServerConfig *firstConfig = NULL;
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
 		if (_configs[i].getPort() != localPort)
 			continue;
-		if (!defaultForPort)
-			defaultForPort = &_configs[i];
+		if (!firstConfig)
+			firstConfig = &_configs[i];
 		if (!host.empty() && _configs[i].getServerName() == host)
 			return &_configs[i];
 	}
-	return defaultForPort;
+	return firstConfig;
 }
 
 void Server::handleCGITimeouts()
