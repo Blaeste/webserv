@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 22:48:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/03 12:23:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,8 +28,8 @@
 #include <sys/wait.h>			// waitpid, WNOHANG, WIFEXITED, WEXITSTATUS, WIFSIGNALED
 
 // Define(s) -------------------------------------------------------------------
-# define CURSOR_HIDE "\033[?25l"	// Server::Server (constructor)
-# define CURSOR_SHOW "\033[?25h"	// Server::~Server (destructor)
+# define CURSOR_HIDE "\033[?25l"
+# define CURSOR_SHOW "\033[?25h"
 
 // Static variable initialization ----------------------------------------------
 // Self-pipe for signal handling in poll()
@@ -99,19 +99,10 @@ void Server::run()
 			SocketType type = _socketTypes[fd];
 
 			// Handle unexpected disconnection / socket errors early
-			// POLLERR/POLLHUP without POLLIN could cause a busy-loop
+			// POLLERR/POLLHUP/POLLNVAL without POLLIN could cause a busy-loop
 			if ((revents & (POLLERR | POLLHUP | POLLNVAL)) && !(revents & POLLIN))
-			{
-				if (type == SOCKET_CLIENT)
-				{
-					std::map<int, Client>::iterator it = _clients.find(fd);
-					if (it != _clients.end())
-						Server::logClientResponse(it->second);
-					removeClient(fd, i);
+				if (handleSocketError(i))
 					continue;
-				}
-				// SOCKET_CGI: handled below by handleCGIPipe() which already checks POLLERR/POLLHUP/POLLNVAL
-			}
 
 			size_t oldSize = _pollFds.size(); // Remember size
 
@@ -150,11 +141,10 @@ void Server::run()
 			if (type == SOCKET_CGI)
 				handleCGIPipe(i);
 
-			// If size changed (element removed), don't increment i
+			// If an element was removed, i already points to the next entry
 			if (_pollFds.size() < oldSize)
-				continue; // Element removed, i already points to next
-
-			i++; // Otherwise move to next
+				continue;
+			i++;
 		}
 	}
 }
@@ -276,14 +266,7 @@ void Server::handleClientTimeouts()
 			Server::logClientResponse(client);
 
 			++it;
-			for (size_t j = 0; j < _pollFds.size(); j++)
-			{
-				if (_pollFds[j].fd == fd)
-				{
-					removeClient(fd, j);
-					break;
-				}
-			}
+			removeClient(fd);
 		}
 		else
 			++it;
@@ -311,7 +294,7 @@ void Server::handleClientRead(size_t clientIndex)
 	if (!client.readData(config))
 	{
 		Server::logClientResponse(client);
-		removeClient(clientFd, clientIndex);
+		removeClient(clientFd);
 		return;
 	}
 
@@ -493,7 +476,7 @@ void Server::handleClientWrite(size_t clientIndex)
 
 	if (client.shouldCloseAfterResponse())
 	{
-		removeClient(clientFd, clientIndex);
+		removeClient(clientFd);
 		return;
 	}
 
@@ -527,12 +510,170 @@ void Server::handleClientWrite(size_t clientIndex)
 	}
 }
 
-void Server::removeClient(int fd, size_t pollIndex)
+void Server::removePollFd(int fd)
+{
+	for (size_t i = 0; i < _pollFds.size(); ++i)
+	{
+		if (_pollFds[i].fd == fd)
+		{
+			_pollFds.erase(_pollFds.begin() + i);
+			_socketTypes.erase(fd);
+			return;
+		}
+	}
+}
+
+void Server::setPollEvents(int fd, short events)
+{
+	for (size_t i = 0; i < _pollFds.size(); ++i)
+	{
+		if (_pollFds[i].fd == fd)
+		{
+			_pollFds[i].events |= events;
+			return;
+		}
+	}
+}
+
+void Server::removeClient(int fd)
 {
 	safeClose(fd);
 	_clients.erase(fd);
-	_socketTypes.erase(fd);
-	_pollFds.erase(_pollFds.begin() + pollIndex);
+	removePollFd(fd);
+}
+
+bool Server::handleSocketError(size_t i)
+{
+	int fd = _pollFds[i].fd;
+	SocketType type = _socketTypes[fd];
+
+	// Client socket: log and remove
+	if (type == SOCKET_CLIENT)
+	{
+		std::map<int, Client>::iterator it = _clients.find(fd);
+		if (it != _clients.end())
+			Server::logClientResponse(it->second);
+		removeClient(fd);
+		return true;
+	}
+
+	// CGI pipe: find owning client and handle the broken pipe
+	if (type == SOCKET_CGI)
+	{
+		for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
+		{
+			Client &client = it->second;
+			CGIProcess *cgi = client.getCGIProcess();
+			if (!cgi)
+				continue;
+
+			// Broken stderr pipe: index i is known, erase directly
+			if (cgi->pipeErr == fd)
+			{
+				_pollFds.erase(_pollFds.begin() + i);
+				_socketTypes.erase(fd);
+				safeClose(cgi->pipeErr);
+				cgi->pipeErr = -1;
+				return true;
+			}
+
+			// Broken stdout pipe: finalize CGI (build response, cleanup)
+			// removePollFd is called inside finalizeCGI for all pipes — search unavoidable
+			if (cgi->pipeOut == fd)
+			{
+				finalizeCGI(client, cgi, it->first);
+				return true;
+			}
+
+			// Broken stdin pipe: index i is known, erase directly
+			if (cgi->pipeIn == fd)
+			{
+				cgi->inputWritten = true;
+				_pollFds.erase(_pollFds.begin() + i);
+				_socketTypes.erase(fd);
+				safeClose(cgi->pipeIn);
+				cgi->pipeIn = -1;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
+{
+	// Remove all CGI pipes from poll
+	if (cgi->pipeOut != -1)
+		removePollFd(cgi->pipeOut);
+	if (cgi->pipeIn != -1)
+		removePollFd(cgi->pipeIn);
+	if (cgi->pipeErr != -1)
+		removePollFd(cgi->pipeErr);
+
+	// Close all pipes
+	if (cgi->pipeOut != -1)
+	{
+		safeClose(cgi->pipeOut);
+		cgi->pipeOut = -1;
+	}
+	if (cgi->pipeIn != -1)
+	{
+		safeClose(cgi->pipeIn);
+		cgi->pipeIn = -1;
+	}
+	if (cgi->pipeErr != -1)
+	{
+		safeClose(cgi->pipeErr);
+		cgi->pipeErr = -1;
+	}
+
+	// Reap CGI process (kill if still running)
+	int status = 0;
+	int waitRet = waitpid(cgi->pid, &status, WNOHANG);
+	if (waitRet == 0)
+	{
+		// CGI closed its stdout but is still running (e.g., infinite sleep)
+		// Kill it immediately to prevent zombie processes
+		kill(cgi->pid, SIGKILL);
+		// Blocking waitpid, instant since we just killed it
+		waitpid(cgi->pid, &status, 0);
+	}
+
+	// Build response based on CGI result
+	bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos)
+						|| (cgi->output.find("Content-type:") != std::string::npos);
+	bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))
+				 || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
+
+	if (cgiError)
+	{
+		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
+		client.buildErrorResponse(500, cfg);
+	}
+	else
+	{
+		CGIResult result;
+		result.output = cgi->output;
+		CGI cgiParser;
+		cgiParser.parseHeaders(cgi->output, result);
+		client.buildResponseFromCGI(result);
+	}
+
+	// Log CGI errors
+	if (cgiError)
+	{
+		Server::logClientResponse(client);
+		if (!cgi->errorOutput.empty())
+			Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
+	}
+
+	// Clean up CGI process
+	delete cgi;
+	client.setCGIProcess(NULL);
+	client.setState(STATE_KEEPALIVE);
+
+	// Enable POLLOUT on client socket to send the response
+	setPollEvents(clientFd, POLLOUT);
 }
 
 const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const
@@ -610,12 +751,7 @@ void Server::handleCGITimeouts()
 			client.setState(STATE_KEEPALIVE);
 
 			// Enable POLLOUT to send the error response
-			for (size_t i = 0; i < _pollFds.size(); ++i)
-				if (_pollFds[i].fd == it->first)
-				{
-					_pollFds[i].events = POLLOUT;
-					break;
-				}
+			setPollEvents(it->first, POLLOUT);
 		}
 	}
 }
@@ -624,7 +760,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 {
 	int pipeFd = _pollFds[pipeIndex].fd;
 
-	// Find the client that owns this CGI
+	// Find the client that owns this CGI pipe
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
 		Client &client = it->second;
@@ -633,7 +769,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			continue;
 
 		// Handle pipeErr (reading CGI stderr)
-		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)))
+		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & POLLIN))
 		{
 			char buffer[4096];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
@@ -651,8 +787,8 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			return;
 		}
 
-		// Handle pipeOut (reading CGI output or detecting closure)
-		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & (POLLIN | POLLHUP | POLLERR | POLLNVAL)))
+		// Handle pipeOut (reading CGI stdout)
+		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & POLLIN))
 		{
 			char buffer[4096];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
@@ -660,124 +796,13 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			if (bytes > 0)
 				cgi->output.append(buffer, bytes);
 			else
-			{
-				// EOF - CGI finished
-				// FIRST: Remove all CGI pipes from poll
-				// Remove pipeOut (current pipe)
-				_pollFds.erase(_pollFds.begin() + pipeIndex);
-				_socketTypes.erase(pipeFd);
-
-				// Remove pipeIn from poll if it exists
-				if (cgi->pipeIn != -1)
-				{
-					for (size_t i = 0; i < _pollFds.size(); ++i)
-					{
-						if (_pollFds[i].fd == cgi->pipeIn)
-						{
-							_pollFds.erase(_pollFds.begin() + i);
-							_socketTypes.erase(cgi->pipeIn);
-							break;
-						}
-					}
-				}
-
-				// Remove pipeErr from poll if it exists
-				if (cgi->pipeErr != -1)
-				{
-					for (size_t i = 0; i < _pollFds.size(); ++i)
-					{
-						if (_pollFds[i].fd == cgi->pipeErr)
-						{
-							_pollFds.erase(_pollFds.begin() + i);
-							_socketTypes.erase(cgi->pipeErr);
-							break;
-						}
-					}
-				}
-
-				// THEN: Close the pipes
-				safeClose(cgi->pipeOut);
-				cgi->pipeOut = -1;
-
-				if (cgi->pipeIn != -1)
-				{
-					safeClose(cgi->pipeIn);
-					cgi->pipeIn = -1;
-				}
-
-				if (cgi->pipeErr != -1)
-				{
-					safeClose(cgi->pipeErr);
-					cgi->pipeErr = -1;
-				}
-
-				int status = 0; // Always initialize for WNOHANG
-				int waitRet = waitpid(cgi->pid, &status, WNOHANG);
-
-				if (waitRet == 0) {
-					// The CGI closed its stdout but is still running (e.g., infinite sleep).
-					// We kill it immediately so it doesn't become a zombie process.
-					kill(cgi->pid, SIGKILL);
-					
-					// Perform a blocking waitpid which will be instant since we just killed it.
-					waitpid(cgi->pid, &status, 0); 
-				}
-
-				bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos) || 
-									  (cgi->output.find("Content-type:") != std::string::npos);
-				bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status)) || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
-
-				if (cgiError)
-				{
-					const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
-					client.buildErrorResponse(500, cfg);
-				}
-				else
-				{
-					CGIResult result;
-					result.output = cgi->output;
-					CGI cgiParser;
-					cgiParser.parseHeaders(cgi->output, result);
-					client.buildResponseFromCGI(result);
-				}
-
-				if (cgiError)
-				{
-					Server::logClientResponse(client);
-					if (!cgi->errorOutput.empty())
-						Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
-				}
-
-				delete cgi;
-				client.setCGIProcess(NULL);
-				client.setState(STATE_KEEPALIVE);
-
-				for (size_t i = 0; i < _pollFds.size(); ++i)
-					if (_pollFds[i].fd == it->first)
-					{
-						_pollFds[i].events |= POLLOUT;
-						break;
-					}
-				return;
-			}
+				finalizeCGI(client, cgi, it->first);
+			return;
 		}
 
-		// Handle pipeIn (writing POST body to CGI)
+		// Handle pipeIn (writing POST body to CGI stdin)
 		if (cgi->pipeIn == pipeFd)
 		{
-			// Fatal error on pipeIn: CGI died or pipe broken
-			if ((_pollFds[pipeIndex].revents & (POLLERR | POLLHUP | POLLNVAL))
-				&& !(_pollFds[pipeIndex].revents & POLLOUT))
-			{
-				cgi->inputWritten = true;
-				_pollFds.erase(_pollFds.begin() + pipeIndex);
-				_socketTypes.erase(pipeFd);
-				safeClose(cgi->pipeIn);
-				cgi->pipeIn = -1;
-				return;
-			}
-
-			// Normal write path
 			if ((_pollFds[pipeIndex].revents & POLLOUT) && !cgi->inputWritten)
 			{
 				const std::string &body = client.getRequest().getBody();
@@ -793,17 +818,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						if (cgi->bytesWritten >= body.size())
 						{
 							cgi->inputWritten = true;
-
-							// Remove from poll THEN close
-							for (size_t i = 0; i < _pollFds.size(); ++i)
-							{
-								if (_pollFds[i].fd == cgi->pipeIn)
-								{
-									_pollFds.erase(_pollFds.begin() + i);
-									_socketTypes.erase(cgi->pipeIn);
-									break;
-								}
-							}
+							removePollFd(cgi->pipeIn);
 							safeClose(cgi->pipeIn);
 							cgi->pipeIn = -1;
 						}
@@ -812,23 +827,15 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					{
 						std::cerr << "[CGI] Write error to stdin: " << strerror(errno) << std::endl;
 						cgi->inputWritten = true;
-						for (size_t i = 0; i < _pollFds.size(); ++i)
-						{
-							if (_pollFds[i].fd == cgi->pipeIn)
-							{
-								_pollFds.erase(_pollFds.begin() + i);
-								_socketTypes.erase(cgi->pipeIn);
-								break;
-							}
-						}
+						removePollFd(cgi->pipeIn);
 						safeClose(cgi->pipeIn);
 						cgi->pipeIn = -1;
 					}
 					// EAGAIN/EWOULDBLOCK: silent, will retry on next poll cycle
 				}
 			}
+			return;
 		}
-		continue;
 	}
 }
 
