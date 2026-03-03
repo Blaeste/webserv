@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 13:45:04 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/03 11:50:47 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -108,7 +108,9 @@ fclean: clean
 	echo "✓ Executable removed"
 
 # Rebuild everything from scratch
-re: fclean all
+re:
+	@$(MAKE) --no-print-directory fclean 2>/dev/null
+	@$(MAKE) --no-print-directory all 2>/dev/null
 
 # Run the server in a new xterm with config file selection
 run: $(NAME)
