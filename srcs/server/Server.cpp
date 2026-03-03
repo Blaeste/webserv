@@ -298,6 +298,27 @@ void Server::handleClientRead(size_t clientIndex)
 		return;
 	}
 
+	// Log request start after headers are parsed so Host-based vhost is accurate
+	const ServerConfig *effectiveCfg = selectConfig(client.getRequest(), clientFd);
+	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && effectiveCfg)
+	{
+		std::string method = client.getRequest().getMethod();
+		std::string uri = client.getRequest().getUri();
+		if (!client.getRequest().headersParsed())
+		{
+			if (method.empty())
+				method = "UNKNOWN";
+			if (uri.empty())
+				uri = "/";
+		}
+		size_t declSize = std::numeric_limits<size_t>::max();
+		if ((method == "POST" || method == "PUT" || method == "PATCH") && !client.getRequest().isChunked())
+			declSize = client.getRequest().getContentLength();
+		Logger::logRequestStart(client.getSocket(), method, uri, client.getClientIp(),
+						effectiveCfg->getServerName(), effectiveCfg->getPort(), declSize);
+		client.markRequestLogged();
+	}
+
 	// If an early error response is already prepared (e.g., size limit), switch to write-only
 	if (client.isResponseReady())
 	{
@@ -307,7 +328,7 @@ void Server::handleClientRead(size_t clientIndex)
 
 	// Early size guard: if body already exceeds configured limit (location override
 	// server default if defined), send 413 and close.
-	const ServerConfig *earlyCfg = selectConfig(client.getRequest(), clientFd);
+	const ServerConfig *earlyCfg = effectiveCfg;
 	if (!client.isResponseReady() && earlyCfg)
 	{
 		// Default to server-level limit
@@ -503,7 +524,8 @@ void Server::handleClientWrite(size_t clientIndex)
 				declSize = client.getRequest().getContentLength();
 		}
 		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
-								client.getClientIp(), cfg->getServerName(), cfg->getPort(), declSize);
+							client.getClientIp(), cfg->getServerName(), cfg->getPort(), declSize);
+		client.markRequestLogged();
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;
