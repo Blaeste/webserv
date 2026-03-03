@@ -70,6 +70,7 @@ public:
 	bool isRequestComplete() const { return _requestComplete; }
 	bool isResponseReady() const { return _responseReady; }
 	bool shouldCloseAfterResponse() const { return _closeAfterResponse; }
+	bool isRequestLogged() const { return _requestLogged; }
 	CGIProcess *getCGIProcess() const { return _cgiProcess; }
 	time_t getRequestStartTime() const { return _requestStartTime; }
 
@@ -77,6 +78,7 @@ public:
 	void updateActivity() { _lastActivity = std::time(NULL); }
 	void setState(ClientState state) { _state = state; }
 	void setCGIProcess(CGIProcess *cgi) { _cgiProcess = cgi; }
+	void markRequestLogged() { _requestLogged = true; }
 
 	/**
 	 * @brief Checks if the client connection has timed out

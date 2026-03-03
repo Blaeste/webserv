@@ -68,20 +68,10 @@ bool Client::readData(const ServerConfig *config)
 		return false;
 	// Append only the new data to the request
 	std::string newData(buffer, bytesRead);
-	bool wasHeadersParsed = _request.headersParsed();
 	_request.appendData(newData);
 
 	// Log request start as soon as headers are parsed
-	if (!wasHeadersParsed && _request.headersParsed() && !_requestLogged && config)
-	{
-		size_t declSize = std::numeric_limits<size_t>::max();
-		const std::string &m = _request.getMethod();
-		if ((m == "POST" || m == "PUT" || m == "PATCH") && !_request.isChunked())
-			declSize = _request.getContentLength();
-		Logger::logRequestStart(_socket, _request.getMethod(), _request.getUri(), _clientIp,
-								config->getServerName(), config->getPort(), declSize);
-		_requestLogged = true;
-	}
+	// Logging moved to Server::handleClientRead once Host header is fully parsed
 
 	if (_request.isComplete())
 	{
@@ -92,18 +82,7 @@ bool Client::readData(const ServerConfig *config)
 			markCloseAfterResponse();
 			_responseReady = true;
 
-			// Log failed request if headers weren't parsed
-			if (!_requestLogged && config)
-			{
-				std::string method = _request.getMethod().empty() ? "UNKNOWN" : _request.getMethod();
-				std::string uri = _request.getUri().empty() ? "/" : _request.getUri();
-				size_t declSize = std::numeric_limits<size_t>::max();
-				if ((method == "POST" || method == "PUT" || method == "PATCH") && !_request.isChunked())
-					declSize = _request.getContentLength();
-				Logger::logRequestStart(_socket, method, uri, _clientIp,
-										config->getServerName(), config->getPort(), declSize);
-				_requestLogged = true;
-			}
+			// Logging moved to Server::handleClientRead once Host header is fully parsed
 		}
 	}
 	updateActivity();
