@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/02 15:40:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/03 13:39:25 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,15 +58,6 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 	size_t queryPos = uri.find('?');
 	if (queryPos != std::string::npos)
 		pathPart = uri.substr(0, queryPos);
-
-	// Security: block path traversal in URI (both raw and encoded)
-	if (pathPart.find("..") != std::string::npos ||
-		pathPart.find("%2e%2e") != std::string::npos ||
-		pathPart.find("%2E%2E") != std::string::npos)
-	{
-		match.statusCode = 403;
-		return match;
-	}
 
 	// Find matching location block
 	match.location = findMatchingLocation(config, pathPart);
