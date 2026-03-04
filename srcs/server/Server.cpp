@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/04 18:11:01 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/04 18:26:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,10 @@ Server::~Server()
 	}
 	// Close all active Client and CGI sockets (skip signal pipe at index 0)
 	for (size_t i = 1; i < _pollFds.size(); i++)
-		safeClose(_pollFds[i].fd);
+	{
+		if (_pollFds[i].fd != -1)
+			safeClose(_pollFds[i].fd);
+	}
 	// Close signal pipe explicitly
 	if (_s_sigpipe[0] >= 0)
 		safeClose(_s_sigpipe[0]);
@@ -87,16 +90,21 @@ void Server::run()
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size();) // no i++ here !
+		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
+			// Skip soft-deleted entries
+			if (_pollFds[i].fd == -1)
+				continue;
+
 			int revents = _pollFds[i].revents;
 			if (!revents)
-			{
-				i++; // Only if no event
 				continue;
-			}
+
 			int fd = _pollFds[i].fd;
-			SocketType type = _socketTypes[fd];
+			std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
+			if (typeIt == _socketTypes.end())
+				continue;
+			SocketType type = typeIt->second;
 
 			// Handle unexpected disconnection / socket errors early
 			// POLLERR/POLLHUP/POLLNVAL without POLLIN could cause a busy-loop
@@ -106,43 +114,45 @@ void Server::run()
 				continue;
 			}
 
-			size_t oldSize = _pollFds.size(); // Remember size
-
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN)
 			{
-				// Handle SIGINT, SIGQUIT or SIGTERM
 				if (type == SOCKET_SIGNAL)
 				{
 					handleSignalPipeReadable();
 					break;
 				}
-
-				// Handle listen socket
-				if (type == SOCKET_LISTEN)
+				else if (type == SOCKET_LISTEN)
 					acceptNewClient(fd);
-
-				// Handle client socket
 				else if (type == SOCKET_CLIENT)
 					handleClientRead(i);
 			}
 
-			// Re-verify after POLLIN: _pollFds[i] may have changed if client was removed
-			if (_pollFds.size() < oldSize)
-				continue; // Client removed during POLLIN, i now points to next element
+			// handleClientRead may have soft-deleted this fd
+			if (_pollFds[i].fd == -1)
+				continue;
 
 			// Handle POLLOUT (socket ready to write)
 			if (revents & POLLOUT && type == SOCKET_CLIENT)
 				handleClientWrite(i);
 
+			// handleClientWrite may have soft-deleted this fd
+			if (_pollFds[i].fd == -1)
+				continue;
+
 			// Handle CGI pipes
 			if (type == SOCKET_CGI)
 				handleCGIPipe(i);
+		}
 
-			// If an element was removed, i already points to the next entry
-			if (_pollFds.size() < oldSize)
-				continue;
-			i++;
+		// --- GARBAGE COLLECTOR ---
+		// Clean up all soft-deleted entries in one pass
+		for (std::vector<pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); )
+		{
+			if (it->fd == -1)
+				it = _pollFds.erase(it);
+			else
+				++it;
 		}
 	}
 }
@@ -536,7 +546,7 @@ void Server::removePollFd(int fd)
 	{
 		if (_pollFds[i].fd == fd)
 		{
-			_pollFds.erase(_pollFds.begin() + i);
+			_pollFds[i].fd = -1;
 			_socketTypes.erase(fd);
 			return;
 		}
@@ -568,7 +578,7 @@ void Server::handleSocketError(size_t i)
 	std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
 	if (typeIt == _socketTypes.end())
 	{
-		_pollFds.erase(_pollFds.begin() + i);
+		_pollFds[i].fd = -1;
 		safeClose(fd);
 		return;
 	}
@@ -594,10 +604,10 @@ void Server::handleSocketError(size_t i)
 			if (!cgi)
 				continue;
 
-			// Broken stderr pipe: index i is known, erase directly
+			// Broken stderr pipe
 			if (cgi->pipeErr == fd)
 			{
-				_pollFds.erase(_pollFds.begin() + i);
+				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
 				safeClose(cgi->pipeErr);
 				cgi->pipeErr = -1;
@@ -605,18 +615,17 @@ void Server::handleSocketError(size_t i)
 			}
 
 			// Broken stdout pipe: finalize CGI (build response, cleanup)
-			// removePollFd is called inside finalizeCGI for all pipes — search unavoidable
 			if (cgi->pipeOut == fd)
 			{
 				finalizeCGI(client, cgi, it->first);
 				return;
 			}
 
-			// Broken stdin pipe: index i is known, erase directly
+			// Broken stdin pipe
 			if (cgi->pipeIn == fd)
 			{
 				cgi->inputWritten = true;
-				_pollFds.erase(_pollFds.begin() + i);
+				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
 				safeClose(cgi->pipeIn);
 				cgi->pipeIn = -1;
@@ -629,7 +638,7 @@ void Server::handleSocketError(size_t i)
 	// Remove and close to prevent busy-loop
 	std::cerr << "[Server] Unhandled socket error on fd " << fd
 			<< " (type=" << type << "), removing to prevent busy-loop" << std::endl;
-	_pollFds.erase(_pollFds.begin() + i);
+	_pollFds[i].fd = -1;
 	_socketTypes.erase(fd);
 	safeClose(fd);
 }
@@ -758,16 +767,14 @@ void Server::handleCGITimeouts()
 			if (cgi->pipeErr != -1)
 				close(cgi->pipeErr);
 
-			// Remove pipes from poll
-			for (size_t i = 0; i < _pollFds.size();)
+			// Remove pipes from poll (soft delete)
+			for (size_t i = 0; i < _pollFds.size(); i++)
 			{
 				if (_pollFds[i].fd == cgi->pipeOut || _pollFds[i].fd == cgi->pipeIn || _pollFds[i].fd == cgi->pipeErr)
 				{
 					_socketTypes.erase(_pollFds[i].fd);
-					_pollFds.erase(_pollFds.begin() + i);
+					_pollFds[i].fd = -1;
 				}
-				else
-					i++;
 			}
 
 			// Build 504 Gateway Timeout response
@@ -811,8 +818,8 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				cgi->errorOutput.append(buffer, bytes);
 			else
 			{
-				// EOF or error on stderr - remove from poll THEN close
-				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				// EOF or error on stderr
+				_pollFds[pipeIndex].fd = -1;
 				_socketTypes.erase(pipeFd);
 				safeClose(cgi->pipeErr);
 				cgi->pipeErr = -1;
