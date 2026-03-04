@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:42:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/04 18:46:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,8 +19,9 @@
 #include "../utils/utils.hpp"
 #include <cerrno>				// errno, EAGAIN, EWOULDBLOCK
 #include <cstring>				// strerror
-#include <iostream>				// std::cerr
+#include <iostream>				// std::cout
 #include <limits>				// std::numeric_limits
+#include <sstream>				// std::stringstream
 #include <sys/socket.h>			// recv, send
 
 // Constructor -----------------------------------------------------------------
@@ -229,7 +230,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 		}
 		catch (const std::exception &e)
 		{
-			std::cerr << "[Client] buildErrorResponse: " << e.what() << std::endl;
+			Logger::logMessage(RED "[Client] buildErrorResponse: " + std::string(e.what()) + RESET);
 			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 		}
 	}
@@ -257,8 +258,12 @@ bool Client::sendResponse()
 		{
 			if (errno == EAGAIN || errno == EWOULDBLOCK)
 				return false; // Not done yet, will retry on next POLLOUT
-			std::cerr << "[Client] sendResponse: send failed on fd " << _socket << " errno=" << errno
-					  << " (" << strerror(errno) << ")" << std::endl;
+			{
+				std::stringstream ss;
+				ss << RED "[Client] sendResponse: send failed on fd " << _socket << " errno=" << errno
+				   << " (" << strerror(errno) << ")" RESET;
+				Logger::logMessage(ss.str());
+			}
 			return false;
 		}
 		if (!sent)

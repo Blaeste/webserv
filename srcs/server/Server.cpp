@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/04 18:26:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/04 18:46:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -226,7 +226,7 @@ void Server::acceptNewClient(int listenSocket)
 	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
 	if (clientFd < 0)
 	{
-		std::cerr << "[Server] accept failed on fd " << listenSocket << std::endl;
+		Logger::logMessage(RED "[Server] accept failed on fd " + intToString(listenSocket) + RESET);
 		return; // No connection available right now
 	}
 
@@ -244,7 +244,7 @@ void Server::acceptNewClient(int listenSocket)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[Server] " << e.what() << " for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] " + std::string(e.what()) + " for fd " + intToString(clientFd) + RESET);
 		safeClose(clientFd);
 		return;
 	}
@@ -290,7 +290,7 @@ void Server::handleClientRead(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
 		return;
 	}
 	Client &client = it->second;
@@ -482,7 +482,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
 		return;
 	}
 	Client &client = it->second;
@@ -636,8 +636,12 @@ void Server::handleSocketError(size_t i)
 
 	// Fallback: unhandled socket type or orphan CGI pipe
 	// Remove and close to prevent busy-loop
-	std::cerr << "[Server] Unhandled socket error on fd " << fd
-			<< " (type=" << type << "), removing to prevent busy-loop" << std::endl;
+	{
+		std::stringstream ss;
+		ss << RED "[Server] Unhandled socket error on fd " << fd
+		   << " (type=" << type << "), removing to prevent busy-loop" RESET;
+		Logger::logMessage(ss.str());
+	}
 	_pollFds[i].fd = -1;
 	_socketTypes.erase(fd);
 	safeClose(fd);
@@ -865,7 +869,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 					}
 					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
 					{
-						std::cerr << "[CGI] Write error to stdin: " << strerror(errno) << std::endl;
+						Logger::logMessage(RED "[CGI] Write error to stdin: " + std::string(strerror(errno)) + RESET);
 						cgi->inputWritten = true;
 						removePollFd(cgi->pipeIn);
 						safeClose(cgi->pipeIn);
