@@ -495,9 +495,14 @@ void Server::handleClientWrite(size_t clientIndex)
 
 	if (!sendComplete)
 	{
-		// Sending not complete (EAGAIN or large response)
-		// Keep POLLOUT active and retry later
-		return; // Don't close connection yet
+		// Send error: clean up the client immediately
+		if (client.shouldCloseAfterResponse())
+		{
+			Server::logClientResponse(client);
+			removeClient(clientFd);
+		}
+		// Otherwise: large response, retry on next POLLOUT
+		return;
 	}
 
 	// Response fully sent
@@ -867,15 +872,14 @@ void Server::handleCGIPipe(size_t pipeIndex)
 							cgi->pipeIn = -1;
 						}
 					}
-					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+					else if (written < 0)
 					{
-						Logger::logMessage(RED "[CGI] Write error to stdin: " + std::string(strerror(errno)) + RESET);
+						Logger::logMessage(RED "[CGI] Write error to stdin pipe" RESET);
 						cgi->inputWritten = true;
 						removePollFd(cgi->pipeIn);
 						safeClose(cgi->pipeIn);
 						cgi->pipeIn = -1;
 					}
-					// EAGAIN/EWOULDBLOCK: silent, will retry on next poll cycle
 				}
 			}
 			return;
@@ -909,8 +913,8 @@ void Server::handleSessionTimeouts()
 void Server::handleSignalPipeReadable()
 {
 	char buf[64];
-	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0)
-		;
+	ssize_t bytes = read(_s_sigpipe[0], buf, sizeof(buf));
+	(void)bytes;
 	_running = false;
 }
 

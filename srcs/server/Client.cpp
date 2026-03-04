@@ -17,8 +17,6 @@
 #include "../utils/Logger.hpp"
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
-#include <cerrno>				// errno, EAGAIN, EWOULDBLOCK
-#include <cstring>				// strerror
 #include <iostream>				// std::cout
 #include <limits>				// std::numeric_limits
 #include <sstream>				// std::stringstream
@@ -249,38 +247,33 @@ bool Client::sendResponse()
 		_bytesSent = 0;
 	}
 
-	// Send remaining data
+	// Send one chunk per call — poll(POLLOUT) will call us again when ready
 	size_t remaining = _cachedResponse.size() - _bytesSent;
-	while (remaining)
-	{
-		ssize_t sent = send(_socket, _cachedResponse.data() + _bytesSent, remaining, 0);
-		if (sent < 0)
-		{
-			if (errno == EAGAIN || errno == EWOULDBLOCK)
-				return false; // Not done yet, will retry on next POLLOUT
-			{
-				std::stringstream ss;
-				ss << RED "[Client] sendResponse: send failed on fd " << _socket << " errno=" << errno
-				   << " (" << strerror(errno) << ")" RESET;
-				Logger::logMessage(ss.str());
-			}
-			return false;
-		}
-		if (!sent)
-			break; // Connection closed by peer
-
-		_bytesSent += sent;
-		remaining -= sent;
-	}
-
 	if (!remaining)
 	{
-		_cachedResponse.clear(); // Free memory
+		_cachedResponse.clear();
 		_bytesSent = 0;
 		return true;
 	}
 
-	return false; // Not complete yet
+	ssize_t sent = send(_socket, _cachedResponse.data() + _bytesSent, remaining, 0);
+	if (sent <= 0)
+	{
+		if (sent < 0)
+			Logger::logMessage(RED "[Client] sendResponse: send failed on fd " + intToString(_socket) + RESET);
+		markCloseAfterResponse();
+		return false;
+	}
+
+	_bytesSent += sent;
+	if (_bytesSent >= _cachedResponse.size())
+	{
+		_cachedResponse.clear();
+		_bytesSent = 0;
+		return true;
+	}
+
+	return false; // More data to send, wait for next POLLOUT
 }
 
 void Client::stashLeftoverFromRequest()
