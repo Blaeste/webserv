@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:47:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:21:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ std::string CGI::readFromPipe(int fd) {
 	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
 		result.append(buffer, bytesRead);
 	if (bytesRead < 0)
-		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "readFromPipe: read failed");
+		Logger::logMessage(RED "[CGI] Error: " RESET "readFromPipe: read failed");
 	return result;
 }
 
@@ -150,12 +150,12 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 	std::string interpreter = buildAbsolutePath(match.location->getCgiPath());
 
 	if (access(interpreter.c_str(), X_OK) != 0) {
-		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Interpreter not executable: " + interpreter);
+		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Interpreter not executable: " + interpreter);
 		return NULL;
 	}
 
 	if (access(match.filePath.c_str(), R_OK) != 0) {
-		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Script not readable: " + match.filePath);
+		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Script not readable: " + match.filePath);
 		return NULL;
 	}
 
@@ -167,7 +167,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 	int pipeErr[2];  // CGI stderr
 
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1) {
-		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Error: pipe failed");
+		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: pipe failed");
 		delete cgi;
 		return NULL;
 	}
@@ -176,7 +176,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 	pid_t pid = fork();
 
 	if (pid == -1) {
-		Logger::logMessage(std::string(RED) + "CGI Error: " + RESET + "Fork failed");
+		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Fork failed");
 		close(pipeOut[0]); close(pipeOut[1]);
 		close(pipeIn[0]); close(pipeIn[1]);
 		close(pipeErr[0]); close(pipeErr[1]);
