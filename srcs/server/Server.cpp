@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/03 21:55:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 10:14:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,7 +59,10 @@ Server::~Server()
 	}
 	// Close all active Client and CGI sockets (skip signal pipe at index 0)
 	for (size_t i = 1; i < _pollFds.size(); i++)
-		safeClose(_pollFds[i].fd);
+	{
+		if (_pollFds[i].fd != -1)
+			safeClose(_pollFds[i].fd);
+	}
 	// Close signal pipe explicitly
 	if (_s_sigpipe[0] >= 0)
 		safeClose(_s_sigpipe[0]);
@@ -87,64 +90,69 @@ void Server::run()
 			continue;
 
 		// Process events on each socket
-		for (size_t i = 0; i < _pollFds.size();) // no i++ here !
+		for (size_t i = 0; i < _pollFds.size(); i++)
 		{
+			// Skip soft-deleted entries
+			if (_pollFds[i].fd == -1)
+				continue;
+
 			int revents = _pollFds[i].revents;
 			if (!revents)
-			{
-				i++; // Only if no event
 				continue;
-			}
+
 			int fd = _pollFds[i].fd;
-			SocketType type = _socketTypes[fd];
+			std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
+			if (typeIt == _socketTypes.end())
+				continue;
+			SocketType type = typeIt->second;
 
 			// Handle unexpected disconnection / socket errors early
 			// POLLERR/POLLHUP/POLLNVAL without POLLIN could cause a busy-loop
 			if ((revents & (POLLERR | POLLHUP | POLLNVAL)) && !(revents & POLLIN))
-				if (handleSocketError(i))
-					continue;
-
-			size_t oldSize = _pollFds.size(); // Remember size
+			{
+				handleSocketError(i);
+				continue;
+			}
 
 			// Handle POLLIN (incoming data to read)
 			if (revents & POLLIN)
 			{
-				// Handle SIGINT, SIGQUIT or SIGTERM
 				if (type == SOCKET_SIGNAL)
 				{
 					handleSignalPipeReadable();
 					break;
 				}
-
-				// Handle listen socket
-				if (type == SOCKET_LISTEN)
+				else if (type == SOCKET_LISTEN)
 					acceptNewClient(fd);
-
-				// Handle client socket
 				else if (type == SOCKET_CLIENT)
 					handleClientRead(i);
 			}
 
-			// Re-verify after POLLIN: _pollFds[i] may have changed if client was removed
-			if (_pollFds.size() < oldSize)
-				continue; // Client removed during POLLIN, i now points to next element
-
-			// Re-read fd and type after potential modifications
-			fd = _pollFds[i].fd;
-			type = _socketTypes[fd];
+			// handleClientRead may have soft-deleted this fd
+			if (_pollFds[i].fd == -1)
+				continue;
 
 			// Handle POLLOUT (socket ready to write)
 			if (revents & POLLOUT && type == SOCKET_CLIENT)
 				handleClientWrite(i);
 
+			// handleClientWrite may have soft-deleted this fd
+			if (_pollFds[i].fd == -1)
+				continue;
+
 			// Handle CGI pipes
 			if (type == SOCKET_CGI)
 				handleCGIPipe(i);
+		}
 
-			// If an element was removed, i already points to the next entry
-			if (_pollFds.size() < oldSize)
-				continue;
-			i++;
+		// --- GARBAGE COLLECTOR ---
+		// Clean up all soft-deleted entries in one pass
+		for (std::vector<pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); )
+		{
+			if (it->fd == -1)
+				it = _pollFds.erase(it);
+			else
+				++it;
 		}
 	}
 }
@@ -167,29 +175,35 @@ void Server::setupListenSockets()
 			continue; // Skip duplicate ports
 		}
 		port.push_back(_configs[i].getPort());
-		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // IPv4, TCP
-		if (listenFd < 0)
-			throw std::runtime_error("socket() failed");
 
-		// Configure SO_REUSEADDR to allow address reuse and prevent "Address already in use" error
-		int opt = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-		{
-			safeClose(listenFd);
-			throw std::runtime_error("setsockopt() failed");
-		}
+		// Create a TCP socket (file descriptor = entry point for network communication)
+        int listenFd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
+        if (listenFd < 0)
+            throw std::runtime_error("socket() failed");
 
-		// Configure the server address structure
-		struct sockaddr_in addr;
-		std::memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;		   // IPv4
-		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
-		addr.sin_port = htons(_configs[i].getPort());	   // Convert port to network byte order
-		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		{
-			safeClose(listenFd);
-			throw std::runtime_error("bind() failed");
-		}
+        // Allow reuse of the port immediately after server restart
+        // Without this, bind() would fail with "Address already in use" for ~60s (TIME_WAIT state)
+        int opt = 1;
+        if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        {
+            safeClose(listenFd);
+            throw std::runtime_error("setsockopt() failed");
+        }
+
+        // Define the local address the socket will be bound to (IP + port)
+        struct sockaddr_in addr;
+        std::memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;                        // IPv4 address family
+        addr.sin_addr.s_addr = INADDR_ANY;                // Accept connections on all local network interfaces (0.0.0.0)
+        addr.sin_port = htons(_configs[i].getPort());     // Port from config, converted to network byte order (big-endian)
+
+        // Bind the socket fd to the address structure above
+        // After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
+        if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        {
+            safeClose(listenFd);
+            throw std::runtime_error("bind() failed");
+        }
 
 		// Start listening for incoming connections
 		if (listen(listenFd, 128) < 0)
@@ -218,7 +232,7 @@ void Server::acceptNewClient(int listenSocket)
 	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
 	if (clientFd < 0)
 	{
-		std::cerr << "[Server] accept failed on fd " << listenSocket << std::endl;
+		Logger::logMessage(RED "[Server] accept failed on fd " + intToString(listenSocket) + RESET);
 		return; // No connection available right now
 	}
 
@@ -236,7 +250,7 @@ void Server::acceptNewClient(int listenSocket)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[Server] " << e.what() << " for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] " + std::string(e.what()) + " for fd " + intToString(clientFd) + RESET);
 		safeClose(clientFd);
 		return;
 	}
@@ -282,7 +296,7 @@ void Server::handleClientRead(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
 		return;
 	}
 	Client &client = it->second;
@@ -474,7 +488,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		std::cerr << "Error: client not found for fd " << clientFd << std::endl;
+		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
 		return;
 	}
 	Client &client = it->second;
@@ -487,9 +501,14 @@ void Server::handleClientWrite(size_t clientIndex)
 
 	if (!sendComplete)
 	{
-		// Sending not complete (EAGAIN or large response)
-		// Keep POLLOUT active and retry later
-		return; // Don't close connection yet
+		// Send error: clean up the client immediately
+		if (client.shouldCloseAfterResponse())
+		{
+			Server::logClientResponse(client);
+			removeClient(clientFd);
+		}
+		// Otherwise: large response, retry on next POLLOUT
+		return;
 	}
 
 	// Response fully sent
@@ -538,7 +557,7 @@ void Server::removePollFd(int fd)
 	{
 		if (_pollFds[i].fd == fd)
 		{
-			_pollFds.erase(_pollFds.begin() + i);
+			_pollFds[i].fd = -1;
 			_socketTypes.erase(fd);
 			return;
 		}
@@ -564,10 +583,17 @@ void Server::removeClient(int fd)
 	removePollFd(fd);
 }
 
-bool Server::handleSocketError(size_t i)
+void Server::handleSocketError(size_t i)
 {
 	int fd = _pollFds[i].fd;
-	SocketType type = _socketTypes[fd];
+	std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
+	if (typeIt == _socketTypes.end())
+	{
+		_pollFds[i].fd = -1;
+		safeClose(fd);
+		return;
+	}
+	SocketType type = typeIt->second;
 
 	// Client socket: log and remove
 	if (type == SOCKET_CLIENT)
@@ -576,7 +602,7 @@ bool Server::handleSocketError(size_t i)
 		if (it != _clients.end())
 			Server::logClientResponse(it->second);
 		removeClient(fd);
-		return true;
+		return;
 	}
 
 	// CGI pipe: find owning client and handle the broken pipe
@@ -589,37 +615,47 @@ bool Server::handleSocketError(size_t i)
 			if (!cgi)
 				continue;
 
-			// Broken stderr pipe: index i is known, erase directly
+			// Broken stderr pipe
 			if (cgi->pipeErr == fd)
 			{
-				_pollFds.erase(_pollFds.begin() + i);
+				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
 				safeClose(cgi->pipeErr);
 				cgi->pipeErr = -1;
-				return true;
+				return;
 			}
 
 			// Broken stdout pipe: finalize CGI (build response, cleanup)
-			// removePollFd is called inside finalizeCGI for all pipes — search unavoidable
 			if (cgi->pipeOut == fd)
 			{
 				finalizeCGI(client, cgi, it->first);
-				return true;
+				return;
 			}
 
-			// Broken stdin pipe: index i is known, erase directly
+			// Broken stdin pipe
 			if (cgi->pipeIn == fd)
 			{
 				cgi->inputWritten = true;
-				_pollFds.erase(_pollFds.begin() + i);
+				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
 				safeClose(cgi->pipeIn);
 				cgi->pipeIn = -1;
-				return true;
+				return;
 			}
 		}
 	}
-	return false;
+
+	// Fallback: unhandled socket type or orphan CGI pipe
+	// Remove and close to prevent busy-loop
+	{
+		std::stringstream ss;
+		ss << RED "[Server] Unhandled socket error on fd " << fd
+		   << " (type=" << type << "), removing to prevent busy-loop" RESET;
+		Logger::logMessage(ss.str());
+	}
+	_pollFds[i].fd = -1;
+	_socketTypes.erase(fd);
+	safeClose(fd);
 }
 
 void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
@@ -746,16 +782,14 @@ void Server::handleCGITimeouts()
 			if (cgi->pipeErr != -1)
 				close(cgi->pipeErr);
 
-			// Remove pipes from poll
-			for (size_t i = 0; i < _pollFds.size();)
+			// Remove pipes from poll (soft delete)
+			for (size_t i = 0; i < _pollFds.size(); i++)
 			{
 				if (_pollFds[i].fd == cgi->pipeOut || _pollFds[i].fd == cgi->pipeIn || _pollFds[i].fd == cgi->pipeErr)
 				{
 					_socketTypes.erase(_pollFds[i].fd);
-					_pollFds.erase(_pollFds.begin() + i);
+					_pollFds[i].fd = -1;
 				}
-				else
-					i++;
 			}
 
 			// Build 504 Gateway Timeout response
@@ -799,8 +833,8 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				cgi->errorOutput.append(buffer, bytes);
 			else
 			{
-				// EOF or error on stderr - remove from poll THEN close
-				_pollFds.erase(_pollFds.begin() + pipeIndex);
+				// EOF or error on stderr
+				_pollFds[pipeIndex].fd = -1;
 				_socketTypes.erase(pipeFd);
 				safeClose(cgi->pipeErr);
 				cgi->pipeErr = -1;
@@ -844,15 +878,14 @@ void Server::handleCGIPipe(size_t pipeIndex)
 							cgi->pipeIn = -1;
 						}
 					}
-					else if (written < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+					else if (written < 0)
 					{
-						std::cerr << "[CGI] Write error to stdin: " << strerror(errno) << std::endl;
+						Logger::logMessage(RED "[CGI] Write error to stdin pipe" RESET);
 						cgi->inputWritten = true;
 						removePollFd(cgi->pipeIn);
 						safeClose(cgi->pipeIn);
 						cgi->pipeIn = -1;
 					}
-					// EAGAIN/EWOULDBLOCK: silent, will retry on next poll cycle
 				}
 			}
 			return;
@@ -886,8 +919,8 @@ void Server::handleSessionTimeouts()
 void Server::handleSignalPipeReadable()
 {
 	char buf[64];
-	while (read(_s_sigpipe[0], buf, sizeof(buf)) > 0)
-		;
+	ssize_t bytes = read(_s_sigpipe[0], buf, sizeof(buf));
+	(void)bytes;
 	_running = false;
 }
 
