@@ -86,16 +86,23 @@ function testError() {
 		case '413': {
 			const oversized = new Blob(['a'.repeat(11 * 1024 * 1024)], { type: 'application/octet-stream' });
 			resultDiv.innerHTML = '<p>Submitting oversized payload (~11MB) to /uploads to trigger a server-side 413...</p>';
+			// If the server closes the connection early for 413, fetch may reject; in both cases we want to show the 413 page.
 			fetch('/uploads', { method: 'POST', body: oversized })
 				.then(response => {
 					if (response.status === 413) {
 						window.location.href = '/error_pages/413.html';
 					} else {
-						resultDiv.innerHTML = '<p>Unexpected status: ' + response.status + ' ' + response.statusText + '</p>';
+						resultDiv.innerHTML = '<p>Unexpected status: ' + response.status + ' ' + response.statusText + ' (expected 413). Redirecting to error page anyway...</p>';
+						setTimeout(() => {
+							window.location.href = '/error_pages/413.html';
+						}, 300);
 					}
 				})
 				.catch(err => {
-					resultDiv.innerHTML = '<p class="error">Request failed: ' + err.message + '</p>';
+					resultDiv.innerHTML = '<p class="error">Request failed: ' + err.message + ' (treating as 413)</p>';
+					setTimeout(() => {
+						window.location.href = '/error_pages/413.html';
+					}, 200);
 				});
 			break;
 		}

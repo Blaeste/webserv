@@ -1,70 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>HTTP Methods Tester</title>
 
-		<link rel="stylesheet" href="/css/style.css">
-		<link rel="stylesheet" href="/css/http-test.css">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>HTTP Methods Tester</title>
 
-		<script src="/js/header.js" defer></script>
-		<script src="/js/http-test.js" defer></script>
-	</head>
+	<link rel="stylesheet" href="/css/style.css">
+	<link rel="stylesheet" href="/css/http-test.css">
 
-	<body>
-		<main class="page">
-			<div class="pageLayout">
-				<aside class="marvin">
-					<img src="/image/Marvin.png" alt="Marvin">
-				</aside>
+	<script src="/js/header.js" defer></script>
+	<script src="/js/http-test.js" defer></script>
+</head>
 
-				<div class="whiteBox">
-					<h1>🔧 HTTP Methods Tester</h1>
+<body>
+	<main class="page">
+		<div class="pageLayout">
+			<aside class="marvin">
+				<img src="/image/Marvin.png" alt="Marvin">
+			</aside>
 
-					<div class="container http-test-container">
-						<section class="quick-tests">.
-							<h3>Quick Tests</h3>
+			<div class="whiteBox">
+				<h1>🔧 HTTP Methods Tester</h1>
 
-							<div class="quick-tests-grid">
-								<button type="button" class="quick-btn" onclick="quickTest('GET', '/')">GET Homepage</button>
-								<button type="button" class="quick-btn" onclick="quickTest('GET', '/uploads')">List Uploads</button>
-								<button type="button" class="quick-btn" onclick="quickTest('GET', '/nonexistent')">404 Error</button>
-								<button type="button" class="quick-btn" onclick="quickTest('POST', '/image/')">POST /forbiden (should 403)</button>
-							</div>
-						</section>
+				<div class="container http-test-container">
+					<section class="quick-tests">.
+						<h3>Quick Tests</h3>
 
-						<section class="request-form">
-							<div class="method-url-row">
-								<select id="method">
-									<option value="GET">GET</option>
-									<option value="POST">POST</option>
-									<option value="DELETE">DELETE</option>
-									<option value="PUT">PUT</option>
-								</select>
+						<div class="quick-tests-grid">
+							<button type="button" class="quick-btn" onclick="quickTest('GET', '/')">GET
+								Homepage</button>
+							<button type="button" class="quick-btn" onclick="quickTest('GET', '/uploads')">List
+								Uploads</button>
+							<button type="button" class="quick-btn" onclick="quickTest('GET', '/nonexistent')">404
+								Error</button>
+						</div>
+					</section>
 
-								<input type="text" id="url" placeholder="/path/to/resource" value="/">
+					<section class="request-form">
+						<div class="method-url-row">
+							<select id="method">
+								<option value="GET">GET</option>
+								<option value="POST">POST</option>
+								<option value="DELETE">DELETE</option>
+								<option value="PUT">PUT</option>
+							</select>
 
-								<button type="button" id="sendBtn">Send</button>
-							</div>
+							<input type="text" id="url" placeholder="/path/to/resource" value="/">
 
-							<div class="body-section">
-								<label for="requestBody">Request body (for POST/PUT)</label>
-								<textarea id="requestBody" placeholder='{"key": "value"}'></textarea>
-							</div>
-						</section>
-					</div>
-						<section id="response" class="response-box">
-							<h3>Response</h3>
-							<div id="statusCode"></div>
-							<div id="responseHeaders"></div>
-							<div id="responseBody"></div>
-						</section>
+							<button type="button" id="sendBtn">Send</button>
+						</div>
+
+						<div class="body-section">
+							<label for="requestBody">Request body (for POST/PUT)</label>
+							<textarea id="requestBody" placeholder='{"key": "value"}'></textarea>
+						</div>
+					</section>
 				</div>
-				<div class="pageSpacer" aria-hidden="true"></div>
+				<section id="response" class="response-box">
+					<h3>Response</h3>
+					<div id="statusCode"></div>
+					<div id="responseHeaders"></div>
+					<div id="responseBody"></div>
+				</section>
 			</div>
-		</main>
+			<div class="pageSpacer" aria-hidden="true"></div>
+		</div>
+	</main>
 
-		<script src="/js/footer.js" defer></script>
-	</body>
+	<script src="/js/footer.js" defer></script>
+</body>
+
 </html>

@@ -112,9 +112,6 @@ make test
 # Run evaluation test suite (downloads official 42 tester)
 make eval
 
-# Clean evaluation artifacts
-make clear_eval
-
 # Manual testing with curl
 curl http://localhost:8080/
 curl -X POST -F "file=@test.txt" http://localhost:8080/uploads
@@ -125,10 +122,9 @@ curl http://localhost:8080/cgi-bin/php/script.php?name=World
 
 Press `Ctrl+C` or use:
 ```bash
-make kill
-```
 
----
+# kill any process called "webserv"
+make kill
 
 ## Resources
 
@@ -171,6 +167,8 @@ make kill
    - Assisted in creating Makefile rules for automated testing
    - Generated test configuration files for various scenarios
    - Helped design test cases for edge conditions
+   - help to design the website used for testing jss/html
+   - python script the test CGI implementation
 
 **Core implementation** (HTTP parsing, routing logic, CGI execution, socket management, configuration parsing) was **written by the team** with manual design and implementation. AI was used as a **reference tool** and **documentation assistant**, not as a code generator for the main logic.
 
@@ -312,7 +310,6 @@ Client → Server (poll) → accept() → Client
 - No caching headers (Cache-Control, ETag)
 - Single-threaded event loop (non-blocking I/O with poll())
 - CGI execution only (no FastCGI, WSGI, ASGI)
-- No persistent connections (Connection: close after each response)
 
 ---
 
