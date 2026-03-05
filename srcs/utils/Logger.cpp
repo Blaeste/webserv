@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:30:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:02:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,7 @@ bool Logger::_pendingRequest = false;
 std::string Logger::_lastRequestStartTime = "";
 int Logger::_lastDisplayedRequestId = -1;
 int Logger::_currentLine = 0;
+bool Logger::_s_logging = false;
 
 // Private method(s) -----------------------------------------------------------
 std::string Logger::getCurrentTime()
@@ -202,6 +203,7 @@ void Logger::logRequestStart(int requestId, const std::string &method, const std
 							 const std::string &clientIP, std::string serverName, int port, size_t declaredSize)
 {
 	if (_firstLog) {
+		_s_logging = true;
 		printSeparator();
 		std::cout << std::endl;
 		_currentLine++;
@@ -348,6 +350,11 @@ void Logger::logMessage(const std::string &message)
 	printSeparator();
 
 	std::cout.flush();
+}
+
+bool Logger::isLogging()
+{
+	return _s_logging;
 }
 
 void Logger::printSeparator()

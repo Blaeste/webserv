@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpRequest.cpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/03 13:36:19 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/05 10:49:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 #include "../utils/utils.hpp"
 #include <cstdlib>				// std::strtoul
 #include <cctype>				// std::isalpha, std::isalnum, std::isdigit, std::isxdigit
-#include <iostream>				// std::cerr
 #include <sstream>				// std::istringstream, std::getline
 #include <cerrno>				// errno
 

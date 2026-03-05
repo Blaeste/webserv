@@ -6,12 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:33:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:03:13 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "utils.hpp"
+#include "Logger.hpp"
 #include <cctype>			// std::tolower
 #include <cerrno>			// errno, ERANGE
 #include <cstdlib>			// std::strtol, std::getenv
@@ -121,7 +122,7 @@ std::vector<std::string> listDirectory(const std::string &path)
 	DIR *dir = opendir(path.c_str());
 	if (!dir)
 	{
-		std::cerr << "[listDirectory] opendir failed for path: " << path << std::endl;
+		Logger::logMessage(RED "[listDirectory] opendir failed for path: " + path + RESET);
 		return entries; // return empty vector if error
 	}
 
@@ -178,7 +179,13 @@ std::string generateSessionId()
 void safeClose(int fd)
 {
 	if (close(fd) < 0)
-		std::cerr << "[safeClose] close failed on fd " << fd << ": " << std::strerror(errno) << std::endl;
+	{
+		std::string msg = "[safeClose] close failed on fd " + intToString(fd) + ": " + std::strerror(errno);
+		if (Logger::isLogging())
+			Logger::logMessage(RED + msg + RESET);
+		else
+			std::cerr << msg << std::endl;
+	}
 }
 
 // Normalize a path by splitting components and resolving '.' and '..'.
