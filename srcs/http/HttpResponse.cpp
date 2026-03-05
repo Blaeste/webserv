@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:43:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 10:51:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,11 @@
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/MimeTypes.hpp"
+#include "../utils/Logger.hpp"
 #include <cstdio>					// std::remove
 #include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
 #include <iostream>					// std::cerr
 #include <unistd.h>					// write
-#include <cerrno>					// errno
 
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()
@@ -142,7 +142,7 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath, const 
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[HttpResponse] readFile error: " << e.what() << std::endl;
+		Logger::logMessage(RED "[HttpResponse] readFile error: " + std::string(e.what()) + RESET);
 	}
 
 	// Default error page
@@ -202,7 +202,7 @@ void HttpResponse::serveFile(const std::string &path, const std::string &root)
 	}
 	catch (const std::exception &e)
 	{
-		std::cerr << "[HttpResponse] serveFile error: " << e.what() << std::endl;
+		Logger::logMessage(RED "[HttpResponse] serveFile error: " + std::string(e.what()) + RESET);
 		serveError(500, "");
 	}
 }
@@ -294,7 +294,7 @@ void HttpResponse::serveDelete(const std::string &path, const std::string &uploa
 		setStatus(204); // Success: 204 No Content
 	else
 	{
-		std::cerr << "[HttpResponse] serveDelete: remove failed for " << path << std::endl;
+		Logger::logMessage(RED "[HttpResponse] serveDelete: remove failed for " + path + RESET);
 		serveError(500, "");
 	}
 }
@@ -380,7 +380,7 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 
 		if (fd < 0)
 		{
-			std::cerr << "[handleUpload] open failed: " << filePath << std::endl;
+			Logger::logMessage(RED "[handleUpload] open failed: " + filePath + RESET);
 			serveError(500, ""); // Failed to save
 			return;
 		}
@@ -389,7 +389,7 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 		if (!writeAll(fd, files[i].content.data(), files[i].content.size()))
 		{
 			safeClose(fd);
-			std::cerr << "[handleUpload] write failed: " << filePath << std::endl;
+			Logger::logMessage(RED "[handleUpload] write failed: " + filePath + RESET);
 			serveError(500, "");
 			return;
 		}

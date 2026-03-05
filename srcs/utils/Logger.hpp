@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:30:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:01:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,7 @@ class Logger {
 		static std::string _lastRequestStartTime; // Store timestamp from logRequestStart
 		static int _lastDisplayedRequestId; // Track which request displayed the last line
 		static int _currentLine; // Current terminal line number for cursor movement
+		static bool _s_logging; // True while Logger is writing to stdout (guards safeClose output)
 
 		// Private method(s) ---------------------------------------------------
 		static std::string getCurrentTime();
@@ -83,4 +84,5 @@ class Logger {
 							size_t declaredSize = std::numeric_limits<size_t>::max());
 		static void logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime);
 		static void logMessage(const std::string &message);
+		static bool isLogging();
 };
