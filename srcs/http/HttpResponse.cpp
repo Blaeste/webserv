@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 10:51:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:56:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,7 +142,7 @@ void HttpResponse::serveError(int code, const std::string &errorPagePath, const 
 	}
 	catch (const std::exception &e)
 	{
-		Logger::logMessage(RED "[HttpResponse] readFile error: " + std::string(e.what()) + RESET);
+		Logger::logMessage(RED "[HttpResponse] Error: " RESET "serveError: readFile failed: " + std::string(e.what()));
 	}
 
 	// Default error page
@@ -201,8 +201,8 @@ void HttpResponse::serveFile(const std::string &path, const std::string &root)
 		setBody(content);
 	}
 	catch (const std::exception &e)
-	{
-		Logger::logMessage(RED "[HttpResponse] serveFile error: " + std::string(e.what()) + RESET);
+	{	
+		Logger::logMessage(RED "[HttpResponse] Error: " RESET "serveFile: " + std::string(e.what()));
 		serveError(500, "");
 	}
 }
@@ -294,7 +294,7 @@ void HttpResponse::serveDelete(const std::string &path, const std::string &uploa
 		setStatus(204); // Success: 204 No Content
 	else
 	{
-		Logger::logMessage(RED "[HttpResponse] serveDelete: remove failed for " + path + RESET);
+		Logger::logMessage(RED "[HttpResponse] Error: " RESET "serveDelete: remove failed for " + path);
 		serveError(500, "");
 	}
 }
@@ -380,7 +380,7 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 
 		if (fd < 0)
 		{
-			Logger::logMessage(RED "[handleUpload] open failed: " + filePath + RESET);
+			Logger::logMessage(RED "[HttpResponse] Error: " RESET "handleUpload: open failed: " + filePath);
 			serveError(500, ""); // Failed to save
 			return;
 		}
@@ -388,12 +388,12 @@ void HttpResponse::handleUpload(const HttpRequest &request, const std::string &u
 		// Write content (handle partial write)
 		if (!writeAll(fd, files[i].content.data(), files[i].content.size()))
 		{
-			safeClose(fd);
-			Logger::logMessage(RED "[handleUpload] write failed: " + filePath + RESET);
+			safeClose(fd, "HttpResponse");
+			Logger::logMessage(RED "[HttpResponse] Error: " RESET "handleUpload: write failed: " + filePath);
 			serveError(500, "");
 			return;
 		}
-		safeClose(fd);
+		safeClose(fd, "HttpResponse");
 	}
 
 	// Success 201 Created

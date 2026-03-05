@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:39:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:57:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -111,7 +111,7 @@ std::string generateSessionId();
  * @brief Closes a file descriptor and logs an error if the operation fails.
  * @param fd The file descriptor to close.
  */
-void safeClose(int fd);
+void safeClose(int fd, const std::string &caller);
 
 /**
  * @brief Validates that a file path stays under the provided root.

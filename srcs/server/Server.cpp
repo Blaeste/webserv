@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 10:14:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:57:30 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,13 +61,13 @@ Server::~Server()
 	for (size_t i = 1; i < _pollFds.size(); i++)
 	{
 		if (_pollFds[i].fd != -1)
-			safeClose(_pollFds[i].fd);
+			safeClose(_pollFds[i].fd, "Server");
 	}
 	// Close signal pipe explicitly
 	if (_s_sigpipe[0] >= 0)
-		safeClose(_s_sigpipe[0]);
+		safeClose(_s_sigpipe[0], "Server");
 	if (_s_sigpipe[1] >= 0)
-		safeClose(_s_sigpipe[1]);
+		safeClose(_s_sigpipe[1], "Server");
 	Logger::logMessage("Server was closed");
 	std::cout << CURSOR_SHOW;
 }
@@ -186,7 +186,7 @@ void Server::setupListenSockets()
         int opt = 1;
         if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
         {
-            safeClose(listenFd);
+            safeClose(listenFd, "Server");
             throw std::runtime_error("setsockopt() failed");
         }
 
@@ -201,14 +201,14 @@ void Server::setupListenSockets()
         // After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
         if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
         {
-            safeClose(listenFd);
+            safeClose(listenFd, "Server");
             throw std::runtime_error("bind() failed");
         }
 
 		// Start listening for incoming connections
 		if (listen(listenFd, 128) < 0)
 		{
-			safeClose(listenFd);
+			safeClose(listenFd, "Server");
 			throw std::runtime_error("listen() failed");
 		}
 
@@ -232,7 +232,7 @@ void Server::acceptNewClient(int listenSocket)
 	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
 	if (clientFd < 0)
 	{
-		Logger::logMessage(RED "[Server] accept failed on fd " + intToString(listenSocket) + RESET);
+		Logger::logMessage(RED "[Server] Error: " RESET "acceptNewClient: accept failed on fd " + intToString(listenSocket));
 		return; // No connection available right now
 	}
 
@@ -250,8 +250,8 @@ void Server::acceptNewClient(int listenSocket)
 	}
 	catch (const std::exception &e)
 	{
-		Logger::logMessage(RED "[Server] " + std::string(e.what()) + " for fd " + intToString(clientFd) + RESET);
-		safeClose(clientFd);
+		Logger::logMessage(RED "[Server] Error: " RESET "acceptNewClient: " + std::string(e.what()) + " for fd " + intToString(clientFd) + RESET);
+		safeClose(clientFd, "Server");
 		return;
 	}
 	// Add a Client to the map
@@ -296,7 +296,7 @@ void Server::handleClientRead(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
+		Logger::logMessage(RED "[Server] Error: " RESET "handleClientRead: client not found for fd " + intToString(clientFd));
 		return;
 	}
 	Client &client = it->second;
@@ -488,7 +488,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	std::map<int, Client>::iterator it = _clients.find(clientFd);
 	if (it == _clients.end())
 	{
-		Logger::logMessage(RED "[Server] Error: client not found for fd " + intToString(clientFd) + RESET);
+		Logger::logMessage(RED "[Server] Error: " RESET "handleClientWrite: client not found for fd " + intToString(clientFd));
 		return;
 	}
 	Client &client = it->second;
@@ -578,7 +578,7 @@ void Server::setPollEvents(int fd, short events)
 
 void Server::removeClient(int fd)
 {
-	safeClose(fd);
+	safeClose(fd, "Server");
 	_clients.erase(fd);
 	removePollFd(fd);
 }
@@ -590,7 +590,7 @@ void Server::handleSocketError(size_t i)
 	if (typeIt == _socketTypes.end())
 	{
 		_pollFds[i].fd = -1;
-		safeClose(fd);
+		safeClose(fd, "Server");
 		return;
 	}
 	SocketType type = typeIt->second;
@@ -620,7 +620,7 @@ void Server::handleSocketError(size_t i)
 			{
 				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
-				safeClose(cgi->pipeErr);
+				safeClose(cgi->pipeErr, "Server");
 				cgi->pipeErr = -1;
 				return;
 			}
@@ -638,7 +638,7 @@ void Server::handleSocketError(size_t i)
 				cgi->inputWritten = true;
 				_pollFds[i].fd = -1;
 				_socketTypes.erase(fd);
-				safeClose(cgi->pipeIn);
+				safeClose(cgi->pipeIn, "Server");
 				cgi->pipeIn = -1;
 				return;
 			}
@@ -649,13 +649,13 @@ void Server::handleSocketError(size_t i)
 	// Remove and close to prevent busy-loop
 	{
 		std::stringstream ss;
-		ss << RED "[Server] Unhandled socket error on fd " << fd
-		   << " (type=" << type << "), removing to prevent busy-loop" RESET;
+		ss << RED "[Server] Error: " RESET "handleSocketError: Unhandled socket error on fd " << fd
+		   << " (type=" << type << "), removing to prevent busy-loop";
 		Logger::logMessage(ss.str());
 	}
 	_pollFds[i].fd = -1;
 	_socketTypes.erase(fd);
-	safeClose(fd);
+	safeClose(fd, "Server");
 }
 
 void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
@@ -671,17 +671,17 @@ void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
 	// Close all pipes
 	if (cgi->pipeOut != -1)
 	{
-		safeClose(cgi->pipeOut);
+		safeClose(cgi->pipeOut, "Server");
 		cgi->pipeOut = -1;
 	}
 	if (cgi->pipeIn != -1)
 	{
-		safeClose(cgi->pipeIn);
+		safeClose(cgi->pipeIn, "Server");
 		cgi->pipeIn = -1;
 	}
 	if (cgi->pipeErr != -1)
 	{
-		safeClose(cgi->pipeErr);
+		safeClose(cgi->pipeErr, "Server");
 		cgi->pipeErr = -1;
 	}
 
@@ -722,7 +722,7 @@ void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
 	{
 		Server::logClientResponse(client);
 		if (!cgi->errorOutput.empty())
-			Logger::logMessage(RED "CGI Error:\n" RESET + cgi->errorOutput);
+			Logger::logMessage(RED "[CGI] Error:\n" RESET + cgi->errorOutput);
 	}
 
 	// Clean up CGI process
@@ -836,7 +836,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 				// EOF or error on stderr
 				_pollFds[pipeIndex].fd = -1;
 				_socketTypes.erase(pipeFd);
-				safeClose(cgi->pipeErr);
+				safeClose(cgi->pipeErr, "Server");
 				cgi->pipeErr = -1;
 			}
 			return;
@@ -874,16 +874,16 @@ void Server::handleCGIPipe(size_t pipeIndex)
 						{
 							cgi->inputWritten = true;
 							removePollFd(cgi->pipeIn);
-							safeClose(cgi->pipeIn);
+							safeClose(cgi->pipeIn, "Server");
 							cgi->pipeIn = -1;
 						}
 					}
 					else if (written < 0)
 					{
-						Logger::logMessage(RED "[CGI] Write error to stdin pipe" RESET);
+						Logger::logMessage(RED "[CGI] Error: " RESET "handleCGIPipe: write to stdin pipe failed on fd " + intToString(pipeFd));
 						cgi->inputWritten = true;
 						removePollFd(cgi->pipeIn);
-						safeClose(cgi->pipeIn);
+						safeClose(cgi->pipeIn, "Server");
 						cgi->pipeIn = -1;
 					}
 				}

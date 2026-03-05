@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/04 18:46:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 11:37:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -228,7 +228,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 		}
 		catch (const std::exception &e)
 		{
-			Logger::logMessage(RED "[Client] buildErrorResponse: " + std::string(e.what()) + RESET);
+			Logger::logMessage(RED "[Client] Error: " RESET "buildErrorResponse: readFile failed: " + std::string(e.what()));
 			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
 		}
 	}
@@ -260,7 +260,7 @@ bool Client::sendResponse()
 	if (sent <= 0)
 	{
 		if (sent < 0)
-			Logger::logMessage(RED "[Client] sendResponse: send failed on fd " + intToString(_socket) + RESET);
+			Logger::logMessage(RED "[Client] Error: " RESET "sendResponse: send failed on fd " + intToString(_socket));
 		markCloseAfterResponse();
 		return false;
 	}

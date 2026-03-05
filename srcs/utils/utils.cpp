@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:03:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 12:02:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -122,7 +122,7 @@ std::vector<std::string> listDirectory(const std::string &path)
 	DIR *dir = opendir(path.c_str());
 	if (!dir)
 	{
-		Logger::logMessage(RED "[listDirectory] opendir failed for path: " + path + RESET);
+		Logger::logMessage(RED "[HttpResponse] Error : " RESET "serveDirectoryListing: listDirectory: opendir failed for path: " + path);
 		return entries; // return empty vector if error
 	}
 
@@ -176,15 +176,14 @@ std::string generateSessionId()
 	return id;
 }
 
-void safeClose(int fd)
+void safeClose(int fd, const std::string &caller)
 {
 	if (close(fd) < 0)
 	{
-		std::string msg = "[safeClose] close failed on fd " + intToString(fd) + ": " + std::strerror(errno);
 		if (Logger::isLogging())
-			Logger::logMessage(RED + msg + RESET);
+			Logger::logMessage(RED "[" + caller + "] Error: " RESET "safeClose: close failed on fd " + intToString(fd) + ": " + std::strerror(errno));
 		else
-			std::cerr << msg << std::endl;
+			std::cerr << "[safeClose] close failed on fd " + intToString(fd) + ": " + std::strerror(errno) << std::endl;
 	}
 }
 
