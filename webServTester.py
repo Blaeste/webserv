@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/02 14:40:14 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/05 13:09:27 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -177,14 +177,22 @@ def test_code_compilation():
 # ============================================================================
 
 def test_config_multiple_ports():
-	"""Test multiple ports with different sites"""
-	ports = [8080, 8081, 8082]
-	for port in ports:
+	"""Test multiple ports and virtual hosts serve content"""
+	servers = [
+		{"name": "webServTester", "port": 8080, "host": "webServTester"},
+		{"name": "server2",       "port": 8081, "host": "server2"},
+		{"name": "same_port",     "port": 8080, "host": "same_port"},
+		{"name": "server4",       "port": 8082, "host": "server4"},
+	]
+	for srv in servers:
 		try:
-			r = requests.get(f"http://localhost:{port}/", timeout=2)
-			test(f"Port {port} is accessible", r.status_code == 200, f"Got {r.status_code}")
-		except:
-			test(f"Port {port} is accessible", False, f"Port {port} not responding")
+			r = requests.get(f"http://localhost:{srv['port']}/",
+							 headers={"Host": srv["host"]}, timeout=2)
+			test(f"Server '{srv['name']}' (port {srv['port']}) is accessible",
+				 r.status_code == 200, f"Got {r.status_code}")
+		except Exception as e:
+			test(f"Server '{srv['name']}' (port {srv['port']}) is accessible",
+				 False, f"Not responding: {e}")
 
 def test_config_virtual_hosts():
 	"""Test virtual hosts with different Host headers"""
@@ -1437,7 +1445,7 @@ def test_port_multiple_configs():
 	result = subprocess.run(['netstat', '-tulpn'], capture_output=True, text=True)
 	ports_found = []
 	for line in result.stdout.split('\n'):
-		if 'webserv' in line or '8080' in line or '8081' in line:
+		if 'webserv' in line or '8080' in line or '8081' in line or '8082' in line:
 			if ':8080' in line:
 				ports_found.append(8080)
 			if ':8081' in line:
@@ -1445,14 +1453,24 @@ def test_port_multiple_configs():
 			if ':8082' in line:
 				ports_found.append(8082)
 
-	test("Multiple ports detected", len(set(ports_found)) >= 1,
+	test("Multiple ports detected (8080, 8081, 8082)", len(set(ports_found)) >= 2,
 		 f"Ports found: {set(ports_found)}")
 
 def test_port_same_port_twice():
-	"""Info: Test that duplicate port is handled (config check)"""
-	# This test is informational - manual config verification needed
-	test("Port duplication check (manual verification needed)", True,
-		 "Verify in config that duplicate ports are handled (virtual hosts or error)")
+	"""Test that two server blocks on the same port are handled as virtual hosts"""
+	try:
+		# Request to default server (webServTester) on port 8080
+		r1 = requests.get("http://localhost:8080/",
+						  headers={"Host": "webServTester"}, timeout=2)
+		# Request to vhost (same_port) on the same port 8080
+		r2 = requests.get("http://localhost:8080/",
+						  headers={"Host": "same_port"}, timeout=2)
+		test("Vhost 'same_port' responds on same port as 'webServTester'",
+			 r1.status_code == 200 and r2.status_code == 200,
+			 f"webServTester={r1.status_code}, same_port={r2.status_code}")
+	except Exception as e:
+		test("Vhost 'same_port' responds on same port as 'webServTester'",
+			 False, f"Error: {e}")
 
 def test_port_cannot_bind_twice():
 	"""Test that two instances cannot bind the same port"""
