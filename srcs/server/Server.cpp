@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/04 18:46:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/05 10:14:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -175,29 +175,35 @@ void Server::setupListenSockets()
 			continue; // Skip duplicate ports
 		}
 		port.push_back(_configs[i].getPort());
-		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // IPv4, TCP
-		if (listenFd < 0)
-			throw std::runtime_error("socket() failed");
 
-		// Configure SO_REUSEADDR to allow address reuse and prevent "Address already in use" error
-		int opt = 1;
-		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-		{
-			safeClose(listenFd);
-			throw std::runtime_error("setsockopt() failed");
-		}
+		// Create a TCP socket (file descriptor = entry point for network communication)
+        int listenFd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
+        if (listenFd < 0)
+            throw std::runtime_error("socket() failed");
 
-		// Configure the server address structure
-		struct sockaddr_in addr;
-		std::memset(&addr, 0, sizeof(addr));
-		addr.sin_family = AF_INET;		   // IPv4
-		addr.sin_addr.s_addr = INADDR_ANY; // Listen on all network interfaces
-		addr.sin_port = htons(_configs[i].getPort());	   // Convert port to network byte order
-		if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		{
-			safeClose(listenFd);
-			throw std::runtime_error("bind() failed");
-		}
+        // Allow reuse of the port immediately after server restart
+        // Without this, bind() would fail with "Address already in use" for ~60s (TIME_WAIT state)
+        int opt = 1;
+        if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+        {
+            safeClose(listenFd);
+            throw std::runtime_error("setsockopt() failed");
+        }
+
+        // Define the local address the socket will be bound to (IP + port)
+        struct sockaddr_in addr;
+        std::memset(&addr, 0, sizeof(addr));
+        addr.sin_family = AF_INET;                        // IPv4 address family
+        addr.sin_addr.s_addr = INADDR_ANY;                // Accept connections on all local network interfaces (0.0.0.0)
+        addr.sin_port = htons(_configs[i].getPort());     // Port from config, converted to network byte order (big-endian)
+
+        // Bind the socket fd to the address structure above
+        // After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
+        if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        {
+            safeClose(listenFd);
+            throw std::runtime_error("bind() failed");
+        }
 
 		// Start listening for incoming connections
 		if (listen(listenFd, 128) < 0)
