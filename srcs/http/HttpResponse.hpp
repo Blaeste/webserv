@@ -59,36 +59,33 @@ class HttpResponse
 		 * @brief Serves a static file as the HTTP response body.
 		 * @param path The path to the file to serve.
 		 * @param root The location root that bounds what can be served.
+		 * @return 200 on success, or an HTTP error code (403, 404, 500).
 		 */
-		void serveFile(const std::string &path, const std::string &root);
-
-		/**
-		 * @brief Serves an error page for the given HTTP status code.
-		 * @param code The HTTP status code.
-		 * @param errorPagePath The path to a custom error page file (optional).
-		 * @param allowedMethods List of allowed methods (for 405 responses).
-		*/
-		void serveError(int code, const std::string &errorPagePath, const std::vector<std::string> &allowedMethods = std::vector<std::string>());
+		int serveFile(const std::string &path, const std::string &root);
 
 		/**
 		 * @brief Serves a directory listing for the given path.
 		 * @param path The directory path.
+		 * @param uri The request URI.
+		 * @return 200 on success, or 404 if not a directory.
 		 */
-		void serveDirectoryListing(const std::string &path, const std::string &uri);
+		int serveDirectoryListing(const std::string &path, const std::string &uri);
 
 		/**
 		 * @brief Handles DELETE requests for the given path.
 		 * @param path The path to the resource to delete.
 		 * @param uploadRoot The upload directory that bounds deletions.
+		 * @return 204 on success, or an HTTP error code (403, 500).
 		 */
-		void serveDelete(const std::string &path, const std::string &uploadRoot);
+		int serveDelete(const std::string &path, const std::string &uploadRoot);
 
 		/**
 		 * @brief Handles file upload by saving uploaded files to a directory.
 		 * @param request The HTTP request containing uploaded files.
 		 * @param uploadDir The directory where files should be saved.
+		 * @return 201 on success, or an HTTP error code (400, 403, 500).
 		 */
-		void handleUpload(const HttpRequest &request, const std::string &uploadDir);
+		int handleUpload(const HttpRequest &request, const std::string &uploadDir);
 
 		/**
 		 * @brief Serves an OPTIONS response with allowed HTTP methods.

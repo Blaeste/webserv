@@ -133,11 +133,21 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	// Handle errors (e.g., 403 traversal attempts) before dereferencing location data
 	else if (match.statusCode != 200)
 	{
-		// For 405 errors, include allowed methods in the response
 		if (match.statusCode == 405 && match.location)
-			_response.serveError(match.statusCode, "", match.location->getAllowedMethods());
+		{
+			buildErrorResponse(match.statusCode, &config);
+			std::string allow;
+			const std::vector<std::string> &methods = match.location->getAllowedMethods();
+			for (size_t i = 0; i < methods.size(); ++i)
+			{
+				if (i > 0)
+					allow += ", ";
+				allow += methods[i];
+			}
+			_response.setHeader("Allow", allow);
+		}
 		else
-			_response.serveError(match.statusCode, "");
+			buildErrorResponse(match.statusCode, &config);
 	}
 
 	// Handle OPTIONS request
@@ -146,11 +156,19 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	// Handle DELETE request
 	else if (_request.getMethod() == "DELETE")
-		_response.serveDelete(match.filePath, match.location->getUploadPath());
+	{
+		int status = _response.serveDelete(match.filePath, match.location->getUploadPath());
+		if (status >= 400)
+			buildErrorResponse(status, &config);
+	}
 
 	// Handle file upload (POST with uploaded files)
 	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
-		_response.handleUpload(_request, match.location->getUploadPath());
+	{
+		int status = _response.handleUpload(_request, match.location->getUploadPath());
+		if (status >= 400)
+			buildErrorResponse(status, &config);
+	}
 
 	// Handle simple POST without files (return 200 OK)
 	else if (_request.getMethod() == "POST")
@@ -162,11 +180,19 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	// Serve directory listing if autoindex is enabled
 	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
-		_response.serveDirectoryListing(match.filePath, _request.getUri());
+	{
+		int status = _response.serveDirectoryListing(match.filePath, _request.getUri());
+		if (status >= 400)
+			buildErrorResponse(status, &config);
+	}
 
 	// Serve static file
 	else
-		_response.serveFile(match.filePath, match.location->getRoot());
+	{
+		int status = _response.serveFile(match.filePath, match.location->getRoot());
+		if (status >= 400)
+			buildErrorResponse(status, &config);
+	}
 
 	_responseReady = true;
 	applyConnectionHeader();
@@ -181,7 +207,7 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 		_response.setBody(result.output);
 	}
 	else
-		_response.serveError(result.statusCode, "");
+		buildErrorResponse(result.statusCode, _serverConfig);
 
 	_responseReady = true;
 	applyConnectionHeader();
