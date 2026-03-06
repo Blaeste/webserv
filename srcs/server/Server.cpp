@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Server.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 13:09:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/06 10:47:40 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -212,6 +212,8 @@ void Server::setupListenSockets()
 			throw std::runtime_error("listen() failed");
 		}
 
+		setNonBlocking(listenFd);
+
 		// Add to poll to monitor incoming connections
 		pollfd pfd;
 		pfd.fd = listenFd;
@@ -278,6 +280,32 @@ void Server::handleClientTimeouts()
 
 			Client &client = it->second;
 			Server::logClientResponse(client);
+
+			// Clean up any CGI active befor removing client
+			CGIProcess *cgi = client.getCGIProcess();
+
+			if (cgi)
+			{
+				kill(cgi->pid, SIGKILL);
+				waitpid(cgi->pid, NULL, 0);
+				if (cgi->pipeOut != -1)
+				{
+					removePollFd(cgi->pipeOut);
+					safeClose(cgi->pipeOut, "Server");
+				}
+				if (cgi->pipeIn != -1)
+				{
+					removePollFd(cgi->pipeIn);
+					safeClose(cgi->pipeIn, "Server");
+				}
+				if (cgi->pipeErr != -1)
+				{
+					removePollFd(cgi->pipeErr);
+					safeClose(cgi->pipeErr, "Server");
+				}
+				delete cgi;
+				client.setCGIProcess(NULL);
+			}
 
 			++it;
 			removeClient(fd);
@@ -411,12 +439,12 @@ void Server::handleClientRead(size_t clientIndex)
 		if (match.statusCode == 200 && match.isCGI)
 		{
 			// Start CGI asynchronously
-			const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
-			size_t cgiExecutionTimeout = config ? config->getCgiTimeout() : static_cast<size_t>(DEFAULT_CGI_EXECUTION_TIMEOUT);
+			const ServerConfig *cgiConfig = selectConfig(client.getRequest(), clientFd);
+			size_t cgiExecutionTimeout = cgiConfig ? cgiConfig->getCgiTimeout() : static_cast<size_t>(DEFAULT_CGI_EXECUTION_TIMEOUT);
 
 			// Store timing info for CGI logging
-			if (config)
-				client.setCGITiming(*config);
+			if (cgiConfig)
+				client.setCGITiming(*cgiConfig);
 
 			std::vector<int> fdsToClose;
 			for (size_t i = 0; i < _pollFds.size(); i++)
@@ -428,7 +456,7 @@ void Server::handleClientRead(size_t clientIndex)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
 			else
 			{
-				client.buildErrorResponse(500, config);
+				client.buildErrorResponse(500, cgiConfig);
 				client.setState(STATE_KEEPALIVE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 				return;
@@ -776,11 +804,11 @@ void Server::handleCGITimeouts()
 
 			// Close pipes
 			if (cgi->pipeOut != -1)
-				close(cgi->pipeOut);
+				safeClose(cgi->pipeOut, "Server");
 			if (cgi->pipeIn != -1)
-				close(cgi->pipeIn);
+				safeClose(cgi->pipeIn, "Server");
 			if (cgi->pipeErr != -1)
-				close(cgi->pipeErr);
+				safeClose(cgi->pipeErr, "Server");
 
 			// Remove pipes from poll (soft delete)
 			for (size_t i = 0; i < _pollFds.size(); i++)
@@ -831,7 +859,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 
 			if (bytes > 0)
 				cgi->errorOutput.append(buffer, bytes);
-			else
+			else if (bytes == 0)
 			{
 				// EOF or error on stderr
 				_pollFds[pipeIndex].fd = -1;
@@ -850,7 +878,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 
 			if (bytes > 0)
 				cgi->output.append(buffer, bytes);
-			else
+			else if (bytes == 0)
 				finalizeCGI(client, cgi, it->first);
 			return;
 		}

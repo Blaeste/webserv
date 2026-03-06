@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:57:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/06 10:44:24 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,13 +24,6 @@
  * @return A new string with leading and trailing whitespace removed.
  */
 std::string trim(const std::string &str);
-
-/**
- * @brief Checks if a character is a hexadecimal digit.
- * @param c The character to check.
- * @return true if the character is a hex digit, false otherwise.
- */
-bool isHexDigit(char c);
 
 /**
  * @brief Decodes a URL-encoded string.
@@ -72,13 +65,6 @@ std::string getHttpDate();
  * @return A string containing the file's content.
  */
 std::string readFile(const std::string &path);
-
-/**
- * @brief Gets the size of a file in bytes.
- * @param path The path to the file.
- * @return The size of the file in bytes, or 0 if the file does not exist or is not a regular file.
- */
-size_t getFileSize(const std::string &path);
 
 /**
  * @brief Converts an integer to a string.
