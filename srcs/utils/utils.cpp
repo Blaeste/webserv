@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 13:34:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,7 +18,6 @@
 #include <cstdlib>			// std::strtol, std::getenv
 #include <cstring>			// std::strerror
 #include <ctime>			// std::time, std::gmtime, std::strftime
-#include <dirent.h>			// opendir, readdir, closedir, DIR, struct dirent
 #include <fcntl.h>			// open, fcntl, O_RDONLY, O_NONBLOCK, F_GETFL, F_SETFL
 #include <iostream>			// std::cerr
 #include <limits>			// std::numeric_limits
@@ -33,7 +32,7 @@
 // Function(s) -----------------------------------------------------------------
 std::string trim(const std::string &str)
 {
-	const std::string whitespace = " \t\n\r\f\v";
+	static const std::string whitespace = " \t\n\r\f\v";
 
 	// Search for first none-whitespace character
 	size_t start = str.find_first_not_of(whitespace);
@@ -113,39 +112,6 @@ std::string intToString(int value)
 	std::stringstream ss;
 	ss << value;
 	return ss.str();
-}
-
-std::vector<std::string> listDirectory(const std::string &path)
-{
-	std::vector<std::string> entries;
-
-	DIR *dir = opendir(path.c_str());
-	if (!dir)
-	{
-		Logger::logMessage(RED "[HttpResponse] Error : " RESET "serveDirectoryListing: listDirectory: opendir failed for path: " + path);
-		return entries; // return empty vector if error
-	}
-
-	struct dirent *entry;
-	while ((entry = readdir(dir)))
-	{
-		std::string name = entry->d_name;
-		// Skip . and ..
-		if (name != "." && name != "..")
-			entries.push_back(name);
-	}
-
-	closedir(dir);
-	return entries;
-}
-
-std::string normalizeHeaderKey(const std::string &key)
-{
-	std::string result = key;
-	for (size_t i = 0; i < result.length(); ++i)
-		if (result[i] >= 'A' && result[i] <= 'Z')
-			result[i] = result[i] + 32;
-	return result;
 }
 
 std::string generateSessionId()

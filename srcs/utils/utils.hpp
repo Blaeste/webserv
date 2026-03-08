@@ -6,15 +6,15 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>		// std::string - used in all function signatures
-#include <vector>		// std::vector - listDirectory, splitTokens
+#include <string>   // std::string
+#include <vector>   // std::vector
 
 // Function prototype(s) *******************************************************
 
@@ -76,16 +76,10 @@ std::string intToString(int value);
 /**
  * @brief Lists all entries in a directory.
  * @param path The path to the directory.
+ * @param caller The name of the calling module (used in error log messages).
  * @return A vector containing the names of all entries in the directory (excluding "." and "..").
  */
-std::vector<std::string> listDirectory(const std::string &path);
-
-/**
- * @brief Normalizes an HTTP header key to capitalize the first letter of each word.
- * @param key The header key to normalize (e.g., "content-type", "CONTENT-TYPE").
- * @return The normalized header key (e.g., "Content-Type").
- */
-std::string normalizeHeaderKey(const std::string &key);
+std::vector<std::string> listDirectory(const std::string &path, const std::string &caller);
 
 /**
  * @brief Generates a random session identifier for HTTP session management.
@@ -96,6 +90,7 @@ std::string generateSessionId();
 /**
  * @brief Closes a file descriptor and logs an error if the operation fails.
  * @param fd The file descriptor to close.
+ * @param caller The name of the calling module (used in error log messages).
  */
 void safeClose(int fd, const std::string &caller);
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 10:49:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,7 +87,7 @@ bool HttpRequest::isComplete() const
 
 std::string HttpRequest::getHeader(const std::string &key) const
 {
-	std::map<std::string, std::string>::const_iterator it = _headers.find(normalizeHeaderKey(key));
+	std::map<std::string, std::string>::const_iterator it = _headers.find(toLowercase(key));
 	if (it != _headers.end())
 		return it->second;
 	return "";
@@ -225,7 +225,7 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 			if (headerCount > MAX_HEADER_COUNT)
 				return setError(431); // Request Header Fields Too Large
 
-			_headers[normalizeHeaderKey(key)] = value;
+			_headers[toLowercase(key)] = value;
 		}
 
 		pos = lineEnd + 2;

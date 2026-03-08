@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:56:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:03:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include "../utils/MimeTypes.hpp"
 #include "../utils/Logger.hpp"
 #include <cstdio>					// std::remove
+#include <dirent.h>					// opendir, readdir, closedir, DIR, struct dirent
 #include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
 #include <iostream>					// std::cerr
 #include <unistd.h>					// write
@@ -167,6 +168,29 @@ static std::string htmlEscape(const std::string &s)
 			out += c;
 	}
 	return out;
+}
+
+static std::vector<std::string> listDirectory(const std::string &path)
+{
+	std::vector<std::string> entries;
+
+	DIR *dir = opendir(path.c_str());
+	if (!dir)
+	{
+		Logger::logMessage(RED "[HttpResponse] Error: " RESET "listDirectory: opendir failed for path: " + path);
+		return entries;
+	}
+
+	struct dirent *entry;
+	while ((entry = readdir(dir)))
+	{
+		std::string name = entry->d_name;
+		if (name != "." && name != "..")
+			entries.push_back(name);
+	}
+
+	closedir(dir);
+	return entries;
 }
 
 int HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
