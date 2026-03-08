@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:23:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:53:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,11 +67,11 @@ std::string getHttpDate();
 std::string readFile(const std::string &path);
 
 /**
- * @brief Converts an integer to a string.
- * @param value The integer value to convert.
- * @return A string representation of the integer.
+ * @brief Converts an integral value to a string.
+ * @param value The value to convert (int, size_t, long, etc. all convert implicitly).
+ * @return A string representation of the value.
  */
-std::string intToString(int value);
+std::string intToString(long long value);
 
 /**
  * @brief Lists all entries in a directory.
@@ -104,13 +104,6 @@ bool isPathSafe(const std::string &path, const std::string &root);
 void setNonBlocking(int fd);
 
 /**
- * @brief Converts a size_t value to a string.
- * @param n The size_t value to convert.
- * @return A string representation of the size_t value.
- */
-std::string sizetToString(size_t n);
-
-/**
  * @brief Split string and filter empty tokens
  * @param str String to split
  * @param delimiter Delimiter character
@@ -118,12 +111,7 @@ std::string sizetToString(size_t n);
  */
 std::vector<std::string> splitTokens(const std::string &str, char delimiter);
 
-/**
- * @brief Gets the local port number of a socket.
- * @param fd The socket file descriptor.
- * @return The port number in host byte order, or -1 if getsockname() fails.
- */
-int getSocketPort(int fd);
+
 
 /**
  * @brief Safely parses a string to an integer with error handling.

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:33:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:01:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,7 +25,6 @@
 #include <set>				// std::set
 #include <sstream>			// std::stringstream
 #include <stdexcept>		// std::runtime_error
-#include <sys/socket.h>		// getsockname, socklen_t
 #include <sys/stat.h>		// stat, S_ISDIR, struct stat
 #include <unistd.h>			// read, close, access, F_OK
 
@@ -108,7 +107,7 @@ std::string readFile(const std::string &path)
 	return result;
 }
 
-std::string intToString(int value)
+std::string intToString(long long value)
 {
 	std::stringstream ss;
 	ss << value;
@@ -188,27 +187,27 @@ static std::string normalizePath(const std::string &raw)
 
 bool isPathSafe(const std::string &path, const std::string &root)
 {
-	// 1) Decode percent-encoding to reject encoded traversal attempts early.
+	// Decode percent-encoding to reject encoded traversal attempts early.
 	std::string decodedPath = urlDecode(path);
 	std::string decodedRoot = urlDecode(root);
 
-	// 2) Quick traversal guard: plain ".." after decode is already suspicious.
+	// Quick traversal guard: plain ".." after decode is already suspicious.
 	if (decodedPath.find("..") != std::string::npos)
 		return false;
 
-	// 3) Normalize both root and target paths (pure string math, no realpath).
+	// Normalize both root and target paths (pure string math, no realpath).
 	std::string normalizedRoot = normalizePath(decodedRoot);
 	std::string normalizedPath = normalizePath(decodedPath);
 
-	// 4) Empty roots are not acceptable for containment checks.
+	// Empty roots are not acceptable for containment checks.
 	if (normalizedRoot.empty())
 		return false;
 
-	// 5) Root "/" contains every absolute path by definition.
+	// Root "/" contains every absolute path by definition.
 	if (normalizedRoot == "/")
 		return normalizedPath[0] == '/';
 
-	// 6) The target must start with the root and either match exactly or have a '/'.
+	// The target must start with the root and either match exactly or have a '/'.
 	if (normalizedPath.compare(0, normalizedRoot.size(), normalizedRoot) != 0)
 		return false;
 	if (normalizedPath.size() == normalizedRoot.size())
@@ -225,54 +224,20 @@ void setNonBlocking(int fd)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
 }
 
-std::string sizetToString(size_t n)
-{
-	std::stringstream ss;
-	ss << n;
-	return ss.str();
-}
-
-int getSocketPort(int fd)
-{
-	sockaddr_in addr;
-
-	socklen_t len = sizeof(addr);
-	if (getsockname(fd, (sockaddr *)&addr, &len) == 0)
-		return ntohs(addr.sin_port);
-	return -1;
-}
-
 int parseIntSafe(const std::string &str, const std::string &context)
 {
-	// Like atoi but better
-	// Check string empty
 	if (str.empty())
 		throw std::runtime_error("parseIntSafe [" + context + "]: empty string");
 
-	// Check if all cha is digit
-	size_t start = 0;
-
-	if (str[0] == '+' || str[0] == '-')
-		start = 1;
-
-	if (start >= str.length())
-		throw std::runtime_error("parseIntSafe [" + context + "]: only sign character");
-
-	for (size_t i = start; i < str.length(); i++)
-		if (str[i] < '0' || str[i] > '9')
-			throw std::runtime_error("parseIntSafe [" + context + "]: invalid character in: " + str);
-
-	// Use strtol for convert with overflow detection
 	char *endptr;
 	errno = 0;
 	long val = std::strtol(str.c_str(), &endptr, 10);
 
-	// Check errors
+	if (endptr == str.c_str() || *endptr != '\0')
+		throw std::runtime_error("parseIntSafe [" + context + "]: invalid input: " + str);
+
 	if (errno == ERANGE || val > std::numeric_limits<int>::max() || val < std::numeric_limits<int>::min())
 		throw std::runtime_error("parseIntSafe [" + context + "]: value out of range: " + str);
-
-	if (endptr == str.c_str() || *endptr != '\0')
-		throw std::runtime_error("parseIntSafe [" + context + "]: conversion failed for: " + str);
 
 	return static_cast<int>(val);
 }

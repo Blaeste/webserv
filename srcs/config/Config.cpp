@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:44:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -167,15 +167,15 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 
 		// Parse directive
 		if (tokens[0] == "listen" && tokens.size() >= 2)
-			server.setPort(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)));
+			server.setPort(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)));
 		else if (tokens[0] == "server_name" && tokens.size() >= 2)
 			server.setServerName(tokens[1]);
 		else if (tokens[0] == "error_page" && tokens.size() >= 3)
-			server.addErrorPage(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)), tokens[2]);
+			server.addErrorPage(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)), tokens[2]);
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
-			server.setMaxBodySize(parseSize(tokens[1], "Server #" + sizetToString(serverIndex)));
+			server.setMaxBodySize(parseSize(tokens[1], "Server #" + intToString(serverIndex)));
 		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
-			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + sizetToString(serverIndex)));
+			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)));
 	}
 
 	// Parse each location block
@@ -314,7 +314,7 @@ bool Config::validate() const {
 		std::string serverName = server.getServerName();
 
 		// Msg prefix
-		std::string prefix = "Server " + sizetToString(i) + " (" + serverName + "): ";
+		std::string prefix = "Server " + intToString(i) + " (" + serverName + "): ";
 
 		// Check port range
 		if (port < 1 || port > 65535)
