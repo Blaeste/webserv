@@ -6,19 +6,26 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:15:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:44:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "CGI.hpp"
+#include "../config/Location.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
-#include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
+#include "../utils/utils.hpp"
+#include <iostream>					// std::cerr
+#include <cctype>					// std::toupper
+#include <cerrno>					// errno
 #include <cstdlib>					// std::exit, std::getenv
-#include <cstring>					// std::strcpy, strerror
+#include <cstring>					// std::strcpy, std::strerror
+#include <fcntl.h>					// fcntl, F_SETFL, O_NONBLOCK
+#include <unistd.h>					// fork, pipe, close, dup2, access, X_OK, R_OK, chdir, execve, read, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO
 
+// Static helper(s) ------------------------------------------------------------
 static std::string toAbsolutePath(const std::string &path)
 {
 	if (!path.empty() && path[0] == '/')
@@ -28,10 +35,6 @@ static std::string toAbsolutePath(const std::string &path)
 		return std::string(cwd) + "/" + path;
 	return path;
 }
-#include <fcntl.h>					// fcntl, F_SETFL, O_NONBLOCK
-#include <iostream>					// std::cerr
-#include <unistd.h>					// fork, pipe, close, dup2, access, X_OK, R_OK, chdir, execve, read, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO
-#include <cerrno>					// errno, strerror
 
 // Private method(s) -----------------------------------------------------------
 std::string CGI::readFromPipe(int fd) {

@@ -6,17 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:01:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:38:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include <string>		// std::string
-#include <ctime>		// time_t
-#include <map>			// std::map
-#include <limits>		// std::numeric_limits
+#include <limits>	// std::numeric_limits
+#include <map>		// std::map
+#include <string>	// std::string
+#include <ctime>	// time_t
 
 // Define(s) -------------------------------------------------------------------
 #define RESET		"\033[0m"

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:26:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:41:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,6 +17,7 @@
 #include <set>					// std::set
 #include <stdexcept>			// std::runtime_error
 
+// Static helper(s) ------------------------------------------------------------
 static bool isValidHttpMethod(const std::string &method)
 {
 	static std::set<std::string> validMethods;

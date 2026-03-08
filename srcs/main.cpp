@@ -6,15 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/02/28 14:22:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
-#include "server/Server.hpp"
 #include "config/Config.hpp"
-#include <cstdlib>
-#include <iostream>
+#include "server/Server.hpp"
+
+#include <iostream>				// std::cout, std::cerr
+
+#include <cstdlib>				// EXIT_SUCCESS, EXIT_FAILURE
 
 // Define(s) -------------------------------------------------------------------
 #define MAGENTA	"\033[35m"

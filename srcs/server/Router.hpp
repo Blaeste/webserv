@@ -6,16 +6,19 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/02 15:40:39 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #pragma once
 
 // Include(s) ******************************************************************
-#include "../config/ServerConfig.hpp"
-#include "../http/HttpRequest.hpp"
 #include <string>						// std::string
+
+// Forward declaration(s) ******************************************************
+class HttpRequest;
+class Location;
+class ServerConfig;
 
 // Structure(s) ****************************************************************
 struct RouteMatch

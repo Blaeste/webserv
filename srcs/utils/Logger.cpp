@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:02:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:39:52 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,20 +18,20 @@
 
 // Static variable(s) initialization -------------------------------------------
 std::map<int, RequestData> Logger::_activeRequests;
-std::string Logger::_lastMethod = "";
-std::string Logger::_lastUri = "";
-std::string Logger::_lastClientIP = "";
+std::string Logger::_lastMethod;
+std::string Logger::_lastUri;
+std::string Logger::_lastClientIP;
 size_t Logger::_requestCount = 0;
 time_t Logger::_minTime = std::numeric_limits<time_t>::max();
 time_t Logger::_maxTime = 0;
-std::string Logger::_lastServerName = "";
+std::string Logger::_lastServerName;
 int Logger::_lastServerPort = 0;
 size_t Logger::_lastEndRequestSize = std::numeric_limits<size_t>::max();
 int Logger::_lastEndStatus = -1;
 size_t Logger::_groupEndCount = 0;
 bool Logger::_firstLog = true;
 bool Logger::_pendingRequest = false;
-std::string Logger::_lastRequestStartTime = "";
+std::string Logger::_lastRequestStartTime;
 int Logger::_lastDisplayedRequestId = -1;
 int Logger::_currentLine = 0;
 bool Logger::_s_logging = false;

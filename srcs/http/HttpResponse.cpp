@@ -6,23 +6,23 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:17:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:42:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "HttpResponse.hpp"
 #include "HttpRequest.hpp"
-#include "../utils/utils.hpp"
-#include "../utils/MimeTypes.hpp"
 #include "../utils/Logger.hpp"
+#include "../utils/MimeTypes.hpp"
+#include "../utils/utils.hpp"
 #include <cstdio>					// std::remove
 #include <ctime>					// std::time, std::gmtime, std::strftime
 #include <dirent.h>					// opendir, readdir, closedir, DIR, struct dirent
 #include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
-#include <iostream>					// std::cerr
 #include <unistd.h>					// write
 
+// Static helper(s) ------------------------------------------------------------
 static std::string getHttpDate()
 {
 	time_t now = std::time(NULL);
@@ -37,8 +37,7 @@ static std::string getHttpDate()
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()
 	: _statusCode(200), _statusMessage("OK")
-{
-}
+{}
 
 // Setter(s) -------------------------------------------------------------------
 void HttpResponse::setStatus(int code)

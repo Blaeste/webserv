@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:26:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:43:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,6 @@
 #include <vector>   // std::vector
 
 // Function prototype(s) *******************************************************
-
 /**
  * @brief Utility functions for string manipulation, file handling, and date formatting.
  * @param str The input string to trim.
@@ -52,7 +51,6 @@ bool isDirectory(const std::string &path);
  * @return The file extension, including the dot (e.g., ".txt"), or an empty string if none exists.
  */
 std::string getFileExtension(const std::string &path);
-
 
 /**
  * @brief Reads the entire content of a file into a string.
@@ -106,8 +104,6 @@ void setNonBlocking(int fd);
  */
 std::vector<std::string> splitTokens(const std::string &str, char delimiter);
 
-
-
 /**
  * @brief Safely parses a string to an integer with error handling.
  * @param str The string to parse.
@@ -123,8 +119,6 @@ int parseIntSafe(const std::string &str, const std::string &context);
  * @return A new string with all characters converted to lowercase.
  */
 std::string toLowercase(const std::string &str);
-
-
 
 /**
  * @brief Joins a root directory and a relative path, avoiding double slashes.

@@ -6,22 +6,19 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:25:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:43:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Client.hpp"
+#include "../cgi/CGI.hpp"
+#include "../utils/Logger.hpp"
 #include "Router.hpp"
 #include "Server.hpp"
-#include "../utils/Logger.hpp"
-#include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
-#include <fcntl.h>				// open, O_RDONLY
-#include <iostream>				// std::cout
-#include <limits>				// std::numeric_limits
-#include <sstream>				// std::stringstream
 #include <stdexcept>			// std::runtime_error
+#include <fcntl.h>				// open, O_RDONLY
 #include <sys/socket.h>			// recv, send
 #include <unistd.h>				// read, close
 
@@ -56,9 +53,20 @@ static std::string generateSessionId()
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
-	: _socket(socket), _clientIp(clientIp), _lastActivity(std::time(NULL)), _requestComplete(false), _responseReady(false), _closeAfterResponse(false), _requestLogged(false), _state(STATE_KEEPALIVE), _cgiProcess(NULL), _bytesSent(0), _cgiStartTime(0), _requestStartTime(0), _serverConfig(NULL)
-{
-}
+	: _socket(socket)
+	, _clientIp(clientIp)
+	, _lastActivity(std::time(NULL))
+	, _requestComplete(false)
+	, _responseReady(false)
+	, _closeAfterResponse(false)
+	, _requestLogged(false)
+	, _state(STATE_KEEPALIVE)
+	, _cgiProcess(NULL)
+	, _bytesSent(0)
+	, _cgiStartTime(0)
+	, _requestStartTime(0)
+	, _serverConfig(NULL)
+{}
 
 // Accessor(s) -----------------------------------------------------------------
 bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const

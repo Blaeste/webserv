@@ -6,24 +6,56 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:36:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:39:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "utils.hpp"
 #include "Logger.hpp"
-#include <cctype>			// std::tolower
-#include <cerrno>			// errno, ERANGE
-#include <cstdlib>			// std::strtol
-#include <cstring>			// std::strerror
-#include <fcntl.h>			// open, fcntl, O_RDONLY, O_NONBLOCK, F_GETFL, F_SETFL
-#include <iostream>			// std::cerr
-#include <limits>			// std::numeric_limits
-#include <sstream>			// std::stringstream
-#include <stdexcept>		// std::runtime_error
-#include <sys/stat.h>		// stat, S_ISDIR, struct stat
-#include <unistd.h>			// read, close, access, F_OK
+#include <iostream>		// std::cerr
+#include <limits>		// std::numeric_limits
+#include <sstream>		// std::stringstream
+#include <stdexcept>	// std::runtime_error
+#include <cctype>		// std::tolower
+#include <cerrno>		// errno, ERANGE
+#include <cstdlib>		// std::strtol
+#include <cstring>		// std::strerror
+#include <fcntl.h>		// open, fcntl, O_RDONLY, O_NONBLOCK, F_GETFL, F_SETFL
+#include <sys/stat.h>	// stat, S_ISDIR, struct stat
+#include <unistd.h>		// read, close, access, F_OK
+
+// Static helper(s) ------------------------------------------------------------
+// Normalize a path by splitting components and resolving '.' and '..'.
+// This does not touch the filesystem (no realpath), so it works with
+// non-existent paths as long as the resulting layout is under the intended root.
+static std::string normalizePath(const std::string &raw)
+{
+	std::vector<std::string> parts = splitTokens(raw, '/');
+	std::vector<std::string> stack;
+
+	for (size_t i = 0; i < parts.size(); ++i)
+	{
+		if (parts[i] == ".")
+			continue;
+		if (parts[i] == "..")
+		{
+			if (!stack.empty())
+				stack.pop_back();
+		}
+		else
+			stack.push_back(parts[i]);
+	}
+
+	std::string result = "/";
+	for (size_t i = 0; i < stack.size(); ++i)
+	{
+		if (i > 0)
+			result += "/";
+		result += stack[i];
+	}
+	return result;
+}
 
 // Function(s) -----------------------------------------------------------------
 std::string trim(const std::string &str)
@@ -151,37 +183,6 @@ std::vector<std::string> splitTokens(const std::string &str, char delimiter)
 	return result;
 }
 
-// Normalize a path by splitting components and resolving '.' and '..'.
-// This does not touch the filesystem (no realpath), so it works with
-// non-existent paths as long as the resulting layout is under the intended root.
-static std::string normalizePath(const std::string &raw)
-{
-	std::vector<std::string> parts = splitTokens(raw, '/');
-	std::vector<std::string> stack;
-
-	for (size_t i = 0; i < parts.size(); ++i)
-	{
-		if (parts[i] == ".")
-			continue;
-		if (parts[i] == "..")
-		{
-			if (!stack.empty())
-				stack.pop_back();
-		}
-		else
-			stack.push_back(parts[i]);
-	}
-
-	std::string result = "/";
-	for (size_t i = 0; i < stack.size(); ++i)
-	{
-		if (i > 0)
-			result += "/";
-		result += stack[i];
-	}
-	return result;
-}
-
 bool isPathSafe(const std::string &path, const std::string &root)
 {
 	// Decode percent-encoding to reject encoded traversal attempts early.
@@ -294,4 +295,3 @@ std::string joinPath(const std::string &root, const std::string &path)
 		return root + "/" + path;
 	return root + path;
 }
-

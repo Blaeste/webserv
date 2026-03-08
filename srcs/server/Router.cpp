@@ -6,12 +6,14 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/08 13:45:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:43:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Router.hpp"
+#include "../config/ServerConfig.hpp"
+#include "../http/HttpRequest.hpp"
 #include "../utils/utils.hpp"
 
 // Private method(s) -----------------------------------------------------------

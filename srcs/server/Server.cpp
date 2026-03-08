@@ -6,39 +6,50 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:53:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Server.hpp"
 #include "../cgi/CGI.hpp"
-#include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
+#include "../utils/utils.hpp"
 #include <algorithm>			// std::find
-#include <cerrno>				// errno
-#include <csignal>				// signal, SIGINT, SIGTERM, SIGPIPE, SIG_IGN, kill
-#include <cstring>				// std::memset, std::strerror
-#include <iostream>				// std::cout, std::cerr
-#include <netinet/in.h>			// sockaddr_in, htons, ntohs, INADDR_ANY
+#include <iostream>				// std::cout, std::endl
 #include <limits>				// std::numeric_limits
 #include <sstream>				// std::stringstream
 #include <stdexcept>			// std::runtime_error
-#include <unistd.h>				// read, write, close, pipe
-#include <sys/socket.h>			// getsockname, socklen_t
+#include <cerrno>				// errno
+#include <csignal>				// signal, kill, SIG_IGN, SIGINT, SIGKILL, SIGPIPE, SIGQUIT, SIGTERM
+#include <cstring>				// std::memset, std::strerror
+#include <netinet/in.h>			// sockaddr_in, htons, ntohs, INADDR_ANY
+#include <sys/socket.h>			// socket, bind, listen, accept, setsockopt, getsockname
 #include <sys/wait.h>			// waitpid, WNOHANG, WIFEXITED, WEXITSTATUS, WIFSIGNALED
+#include <unistd.h>				// read, write, close, pipe
 
 // Define(s) -------------------------------------------------------------------
-# define CURSOR_HIDE "\033[?25l"
-# define CURSOR_SHOW "\033[?25h"
+#define CURSOR_HIDE "\033[?25l"
+#define CURSOR_SHOW "\033[?25h"
+
+// Static helper(s) ------------------------------------------------------------
+static int getSocketPort(int fd)
+{
+	sockaddr_in addr;
+	socklen_t len = sizeof(addr);
+	if (getsockname(fd, (sockaddr *)&addr, &len) == 0)
+		return ntohs(addr.sin_port);
+	return -1;
+}
 
 // Static variable initialization ----------------------------------------------
-// Self-pipe for signal handling in poll()
-int Server::_s_sigpipe[2] = {-1, -1};
+int Server::_s_sigpipe[2] = {-1, -1}; // Self-pipe for signal handling in poll()
 
 // Special member function(s) --------------------------------------------------
 Server::Server(const Config &config)
-	: _configs(config.getServers()), _running(false), _lastSessionCleanup(0)
+	: _configs(config.getServers())
+	, _running(false)
+	, _lastSessionCleanup(0)
 {
 	installSignals();
 	setupListenSockets();
@@ -761,15 +772,6 @@ void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
 
 	// Enable POLLOUT on client socket to send the response
 	setPollEvents(clientFd, POLLOUT);
-}
-
-static int getSocketPort(int fd)
-{
-	sockaddr_in addr;
-	socklen_t len = sizeof(addr);
-	if (getsockname(fd, (sockaddr *)&addr, &len) == 0)
-		return ntohs(addr.sin_port);
-	return -1;
 }
 
 const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const

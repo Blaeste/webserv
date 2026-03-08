@@ -6,17 +6,17 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:17:12 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 16:42:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
-#include <cstdlib>				// std::strtoul
-#include <cctype>				// std::isalpha, std::isalnum, std::isdigit, std::isxdigit
 #include <sstream>				// std::istringstream, std::getline
+#include <cctype>				// std::isalpha, std::isalnum, std::isxdigit
 #include <cerrno>				// errno
+#include <cstdlib>				// std::strtoul
 
 // Default constructor ---------------------------------------------------------
 HttpRequest::HttpRequest()
@@ -408,31 +408,7 @@ bool HttpRequest::parse()
 	{
 		size_t headersEnd = _rawData.find("\r\n\r\n");
 		if (headersEnd == std::string::npos)
-		// {
-		// 	// Security: validate data before waiting for more
-		// 	size_t firstCRLF = _rawData.find("\r\n");
-		// 	if (firstCRLF == std::string::npos && !_rawData.empty())
-		// 	{
-		// 		// No CRLF yet - only allow valid HTTP request line chars
-		// 		for (size_t i = 0; i < _rawData.length(); i++)
-		// 		{
-		// 			unsigned char c = static_cast<unsigned char>(_rawData[i]);
-		// 			// Allow: printable ASCII (33-126) + space (32) + tab (9)
-		// 			if (!((c >= 33 && c <= 126) || c == 32 || c == 9))
-		// 			{
-		// 				_isComplete = true;
-		// 				return setError(400); // Bad request
-		// 			}
-		// 		}
-		// 		// Check buffer not too large without CRLF
-		// 		if (_rawData.length() > MAX_REQUEST_LINE_SIZE)
-		// 		{
-		// 			_isComplete = true;
-		// 			return setError(414); // URI too long
-		// 		}
-		// 	}
 			return false;
-		// }
 
 		std::string headersBlock = _rawData.substr(0, headersEnd + 2); // Include first \r\n
 
