@@ -6,24 +6,39 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:31:04 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef ROUTER_HPP
+# define ROUTER_HPP
 
-// Include(s) ******************************************************************
-#include <string>						// std::string
+// Include(s) ------------------------------------------------------------------
 
-// Forward declaration(s) ******************************************************
-class HttpRequest;
-class Location;
-class ServerConfig;
+# include <string>	// std::string
 
-// Structure(s) ****************************************************************
+// Forward declaration(s) ------------------------------------------------------
+
+class	HttpRequest;
+class	Location;
+class	ServerConfig;
+
+// Structure(s) ----------------------------------------------------------------
+
 struct RouteMatch
 {
-	// Default constructor -----------------------------------------------------
+	// Attribute(s)
+	const Location*	location;		// Matched location configuration
+	std::string		filePath;		// Resolved file path for the request
+	std::string		pathInfo;		// Relative path for CGI PATH_INFO
+	bool			isRedirect;		// Indicates if this is a redirect response
+	std::string		redirectUrl;	// Redirect destination URL
+	int				statusCode;		// HTTP status code for the response
+	bool			isCGI;			// Indicates if this request should be handled by CGI
+	std::string		serverName;		// Server name for this request
+	int				serverPort;		// Server port for this request
+
+	// Default constructor
 	RouteMatch()
 		: location(NULL)
 		, filePath()
@@ -35,27 +50,23 @@ struct RouteMatch
 		, serverName()
 		, serverPort(0)
 	{}
-
-	// Attribute(s) ------------------------------------------------------------
-	const Location *location; ///< Matched location configuration
-	std::string filePath; ///< Resolved file path for the request
-	std::string pathInfo; ///< Relative path for CGI PATH_INFO
-	bool isRedirect; ///< Indicates if this is a redirect response
-	std::string redirectUrl; ///< Redirect destination URL
-	int statusCode; ///< HTTP status code for the response
-	bool isCGI; ///< Indicates if this request should be handled by CGI
-	std::string serverName; ///< Server name for this request
-	int serverPort; ///< Server port for this request
 };
 
-// Class ***********************************************************************
+// Class -----------------------------------------------------------------------
+
 class Router
 {
+	private:
+
+		// Private method(s)
+		const Location *findMatchingLocation(const ServerConfig &config, const std::string &uri) const;
+
 	public:
-		// Public method(s) ----------------------------------------------------
+
+		// Public method(s)
 		RouteMatch matchRoute(const ServerConfig &config, const HttpRequest &request) const;
 
-	private:
-		// Private method(s) ---------------------------------------------------
-		const Location *findMatchingLocation(const ServerConfig &config, const std::string &uri) const;
+
 };
+
+#endif

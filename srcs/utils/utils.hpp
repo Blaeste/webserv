@@ -6,17 +6,20 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:43:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:31:28 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef UTILS_HPP
+# define UTILS_HPP
 
-// Include(s) ******************************************************************
-#include <string>   // std::string
-#include <vector>   // std::vector
+// Include(s) ------------------------------------------------------------------
 
-// Function prototype(s) *******************************************************
+# include <string>   // std::string
+# include <vector>   // std::vector
+
+// Function prototype(s) -------------------------------------------------------
+
 /**
  * @brief Utility functions for string manipulation, file handling, and date formatting.
  * @param str The input string to trim.
@@ -127,3 +130,5 @@ std::string toLowercase(const std::string &str);
  * @return The combined path (e.g., "www/index.html").
  */
 std::string joinPath(const std::string &root, const std::string &path);
+
+#endif

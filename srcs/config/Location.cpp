@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:41:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 17:22:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ void Location::addIndex(const std::string &index)
 	_index.push_back(index);
 }
 
-// Public Method(s) ------------------------------------------------------------
+// Public method(s)
 bool Location::isMethodAllowed(const std::string &method) const {
 	return std::find(_allowedMethods.begin(), _allowedMethods.end(), method)
 		!= _allowedMethods.end();

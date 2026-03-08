@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/08 15:27:17 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/08 18:29:44 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -43,7 +43,7 @@ endif
 # ============================================================================ #
 
 # Source files by category
-CGI_FILES = CGI.cpp
+CGI_FILES = Cgi.cpp
 CONFIG_FILES = Config.cpp Location.cpp ServerConfig.cpp
 HTTP_FILES = HttpRequest.cpp HttpResponse.cpp
 SERVER_FILES = Client.cpp Server.cpp Router.cpp
@@ -63,7 +63,7 @@ SRCS = srcs/main.cpp $(CGI) $(CONFIG) $(HTTP) $(SERVER) $(UTILS)
 OBJS = $(SRCS:srcs/%.cpp=obj/%.o)
 
 # Header files by category
-CGI_HEADERS = CGI.hpp
+CGI_HEADERS = Cgi.hpp
 CONFIG_HEADERS = Config.hpp Location.hpp ServerConfig.hpp
 HTTP_HEADERS = HttpRequest.hpp HttpResponse.hpp
 SERVER_HEADERS = Client.hpp Router.hpp Server.hpp

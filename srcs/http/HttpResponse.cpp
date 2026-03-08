@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:42:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 17:23:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ void HttpResponse::setStatus(int code)
 	_statusMessage = getStatusMessage(code);
 }
 
-// Private Method(s) -----------------------------------------------------------
+// Private method(s)
 std::string HttpResponse::getStatusMessage(int code) const
 {
 	switch (code)
@@ -82,7 +82,7 @@ std::string HttpResponse::getStatusMessage(int code) const
 	}
 }
 
-// Public Method(s) ------------------------------------------------------------
+// Public method(s)
 std::string HttpResponse::build(const std::string &method) const
 {
 	std::string response;

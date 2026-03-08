@@ -6,51 +6,39 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:41:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:30:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef CONFIG_HPP
+# define CONFIG_HPP
 
-// Include(s) ******************************************************************
-#include "ServerConfig.hpp"
-#include <string>			// std::string
-#include <vector>			// std::vector
+// Include(s) ------------------------------------------------------------------
 
-/**
- * @brief Represents a configuration block with its content and position.
- * Used during parsing to track block locations in the config file.
- */
-struct BlockInfo {
-	std::string content; ///< Block content without braces
-	size_t startPos; ///< Start position in original file
-	size_t endPos; ///< End position in original file
+# include "ServerConfig.hpp"
+# include <string>			// std::string
+# include <vector>			// std::vector
+
+// Structure(s) ----------------------------------------------------------------
+
+struct BlockInfo
+{
+	std::string	content;	// Block content without braces
+	size_t		startPos;	// Start position in original file
+	size_t		endPos;		// End position in original file
 };
 
-// Class ***********************************************************************
+// Class -----------------------------------------------------------------------
+
 class Config
 {
 	private:
-		// Attribute(s) --------------------------------------------------------
 
-		std::vector<ServerConfig> _servers; ///< List of parsed server configurations
-		std::string _filePath; ///< Path to the configuration file
+		// Attribute(s)
+		std::vector<ServerConfig>	_servers;	// List of parsed server configurations
+		std::string					_filePath;	// Path to the configuration file
 
-	public:
-		// Public Method(s) ----------------------------------------------------
-
-		/**
-		 * @brief Parses the configuration file at the given path.
-		 * @param filePath The path to the configuration file.
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parse(const std::string &filePath);
-
-		// Getter(s) -----------------------------------------------------------
-		const std::vector<ServerConfig> &getServers() const { return _servers; }
-
-	private:
-		// Private Method(s) ---------------------------------------------------
+		// Private Method(s)
 
 		/**
 		 * @brief Removes comments (lines starting with #) from content.
@@ -94,4 +82,20 @@ class Config
 		 * @return The size in bytes.
 		 */
 		size_t parseSize(const std::string &sizeStr, const std::string &context);
+
+	public:
+
+		// Public Method(s)
+
+		/**
+		 * @brief Parses the configuration file at the given path.
+		 * @param filePath The path to the configuration file.
+		 * @return true if parsing was successful, false otherwise.
+		 */
+		bool parse(const std::string &filePath);
+
+		// Getter(s)
+		const std::vector<ServerConfig> &getServers() const { return _servers; }
 };
+
+#endif

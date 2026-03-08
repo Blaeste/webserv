@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:42:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 17:23:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,7 @@ HttpRequest::HttpRequest()
 {
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 bool HttpRequest::setError(int code)
 {
 	_errorCode = code;
@@ -124,7 +124,7 @@ std::string HttpRequest::getLeftover() const
 	return _rawData.substr(_consumedBytes);
 }
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 {
 	// Search the first line

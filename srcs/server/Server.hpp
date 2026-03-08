@@ -6,70 +6,70 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:38:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:31:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef SERVER_HPP
+# define SERVER_HPP
 
-// Include(s) ******************************************************************
-#include "Client.hpp"
-#include "Router.hpp"
-#include "../config/Config.hpp"
-#include <map>					// std::map
-#include <string>				// std::string
-#include <vector>				// std::vector
-#include <ctime>				// time_t
-#include <poll.h>				// pollfd
+// Include(s) ------------------------------------------------------------------
 
-// Structure(s) ****************************************************************
-struct SessionData {
-	time_t lastActive; ///< Timestamp of last session activity
-	std::string username; ///< Username associated with the session
-	int visitCount; ///< Number of page visits for this session
+# include "Client.hpp"
+# include "Router.hpp"
+# include "../config/Config.hpp"
+# include <map>					// std::map
+# include <string>				// std::string
+# include <vector>				// std::vector
+# include <ctime>				// time_t
+# include <poll.h>				// pollfd
+
+// Structure(s) ----------------------------------------------------------------
+
+struct SessionData
+{
+	time_t		lastActive;	// Timestamp of last session activity
+	std::string	username;	// Username associated with the session
+	int			visitCount;	// Number of page visits for this session
 };
 
-// Enum(s) *********************************************************************
-enum SocketType {
+// Enum(s) ---------------------------------------------------------------------
+
+enum SocketType
+{
 	SOCKET_LISTEN,
 	SOCKET_CLIENT,
 	SOCKET_SIGNAL,
 	SOCKET_CGI
 };
 
-// Class ***********************************************************************
-class Server {
+// Class -----------------------------------------------------------------------
+
+class Server
+{
 	private:
-		// Attribute(s) --------------------------------------------------------
+
+		// Attribute(s)
 		enum {
-			SESSION_TIMEOUT = 1800, // 30 minutes
-			SESSION_CLEANUP_INTERVAL = 60, // 1 minute
-			CLIENT_KEEPALIVE_TIMEOUT = 75, // 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
-			CLIENT_PROCESSING_TIMEOUT = 180, // 3 minutes - request processing timeout, including CGI execution
-			DEFAULT_CGI_EXECUTION_TIMEOUT = 90 // 90 seconds - single CGI execution timeout (prevents hanging scripts)
+			SESSION_TIMEOUT = 1800,				// 30 minutes
+			SESSION_CLEANUP_INTERVAL = 60,		// 1 minute
+			CLIENT_KEEPALIVE_TIMEOUT = 75,		// 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
+			CLIENT_PROCESSING_TIMEOUT = 180,	// 3 minutes - request processing timeout, including CGI execution
+			DEFAULT_CGI_EXECUTION_TIMEOUT = 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
 		};
 
-		std::vector<ServerConfig> _configs; ///< Server configurations
-		std::vector<pollfd> _pollFds; ///< Poll file descriptors for I/O multiplexing
-		std::map<int, Client> _clients; ///< Active client connections
-		std::map<int, SocketType> _socketTypes; ///< Socket type mapping
-		bool _running; ///< Server running state
-		Router _router; ///< Request router
-		std::map<std::string, SessionData> _sessions; ///< Active user sessions
-		static int _s_sigpipe[2]; ///< Self-pipe for signal handling
-		time_t _lastSessionCleanup; ///< Timestamp of last session cleanup
+		std::vector<ServerConfig>			_configs;				// Server configurations
+		std::vector<pollfd>					_pollFds;				// Poll file descriptors for I/O multiplexing
+		std::map<int, Client>				_clients;				// Active client connections
+		std::map<int, SocketType>			_socketTypes;			// Socket type mapping
+		bool								_running;				// Server running state
+		Router								_router;				// Request router
+		std::map<std::string, SessionData>	_sessions;				// Active user sessions
+		static int							_s_sigpipe[2];			// Self-pipe for signal handling
+		time_t								_lastSessionCleanup;	// Timestamp of last session cleanup
 
-	public:
-		// Special member function(s) ------------------------------------------
-		explicit Server(const Config& config);
-		~Server();
+		// Private method(s)
 
-		// Public method(s) ----------------------------------------------------
-		void run();
-		void stop();
-
-	private:
-		// Private method(s) ---------------------------------------------------
 		// Socket management
 		void setupListenSockets();
 		void acceptNewClient(int listenSocket);
@@ -94,7 +94,7 @@ class Server {
 		// Session management
 		void handleSessionTimeouts();
 
-		// Signal handling (self-pipe trick for async-signal-safety)
+		// Signal handling
 		void handleSignalPipeReadable();
 		void addSignalPipeToPoll();
 		static void signalHandler(int sig);
@@ -102,4 +102,17 @@ class Server {
 
 		// Logging
 		void logClientResponse(Client &client);
+		
+	public:
+
+		// Special member function(s)
+		explicit Server(const Config& config);
+		~Server();
+
+		// Public method(s)
+		void run();
+		void stop();
+
 };
+
+#endif

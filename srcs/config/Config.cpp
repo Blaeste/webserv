@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:41:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 17:23:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ static bool isValidHttpMethod(const std::string &method)
 	return validMethods.find(method) != validMethods.end();
 }
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 std::string Config::removeComments(const std::string &content) {
 
 	std::string result;
@@ -395,7 +395,7 @@ bool Config::validate() const {
 	return true;
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 bool Config::parse(const std::string &filePath) {
 	try {
 

@@ -6,38 +6,42 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:42:14 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:15:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#pragma once
+#ifndef LOCATION_HPP
+# define LOCATION_HPP
 
-// Include(s) ******************************************************************
-#include <string>	// std::string
-#include <vector>	// std::vector
+// Include(s) ------------------------------------------------------------------
 
-// Class ***********************************************************************
+# include <string>	// std::string
+# include <vector>	// std::vector
+
+// Class -----------------------------------------------------------------------
+
 class Location
 {
 	private:
-		// Attribute(s) --------------------------------------------------------
 
-		std::string _path; ///< Location path prefix
-		std::string _root; ///< Root directory for file serving
-		std::vector<std::string> _allowedMethods; ///< Allowed HTTP methods
-		std::vector<std::string> _index; ///< Default index file names
-		bool _autoIndex; ///< Enable directory listing
-		std::string _uploadPath; ///< Directory for file uploads
-		std::string _redirect; ///< URL redirection target
-		std::string _cgiExtension; ///< CGI file extension
-		std::string _cgiPath; ///< CGI interpreter path
-		size_t _maxBodySize; ///< Max body size (0 = use server default)
+		// Attribute(s)
+		std::string					_path;				// Location path prefix
+		std::string					_root;				// Root directory for file serving
+		std::vector<std::string>	_allowedMethods;	// Allowed HTTP methods
+		std::vector<std::string>	_index;				// Default index file names
+		bool						_autoIndex;			// Enable directory listing
+		std::string					_uploadPath;		// Directory for file uploads
+		std::string					_redirect;			// URL redirection target
+		std::string					_cgiExtension;		// CGI file extension
+		std::string					_cgiPath;			// CGI interpreter path
+		size_t						_maxBodySize;		// Max body size (0 = use server default)
 
 	public:
-		// Default constructor -------------------------------------------------
+
+		// Default constructor
 		Location();
 
-		// Setters -------------------------------------------------------------
+		// Setter(s)
 		void setPath(const std::string &path) { _path = path; }
 		void setRoot(const std::string &root) { _root = root; }
 		void setAutoIndex(bool autoIndex) { _autoIndex = autoIndex; }
@@ -59,7 +63,7 @@ class Location
 		 */
 		void addIndex(const std::string &index);
 
-		// Getter(s) -----------------------------------------------------------
+		// Getter(s)
 		const std::string &getPath() const { return _path; }
 		const std::string &getRoot() const { return _root; }
 		const std::vector<std::string> &getAllowedMethods() const { return _allowedMethods; }
@@ -71,7 +75,7 @@ class Location
 		const std::string &getCgiPath() const { return _cgiPath; }
 		size_t getMaxBodySize() const { return _maxBodySize; }
 
-		// Public method(s) ----------------------------------------------------
+		// Public method(s)
 		/**
 		 * @brief Checks if a given HTTP method is allowed in this location.
 		 * @param method The HTTP method to check (e.g., "GET", "POST").
@@ -79,3 +83,5 @@ class Location
 		 */
 		bool isMethodAllowed(const std::string &method) const;
 };
+
+#endif

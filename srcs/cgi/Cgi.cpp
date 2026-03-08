@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   CGI.cpp                                            :+:      :+:    :+:   */
+/*   Cgi.cpp                                            :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:44:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:27:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
-#include "CGI.hpp"
+#include "Cgi.hpp"
 #include "../config/Location.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../server/Router.hpp"
@@ -36,7 +36,7 @@ static std::string toAbsolutePath(const std::string &path)
 	return path;
 }
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 std::string CGI::readFromPipe(int fd) {
 	char buffer[4096];
 	std::string result;
@@ -114,7 +114,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	}
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	// Truncate display for large outputs
 	std::string displayOutput = output;

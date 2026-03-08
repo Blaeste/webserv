@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/08 16:43:26 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:28:43 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@
 #include "../http/HttpRequest.hpp"
 #include "../utils/utils.hpp"
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 // Find location with longest matching path prefix
 const Location *Router::findMatchingLocation(const ServerConfig &config, const std::string &uri) const
 {
@@ -43,7 +43,7 @@ const Location *Router::findMatchingLocation(const ServerConfig &config, const s
 	return bestMatch;
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 // Match request to appropriate route and determine response type
 RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &request) const
 {

@@ -6,13 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:30:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Server.hpp"
-#include "../cgi/CGI.hpp"
+#include "../cgi/Cgi.hpp"
 #include "../utils/Logger.hpp"
 #include "../utils/utils.hpp"
 #include <algorithm>			// std::find
@@ -84,7 +84,7 @@ Server::~Server()
 	std::cout << CURSOR_SHOW;
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 void Server::run()
 {
 	_running = true;
@@ -174,7 +174,7 @@ void Server::stop()
 	_running = false;
 }
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 void Server::setupListenSockets()
 {
 	// Create one listening socket per configuration (one per port)

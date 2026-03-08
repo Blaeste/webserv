@@ -6,13 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:43:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:28:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 #include "Client.hpp"
-#include "../cgi/CGI.hpp"
+#include "../cgi/Cgi.hpp"
 #include "../utils/Logger.hpp"
 #include "Router.hpp"
 #include "Server.hpp"
@@ -92,7 +92,7 @@ void Client::setCGITiming(const ServerConfig &config)
 	_serverConfig = &config;
 }
 
-// Public method(s) ------------------------------------------------------------
+// Public method(s)
 bool Client::readData(const ServerConfig *config)
 {
 	// Set start time on very first read (before any parsing)
@@ -394,7 +394,7 @@ void Client::applyConnectionHeader()
 	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
 }
 
-// Private method(s) -----------------------------------------------------------
+// Private method(s)
 void Client::handleSession(std::map<std::string, SessionData> &sessions)
 {
 	std::map<std::string, std::string> cookies = _request.getCookies();
