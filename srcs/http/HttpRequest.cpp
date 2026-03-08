@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:17:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -486,38 +486,28 @@ bool HttpRequest::parse()
 
 			if (!clStr.empty())
 			{
-				for (size_t i = 0; i < clStr.length(); i++)
-				{
-					unsigned char d = static_cast<unsigned char>(clStr[i]);
-					if (!std::isdigit(d))
+				try {
+					// RFC 7230: Content-Length = 1*DIGIT (no sign allowed)
+					if (clStr[0] == '+' || clStr[0] == '-')
 					{
 						_isComplete = true;
 						return setError(400); // Bad request
 					}
-				}
 
-				// Security: Check for overflow (max 20 digits)
-				if (clStr.length() > 20)
-				{
-					_isComplete = true;
-					return setError(413); // Payload Too Large
-				}
-
-				try {
-					size_t contentLength = parseIntSafe(clStr.c_str(), "Content-Length header");
+					int contentLength = parseIntSafe(clStr.c_str(), "Content-Length header");
 
 					// Security: Check Content-Length against max body size
-					if (contentLength > MAX_BODY_SIZE)
+					if (static_cast<size_t>(contentLength) > MAX_BODY_SIZE)
 					{
 						_isComplete = true;
 						return setError(413); // Payload Too Large
 					}
 
-					_contentLength = contentLength;
+					_contentLength = static_cast<size_t>(contentLength);
 
 				} catch (const std::exception &e) {
 					_isComplete = true;
-					return setError(400); // bad request
+					return setError(400); // Bad request
 				}
 			}
 			else if (_method == "POST" || _method == "PUT")
