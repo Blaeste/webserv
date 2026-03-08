@@ -6,16 +6,18 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 17:22:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:31:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "Location.hpp"
 #include <algorithm>	// std::find, std::transform
 #include <cctype>		// ::toupper
 
 // Default constructor ---------------------------------------------------------
+
 Location::Location() :
 	_path(""),
 	_root(""),
@@ -30,7 +32,8 @@ Location::Location() :
 	_index.reserve(4); // generally no more
 }
 
-// Setter(s) -------------------------------------------------------------------
+// Public method(s) ------------------------------------------------------------
+
 void Location::addAllowedMethod(const std::string &method)
 {
 	std::string m = method;
@@ -51,7 +54,6 @@ void Location::addIndex(const std::string &index)
 	_index.push_back(index);
 }
 
-// Public method(s)
 bool Location::isMethodAllowed(const std::string &method) const {
 	return std::find(_allowedMethods.begin(), _allowedMethods.end(), method)
 		!= _allowedMethods.end();

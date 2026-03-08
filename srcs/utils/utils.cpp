@@ -6,11 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:39:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:48:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "utils.hpp"
 #include "Logger.hpp"
 #include <iostream>		// std::cerr
@@ -26,6 +27,7 @@
 #include <unistd.h>		// read, close, access, F_OK
 
 // Static helper(s) ------------------------------------------------------------
+
 // Normalize a path by splitting components and resolving '.' and '..'.
 // This does not touch the filesystem (no realpath), so it works with
 // non-existent paths as long as the resulting layout is under the intended root.
@@ -58,6 +60,7 @@ static std::string normalizePath(const std::string &raw)
 }
 
 // Function(s) -----------------------------------------------------------------
+
 std::string trim(const std::string &str)
 {
 	static const std::string whitespace = " \t\n\r\f\v";

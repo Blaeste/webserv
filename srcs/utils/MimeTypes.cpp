@@ -6,14 +6,16 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 17:24:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:47:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "MimeTypes.hpp"
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
+
 std::map<std::string, std::string> MimeTypes::createMap() {
 	std::map<std::string, std::string> map;
 
@@ -44,9 +46,11 @@ std::map<std::string, std::string> MimeTypes::createMap() {
 }
 
 // Static variable initialization ----------------------------------------------
+
 const std::map<std::string, std::string> MimeTypes::_types = MimeTypes::createMap();
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
+
 const std::string& MimeTypes::get(const std::string& extension) {
 	std::map<std::string, std::string>::const_iterator it = _types.find(extension);
 	if (it != _types.end())

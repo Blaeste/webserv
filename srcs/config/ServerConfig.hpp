@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:24:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:33:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -49,6 +49,7 @@ class ServerConfig
 		size_t								getMaxBodySize() const							{ return _maxBodySize; }
 		const std::vector<Location>&		getLocations() const							{ return _locations; }
 		size_t								getCgiTimeout() const							{ return _cgiTimeout; }
+		std::string							getErrorPage(int code) const;
 
 		// Setter(s)
 
@@ -58,11 +59,6 @@ class ServerConfig
 		void								setMaxBodySize(size_t size)						{ _maxBodySize = size; }
 		void								addLocation(const Location &location)			{ _locations.push_back(location); }
 		void								setCgiTimeout(size_t timeout)					{ _cgiTimeout = timeout; }
-
-		// Public method(s)
-		
-		/** @brief Returns the configured error page path for the given status code, or empty string. */
-		std::string getErrorPage(int code) const;
 };
 
 #endif

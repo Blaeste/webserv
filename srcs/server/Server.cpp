@@ -6,11 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:30:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:46:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "Server.hpp"
 #include "../cgi/Cgi.hpp"
 #include "../utils/Logger.hpp"
@@ -29,10 +30,12 @@
 #include <unistd.h>				// read, write, close, pipe
 
 // Define(s) -------------------------------------------------------------------
+
 #define CURSOR_HIDE "\033[?25l"
 #define CURSOR_SHOW "\033[?25h"
 
 // Static helper(s) ------------------------------------------------------------
+
 static int getSocketPort(int fd)
 {
 	sockaddr_in addr;
@@ -43,9 +46,11 @@ static int getSocketPort(int fd)
 }
 
 // Static variable initialization ----------------------------------------------
+
 int Server::_s_sigpipe[2] = {-1, -1}; // Self-pipe for signal handling in poll()
 
 // Special member function(s) --------------------------------------------------
+
 Server::Server(const Config &config)
 	: _configs(config.getServers())
 	, _running(false)
@@ -84,7 +89,8 @@ Server::~Server()
 	std::cout << CURSOR_SHOW;
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
+
 void Server::run()
 {
 	_running = true;
@@ -169,12 +175,8 @@ void Server::run()
 	}
 }
 
-void Server::stop()
-{
-	_running = false;
-}
+// Private method(s) -----------------------------------------------------------
 
-// Private method(s)
 void Server::setupListenSockets()
 {
 	// Create one listening socket per configuration (one per port)

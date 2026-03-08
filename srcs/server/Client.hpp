@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:26:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:38:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -98,6 +98,8 @@ class Client
 		void				setState(ClientState state)			{ _state = state; }
 		void				setCGIProcess(CGIProcess *cgi)		{ _cgiProcess = cgi; }
 		void				markRequestLogged()					{ _requestLogged = true; }
+
+		// Public method(s)
 
 		/** @brief Returns true if the client has exceeded the idle or processing timeout. */
 		bool				hasTimedOut(time_t readTimeout, time_t processingTimeout) const;

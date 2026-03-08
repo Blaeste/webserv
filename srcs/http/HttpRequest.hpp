@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:22:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:36:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -102,15 +102,13 @@ class HttpRequest
 		size_t										getContentLength() const	{ return _contentLength; }
 		bool										isChunked() const			{ return _isChunked; }
 		size_t										getConsumedBytes() const 	{ return _consumedBytes; }
+		bool										isComplete() const			{ return _isComplete; }
 		std::map<std::string, std::string>			getCookies() const;
 
 		// Public method(s)
 
 		/** @brief Appends raw socket data and triggers parsing; returns true when request is complete. */
 		bool										appendData(const std::string &data);
-
-		/** @brief Returns true if the request has been fully received and parsed. */
-		bool										isComplete() const;
 
 		/** @brief Resets all state for reuse on a keep-alive connection. */
 		void										reset();

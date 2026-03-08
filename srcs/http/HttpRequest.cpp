@@ -6,11 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:45:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:36:24 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "HttpRequest.hpp"
 #include "../utils/utils.hpp"
 #include <sstream>				// std::istringstream, std::getline
@@ -19,6 +20,7 @@
 #include <cstdlib>				// std::strtoul
 
 // Default constructor ---------------------------------------------------------
+
 HttpRequest::HttpRequest()
 	: _isComplete(false)
 	, _errorCode(0)
@@ -32,7 +34,8 @@ HttpRequest::HttpRequest()
 	, _consumedBytes(0)
 {}
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
+
 bool HttpRequest::setError(int code)
 {
 	_errorCode = code;
@@ -88,11 +91,6 @@ bool HttpRequest::appendData(const std::string &data)
 	return _isComplete;
 }
 
-bool HttpRequest::isComplete() const
-{
-	return _isComplete;
-}
-
 std::string HttpRequest::getHeader(const std::string &key) const
 {
 	std::map<std::string, std::string>::const_iterator it = _headers.find(toLowercase(key));
@@ -132,7 +130,8 @@ std::string HttpRequest::getLeftover() const
 	return _rawData.substr(_consumedBytes);
 }
 
-// Private method(s)
+// Private method(s)------------------------------------------------------------
+
 bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 {
 	// Search the first line

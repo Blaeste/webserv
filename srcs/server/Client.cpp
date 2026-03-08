@@ -6,11 +6,12 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:28:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:39:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "Client.hpp"
 #include "../cgi/Cgi.hpp"
 #include "../utils/Logger.hpp"
@@ -23,6 +24,7 @@
 #include <unistd.h>				// read, close
 
 // Static helper(s) ------------------------------------------------------------
+
 static std::string generateSessionId()
 {
 	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -51,6 +53,7 @@ static std::string generateSessionId()
 }
 
 // Constructor -----------------------------------------------------------------
+
 // Initialize socket and activity timestamp
 Client::Client(int socket, const std::string &clientIp)
 	: _socket(socket)
@@ -69,6 +72,7 @@ Client::Client(int socket, const std::string &clientIp)
 {}
 
 // Accessor(s) -----------------------------------------------------------------
+
 bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 {
 	time_t timeout;
@@ -92,7 +96,8 @@ void Client::setCGITiming(const ServerConfig &config)
 	_serverConfig = &config;
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
+
 bool Client::readData(const ServerConfig *config)
 {
 	// Set start time on very first read (before any parsing)
@@ -394,7 +399,8 @@ void Client::applyConnectionHeader()
 	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
 }
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
+
 void Client::handleSession(std::map<std::string, SessionData> &sessions)
 {
 	std::map<std::string, std::string> cookies = _request.getCookies();

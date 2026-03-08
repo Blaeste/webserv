@@ -6,17 +6,19 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 17:24:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:47:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
+
 #include "Logger.hpp"
 #include <iomanip>		// std::setw, std::left, std::right
 #include <iostream>		// std::cout
 #include <sstream>		// std::stringstream
 
 // Static variable(s) initialization -------------------------------------------
+
 std::map<int, RequestData> Logger::_activeRequests;
 std::string Logger::_lastMethod;
 std::string Logger::_lastUri;
@@ -36,7 +38,8 @@ int Logger::_lastDisplayedRequestId = -1;
 int Logger::_currentLine = 0;
 bool Logger::_s_logging = false;
 
-// Private method(s)
+// Private method(s) -----------------------------------------------------------
+
 std::string Logger::getCurrentTime()
 {
 	std::time_t now = std::time(NULL);
@@ -198,7 +201,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::cout.flush();
 }
 
-// Public method(s)
+// Public method(s) ------------------------------------------------------------
+
 void Logger::logRequestStart(int requestId, const std::string &method, const std::string &uri,
 							 const std::string &clientIP, std::string serverName, int port, size_t declaredSize)
 {
