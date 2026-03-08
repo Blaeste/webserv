@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -232,7 +232,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 			{
 				if (locations[i].getPath() == "/")
 				{
-					std::string candidate = buildPath(locations[i].getRoot(), customPath);
+					std::string candidate = joinPath(locations[i].getRoot(), customPath);
 					if (isPathSafe(candidate, locations[i].getRoot()))
 						errorPage = candidate;
 					else
@@ -242,7 +242,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 			}
 			// If no "/" location found, try with customPath as-is (relative)
 			if (errorPage.empty() && !customPath.empty() && customPath.find("..") == std::string::npos)
-				errorPage = buildPath(".", customPath);
+				errorPage = joinPath(".", customPath);
 		}
 	}
 

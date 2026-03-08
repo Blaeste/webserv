@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,7 +164,7 @@ bool isValidHttpMethod(const std::string &method);
  * @param path The path to resolve (returned as-is if already absolute).
  * @return The absolute path, or the original path if PWD is unavailable.
  */
-std::string buildAbsolutePath(const std::string &path);
+std::string toAbsolutePath(const std::string &path);
 
 /**
  * @brief Joins a root directory and a relative path, avoiding double slashes.
@@ -172,4 +172,4 @@ std::string buildAbsolutePath(const std::string &path);
  * @param path The relative path to append (e.g., "/index.html").
  * @return The combined path (e.g., "www/index.html").
  */
-std::string buildPath(const std::string &root, const std::string &path);
+std::string joinPath(const std::string &root, const std::string &path);

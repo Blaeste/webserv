@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 11:21:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,7 +43,7 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	_env["REQUEST_METHOD"] = request.getMethod();
 
 	// Convert script path to absolute path for PHP-CGI
-	_env["SCRIPT_FILENAME"] = buildAbsolutePath(match.filePath);
+	_env["SCRIPT_FILENAME"] = toAbsolutePath(match.filePath);
 
 	// Query string (part after '?')
 	if (pos != std::string::npos)
@@ -147,7 +147,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 	setupEnvironment(match, request);
 
 	// Validate interpreter is executable and script is readable
-	std::string interpreter = buildAbsolutePath(match.location->getCgiPath());
+	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
 
 	if (access(interpreter.c_str(), X_OK) != 0) {
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Interpreter not executable: " + interpreter);
@@ -206,7 +206,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 			close(fdsToClose[i]);
 
 		// Get CGI interpreter path as absolute BEFORE chdir
-		std::string interpreter = buildAbsolutePath(match.location->getCgiPath());
+		std::string interpreter = toAbsolutePath(match.location->getCgiPath());
 
 		// Change to script directory for relative path access
 		std::string scriptPath = match.filePath;

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 12:54:28 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 13:34:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -426,10 +426,10 @@ std::string urlDecode(const std::string &url)
 	return decoded;
 }
 
-std::string buildPath(const std::string &root, const std::string &path)
+std::string joinPath(const std::string &root, const std::string &path)
 {
 	if (root.empty())
-		return buildPath(".", path);
+		return joinPath(".", path);
 	if (path.empty())
 		return root;
 	bool rootEnds = root[root.size() - 1] == '/';
@@ -441,7 +441,7 @@ std::string buildPath(const std::string &root, const std::string &path)
 	return root + path;
 }
 
-std::string buildAbsolutePath(const std::string &path)
+std::string toAbsolutePath(const std::string &path)
 {
 	if (!path.empty() && path[0] == '/')
 		return path;
