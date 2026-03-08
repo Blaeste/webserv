@@ -232,13 +232,17 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 			{
 				if (locations[i].getPath() == "/")
 				{
-					errorPage = locations[i].getRoot() + customPath;
+					std::string candidate = buildPath(locations[i].getRoot(), customPath);
+					if (isPathSafe(candidate, locations[i].getRoot()))
+						errorPage = candidate;
+					else
+						Logger::logMessage(RED "[Client] Error: " RESET "buildErrorResponse: error page path traversal blocked: " + candidate);
 					break;
 				}
 			}
 			// If no "/" location found, try with customPath as-is (relative)
-			if (errorPage.empty())
-				errorPage = "." + customPath;
+			if (errorPage.empty() && !customPath.empty() && customPath.find("..") == std::string::npos)
+				errorPage = buildPath(".", customPath);
 		}
 	}
 

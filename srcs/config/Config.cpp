@@ -346,6 +346,10 @@ bool Config::validate() const {
 			if (path.empty() || path[0] != '/')
 				errors.push_back(locPrefix + "Invalid path (must start with /)");
 
+			// Check root is defined
+			if (loc.getRoot().empty())
+				errors.push_back(locPrefix + "Missing root directive");
+
 			// Check CGI extension has corresponding CGI path
 			if (!loc.getCgiExtension().empty() && loc.getCgiPath().empty())
 				errors.push_back(locPrefix + "CGI extension without CGI path");

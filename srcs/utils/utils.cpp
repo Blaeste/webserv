@@ -422,6 +422,21 @@ std::string urlDecode(const std::string &url)
 	return decoded;
 }
 
+std::string buildPath(const std::string &root, const std::string &path)
+{
+	if (root.empty())
+		return buildPath(".", path);
+	if (path.empty())
+		return root;
+	bool rootEnds = root[root.size() - 1] == '/';
+	bool pathStarts = path[0] == '/';
+	if (rootEnds && pathStarts)
+		return root + path.substr(1);
+	if (!rootEnds && !pathStarts)
+		return root + "/" + path;
+	return root + path;
+}
+
 std::string buildAbsolutePath(const std::string &path)
 {
 	if (!path.empty() && path[0] == '/')
