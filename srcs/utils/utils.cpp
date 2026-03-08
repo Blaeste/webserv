@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/05 12:02:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 12:54:28 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -247,7 +247,11 @@ bool isPathSafe(const std::string &path, const std::string &root)
 	if (normalizedRoot.empty())
 		return false;
 
-	// 5) The target must start with the root and either match exactly or have a '/'.
+	// 5) Root "/" contains every absolute path by definition.
+	if (normalizedRoot == "/")
+		return normalizedPath[0] == '/';
+
+	// 6) The target must start with the root and either match exactly or have a '/'.
 	if (normalizedPath.compare(0, normalizedRoot.size(), normalizedRoot) != 0)
 		return false;
 	if (normalizedPath.size() == normalizedRoot.size())
