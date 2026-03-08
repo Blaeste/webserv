@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:15:14 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:24:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,7 @@ class Location
 	private:
 
 		// Attribute(s)
+
 		std::string					_path;				// Location path prefix
 		std::string					_root;				// Root directory for file serving
 		std::vector<std::string>	_allowedMethods;	// Allowed HTTP methods
@@ -39,49 +40,43 @@ class Location
 	public:
 
 		// Default constructor
+
 		Location();
 
-		// Setter(s)
-		void setPath(const std::string &path) { _path = path; }
-		void setRoot(const std::string &root) { _root = root; }
-		void setAutoIndex(bool autoIndex) { _autoIndex = autoIndex; }
-		void setUploadPath(const std::string &path) { _uploadPath = path; }
-		void setRedirect(const std::string &redirect) { _redirect = redirect; }
-		void setCgiExtension(const std::string &ext) { _cgiExtension = ext; }
-		void setCgiPath(const std::string &path) { _cgiPath = path; }
-		void setMaxBodySize(size_t size) { _maxBodySize = size; }
-
-		/**
-		 * @brief Adds an allowed HTTP method to the location.
-		 * @param method The HTTP method to allow (e.g., "GET", "POST").
-		 */
-		void addAllowedMethod(const std::string &method);
-
-		/**
-		 * @brief Adds an index file to the location.
-		 * @param index The name of the index file to add.
-		 */
-		void addIndex(const std::string &index);
-
 		// Getter(s)
-		const std::string &getPath() const { return _path; }
-		const std::string &getRoot() const { return _root; }
-		const std::vector<std::string> &getAllowedMethods() const { return _allowedMethods; }
-		const std::vector<std::string> &getIndex() const { return _index; }
-		bool getAutoIndex() const { return _autoIndex; }
-		const std::string &getUploadPath() const { return _uploadPath; }
-		const std::string &getRedirect() const { return _redirect; }
-		const std::string &getCgiExtension() const { return _cgiExtension; }
-		const std::string &getCgiPath() const { return _cgiPath; }
-		size_t getMaxBodySize() const { return _maxBodySize; }
+
+		const std::string&				getPath() const								{ return _path; }
+		const std::string&				getRoot() const								{ return _root; }
+		const std::vector<std::string>&	getAllowedMethods() const					{ return _allowedMethods; }
+		const std::vector<std::string>&	getIndex() const							{ return _index; }
+		bool							getAutoIndex() const						{ return _autoIndex; }
+		const std::string&				getUploadPath() const						{ return _uploadPath; }
+		const std::string&				getRedirect() const							{ return _redirect; }
+		const std::string&				getCgiExtension() const						{ return _cgiExtension; }
+		const std::string&				getCgiPath() const							{ return _cgiPath; }
+		size_t							getMaxBodySize() const						{ return _maxBodySize; }
+
+		// Setter(s)
+
+		void							setPath(const std::string &path)			{ _path = path; }
+		void							setRoot(const std::string &root)			{ _root = root; }
+		void							setAutoIndex(bool autoIndex)				{ _autoIndex = autoIndex; }
+		void							setUploadPath(const std::string &path)		{ _uploadPath = path; }
+		void							setRedirect(const std::string &redirect)	{ _redirect = redirect; }
+		void							setCgiExtension(const std::string &ext)		{ _cgiExtension = ext; }
+		void							setCgiPath(const std::string &path)			{ _cgiPath = path; }
+		void							setMaxBodySize(size_t size)					{ _maxBodySize = size; }
 
 		// Public method(s)
-		/**
-		 * @brief Checks if a given HTTP method is allowed in this location.
-		 * @param method The HTTP method to check (e.g., "GET", "POST").
-		 * @return true if the method is allowed, false otherwise.
-		 */
-		bool isMethodAllowed(const std::string &method) const;
+
+		/** @brief Adds a method to the allowed list (uppercased, no duplicates). */
+		void							addAllowedMethod(const std::string &method);
+
+		/** @brief Adds an index filename (no duplicates). */
+		void							addIndex(const std::string &index);
+
+		/** @brief Returns true if method is in the allowed list. */
+		bool							isMethodAllowed(const std::string &method) const;
 };
 
 #endif

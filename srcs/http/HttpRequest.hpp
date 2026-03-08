@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:30:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:22:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,90 +65,61 @@ class HttpRequest
 
 		// Private method(s)
 
-		/**
-		 * @brief Parses the request line from the header block.
-		 * @param headerBlock The header block containing the request line.
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parse();
-
-		/**
-		 * @brief Parses the request line from the header block.
-		 * @param headerBlock The header block containing the request line.
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parseRequestLine(const std::string &headerBlock);
-		bool parseHeaders(const std::string &headerBlock);
-
-		/**
-		 * @brief Parses the body of a chunked transfer encoded request.
-		 * @param offset The offset in _rawData where the chunked body starts (after headers).
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parseChunked();
-
-		/**
-		 * @brief Parses multipart/form-data body.
-		 * @param boundary The boundary string used to separate parts.
-		 * @return true if parsing was successful, false otherwise.
-		 */
-		bool parseMultipart(const std::string &boundary);
-
-		/**
-		 * @brief Sets an HTTP error code and marks the request as complete.
-		 * @param code The HTTP error code to set (e.g., 400, 413).
-		 * @return true if the error code was set successfully, false otherwise.
-		 */
-		bool setError(int code);
+		/** @brief Entry point: drives header and body parsing on _rawData. */
+		bool										parse();
+	
+		/** @brief Parses the first line (method, URI, version) from the header block. */
+		bool										parseRequestLine(const std::string &headerBlock);
+	
+		/** @brief Parses header fields from the header block into _headers. */
+		bool										parseHeaders(const std::string &headerBlock);
+	
+		/** @brief Parses a chunked Transfer-Encoding body and accumulates decoded payload. */
+		bool										parseChunked();
+	
+		/** @brief Parses a multipart/form-data body and populates _uploadedFiles. */
+		bool										parseMultipart(const std::string &boundary);
+	
+		/** @brief Stores error code and marks the request complete to trigger an error response. */
+		bool										setError(int code);
 
 	public:
 
 		// Default constructor
+
 		HttpRequest();
+
+		// Getter(s)
+
+		const std::string&							getMethod() const			{ return _method; }
+		const std::string&							getUri() const				{ return _uri; }
+		const std::string&							getVersion() const			{ return _version; }
+		const std::string&							getBody() const				{ return _body; }
+		const std::map<std::string, std::string>&	getHeaders() const			{ return _headers; }
+		const std::vector<UploadedFile>&			getUploadedFiles() const	{ return _uploadedFiles; }
+		int											getErrorCode() const		{ return _errorCode; }
+		bool										headersParsed() const		{ return _headersParsed; }
+		size_t										getContentLength() const	{ return _contentLength; }
+		bool										isChunked() const			{ return _isChunked; }
+		size_t										getConsumedBytes() const 	{ return _consumedBytes; }
+		std::map<std::string, std::string>			getCookies() const;
 
 		// Public method(s)
 
-		/**
-		 * @brief Appends raw data to the HTTP request and attempts to parse it.
-		 * @param data The raw data to append.
-		 * @return true if the request is complete after appending, false otherwise.
-		 */
-		bool appendData(const std::string &data);
+		/** @brief Appends raw socket data and triggers parsing; returns true when request is complete. */
+		bool										appendData(const std::string &data);
 
-		/**
-		 * @brief Checks if the HTTP request is complete.
-		 * @return true if the request is complete, false otherwise.
-		 */
-		bool isComplete() const;
+		/** @brief Returns true if the request has been fully received and parsed. */
+		bool										isComplete() const;
 
-		/** Reset l'état complet de la requête pour réutilisation. */
-		void reset();
+		/** @brief Resets all state for reuse on a keep-alive connection. */
+		void										reset();
 
-		/** Octets consommés dans _rawData (fin exacte de la requête). */
-		size_t getConsumedBytes() const { return _consumedBytes; }
+		/** @brief Returns leftover bytes in _rawData that belong to the next pipelined request. */
+		std::string									getLeftover() const;
 
-		/** Portion restante (début de la requête suivante si déjà reçue). */
-		std::string getLeftover() const;
-
-		/**
-		 * @brief Gets a specific header value by key.
-		 * @param key The header name (e.g., "Content-Type").
-		 * @return The header value if found, empty string otherwise.
-		 */
-		std::string getHeader(const std::string &key) const;
-
-		// Getter(s)
-		const std::string &getMethod() const { return _method; }
-		const std::string &getUri() const { return _uri; }
-		const std::string &getVersion() const { return _version; }
-		const std::string &getBody() const { return _body; }
-		const std::map<std::string, std::string> &getHeaders() const { return _headers; }
-		const std::vector<UploadedFile> &getUploadedFiles() const { return _uploadedFiles; }
-		int getErrorCode() const { return _errorCode; }
-		bool headersParsed() const { return _headersParsed; }
-		size_t getContentLength() const { return _contentLength; }
-		bool isChunked() const { return _isChunked; }
-		std::map<std::string, std::string> getCookies() const;
+		/** @brief Returns the value of the given header (case-insensitive), or empty string. */
+		std::string									getHeader(const std::string &key) const;
 };
 
 #endif

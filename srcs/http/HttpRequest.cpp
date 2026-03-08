@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 17:23:39 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 18:45:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,17 @@
 
 // Default constructor ---------------------------------------------------------
 HttpRequest::HttpRequest()
-	: _isComplete(false), _errorCode(0), _headersParsed(false), _bodyStart(0), _isChunked(false), _contentLength(0), _chunkParsePos(0), _chunkTotalSize(0), _chunkDone(false), _consumedBytes(0)
-{
-}
+	: _isComplete(false)
+	, _errorCode(0)
+	, _headersParsed(false)
+	, _bodyStart(0)
+	, _isChunked(false)
+	, _contentLength(0)
+	, _chunkParsePos(0)
+	, _chunkTotalSize(0)
+	, _chunkDone(false)
+	, _consumedBytes(0)
+{}
 
 // Public method(s)
 bool HttpRequest::setError(int code)

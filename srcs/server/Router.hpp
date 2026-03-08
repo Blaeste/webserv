@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/08 18:31:04 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:17:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,12 +59,16 @@ class Router
 	private:
 
 		// Private method(s)
-		const Location *findMatchingLocation(const ServerConfig &config, const std::string &uri) const;
+
+		/** @brief Returns the location block with the longest matching prefix for uri, or NULL. */
+		const Location*	findMatchingLocation(const ServerConfig &config, const std::string &uri) const;
 
 	public:
 
 		// Public method(s)
-		RouteMatch matchRoute(const ServerConfig &config, const HttpRequest &request) const;
+
+		/** @brief Resolves request to a RouteMatch (file path, CGI flag, status code, etc.). */
+		RouteMatch		matchRoute(const ServerConfig &config, const HttpRequest &request) const;
 
 
 };

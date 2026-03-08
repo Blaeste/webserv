@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:15:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:24:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,29 +38,30 @@ class ServerConfig
 	public:
 
 		// Default constructor
+
 		ServerConfig();
 
-		// Setter(s)
-		void setPort(int port) { _port = port; }
-		void setServerName(const std::string &name) { _serverName = name; }
-		void addErrorPage(int code, const std::string &path) { _errorPages[code] = path; }
-		void setMaxBodySize(size_t size) { _maxBodySize = size; }
-		void addLocation(const Location &location) { _locations.push_back(location); }
-		void setCgiTimeout(size_t timeout) { _cgiTimeout = timeout; }
-
 		// Getter(s)
-		int getPort() const { return _port; }
-		const std::string &getServerName() const { return _serverName; }
-		const std::map<int, std::string> &getErrorPages() const { return _errorPages; }
-		size_t getMaxBodySize() const { return _maxBodySize; }
-		const std::vector<Location> &getLocations() const { return _locations; }
-		size_t getCgiTimeout() const { return _cgiTimeout; }
 
-		/**
-		 * @brief Gets the error page path for a specific HTTP status code.
-		 * @param code The HTTP status code.
-		 * @return The path to the error page, or an empty string if not found.
-		 */
+		int									getPort() const									{ return _port; }
+		const std::string&					getServerName() const							{ return _serverName; }
+		const std::map<int, std::string>&	getErrorPages() const							{ return _errorPages; }
+		size_t								getMaxBodySize() const							{ return _maxBodySize; }
+		const std::vector<Location>&		getLocations() const							{ return _locations; }
+		size_t								getCgiTimeout() const							{ return _cgiTimeout; }
+
+		// Setter(s)
+
+		void								setPort(int port)								{ _port = port; }
+		void								setServerName(const std::string &name)			{ _serverName = name; }
+		void								addErrorPage(int code, const std::string &path)	{ _errorPages[code] = path; }
+		void								setMaxBodySize(size_t size)						{ _maxBodySize = size; }
+		void								addLocation(const Location &location)			{ _locations.push_back(location); }
+		void								setCgiTimeout(size_t timeout)					{ _cgiTimeout = timeout; }
+
+		// Public method(s)
+		
+		/** @brief Returns the configured error page path for the given status code, or empty string. */
 		std::string getErrorPage(int code) const;
 };
 

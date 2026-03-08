@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:31:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:26:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,47 +71,66 @@ class Server
 		// Private method(s)
 
 		// Socket management
-		void setupListenSockets();
-		void acceptNewClient(int listenSocket);
+
+		void				setupListenSockets();
+		void				acceptNewClient(int listenSocket);
 
 		// Client lifecycle
-		void handleClientTimeouts();
-		void handleClientRead(size_t clientIndex);
-		void handleClientWrite(size_t clientIndex);
-		void removeClient(int fd);
-		const ServerConfig* selectConfig(const HttpRequest& request, int clientFd) const;
+
+		void				handleClientTimeouts();
+		void				handleClientRead(size_t clientIndex);
+		void				handleClientWrite(size_t clientIndex);
+		void				removeClient(int fd);
+		
+		/** @brief Picks the ServerConfig matching the Host header, or falls back to the first config. */
+		const ServerConfig*	selectConfig(const HttpRequest& request, int clientFd) const;
 
 		// CGI handling
-		void handleCGITimeouts();
-		void handleCGIPipe(size_t pipeIndex);
-		void finalizeCGI(Client &client, CGIProcess *cgi, int clientFd);
+
+		void				handleCGITimeouts();
+
+		/** @brief Reads available CGI stdout/stderr and triggers response finalization on EOF. */
+		void				handleCGIPipe(size_t pipeIndex);
+
+		/** @brief Collects CGI output, parses its headers, and builds the client HTTP response. */
+		void				finalizeCGI(Client &client, CGIProcess *cgi, int clientFd);
 
 		// Socket management helpers
-		void handleSocketError(size_t i);
-		void removePollFd(int fd);
-		void setPollEvents(int fd, short events);
+
+		void				handleSocketError(size_t i);
+		void				removePollFd(int fd);
+		void				setPollEvents(int fd, short events);
 
 		// Session management
-		void handleSessionTimeouts();
+
+		void				handleSessionTimeouts();
 
 		// Signal handling
-		void handleSignalPipeReadable();
-		void addSignalPipeToPoll();
-		static void signalHandler(int sig);
-		void installSignals();
+		
+		/** @brief Drains the self-pipe after a signal to prevent poll() from busy-looping. */
+		void				handleSignalPipeReadable();
+
+		/** @brief Registers the self-pipe read end in _pollFds for signal-safe interruption. */
+		void				addSignalPipeToPoll();
+
+		static void			signalHandler(int sig);
+		void				installSignals();
 
 		// Logging
-		void logClientResponse(Client &client);
+
+		void				logClientResponse(Client &client);
 		
 	public:
 
 		// Special member function(s)
+
 		explicit Server(const Config& config);
 		~Server();
 
 		// Public method(s)
-		void run();
-		void stop();
+
+		void				run();
+		void				stop();
 
 };
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 18:27:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:16:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,17 +75,29 @@ class CGI
 	private:
 
 		// Attribute(s)
-		std::map<std::string, std::string> _env; // Environment variables for CGI execution
+		std::map<std::string, std::string> _env;	// Environment variables for CGI execution
 
 		// Private method(s)
-		void setupEnvironment(const RouteMatch& match, const HttpRequest &request);
-		std::string readFromPipe(int fd);
+
+		/** @brief Populates _env with CGI/1.1 variables derived from the request and route. */
+		void		setupEnvironment(const RouteMatch& match, const HttpRequest &request);
+
+		/** @brief Reads all available data from a pipe fd into a string. */
+		std::string	readFromPipe(int fd);
 
 	public:
 
 		// Public method(s)
-		void parseHeaders(const std::string& output, CGIResult& result);
-		CGIProcess* startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose);
+
+		/** @brief Parses CGI response headers (Status, Content-Type) and splits body into result. */
+		void		parseHeaders(const std::string& output, CGIResult& result);
+
+		/**
+		 * @brief Forks a CGI process, sets up stdin/stdout/stderr pipes, and returns the process handle.
+		 * @param fdsToClose List of server fds to close in the child to prevent fd leaks across CGI processes.
+		 * @return Heap-allocated CGIProcess on success, NULL on fork/pipe/access failure.
+		 */
+		CGIProcess*	startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose);
 };
 
 #endif

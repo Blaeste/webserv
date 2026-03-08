@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 17:23:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 19:23:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,8 @@ static std::string getHttpDate()
 
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()
-	: _statusCode(200), _statusMessage("OK")
+	: _statusCode(200)
+	, _statusMessage("OK")
 {}
 
 // Setter(s) -------------------------------------------------------------------
