@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:28:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:36:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,13 +15,11 @@
 #include "Logger.hpp"
 #include <cctype>			// std::tolower
 #include <cerrno>			// errno, ERANGE
-#include <cstdlib>			// std::strtol, std::getenv
+#include <cstdlib>			// std::strtol
 #include <cstring>			// std::strerror
-#include <ctime>			// std::time, std::gmtime, std::strftime
 #include <fcntl.h>			// open, fcntl, O_RDONLY, O_NONBLOCK, F_GETFL, F_SETFL
 #include <iostream>			// std::cerr
 #include <limits>			// std::numeric_limits
-#include <netinet/in.h>		// sockaddr_in, ntohs
 #include <sstream>			// std::stringstream
 #include <stdexcept>		// std::runtime_error
 #include <sys/stat.h>		// stat, S_ISDIR, struct stat
@@ -272,18 +270,12 @@ std::string urlDecode(const std::string &url)
 				i += 2; // skip 2 next char
 			}
 			else
-			{
 				decoded += url[i]; // if invalid keep at it is
-			}
 		}
 		else if (url[i] == '+')
-		{
 			decoded += ' '; // + = space in URL encoding
-		}
 		else
-		{
 			decoded += url[i];
-		}
 	}
 	return decoded;
 }
@@ -303,23 +295,3 @@ std::string joinPath(const std::string &root, const std::string &path)
 	return root + path;
 }
 
-std::string toAbsolutePath(const std::string &path)
-{
-	if (!path.empty() && path[0] == '/')
-		return path;
-	const char *cwd = std::getenv("PWD");
-	if (cwd)
-		return std::string(cwd) + "/" + path;
-	return path;
-}
-
-std::string getHttpDate()
-{
-	time_t now = std::time(NULL);
-	struct tm *gmt = std::gmtime(&now);
-	if (!gmt)
-		return "";
-	char buffer[100];
-	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
-	return std::string(buffer);
-}

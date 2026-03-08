@@ -17,10 +17,22 @@
 #include "../utils/MimeTypes.hpp"
 #include "../utils/Logger.hpp"
 #include <cstdio>					// std::remove
+#include <ctime>					// std::time, std::gmtime, std::strftime
 #include <dirent.h>					// opendir, readdir, closedir, DIR, struct dirent
 #include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
 #include <iostream>					// std::cerr
 #include <unistd.h>					// write
+
+static std::string getHttpDate()
+{
+	time_t now = std::time(NULL);
+	struct tm *gmt = std::gmtime(&now);
+	if (!gmt)
+		return "";
+	char buffer[100];
+	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	return std::string(buffer);
+}
 
 // Default constructor ---------------------------------------------------------
 HttpResponse::HttpResponse()

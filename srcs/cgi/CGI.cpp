@@ -16,8 +16,18 @@
 #include "../server/Router.hpp"
 #include "../utils/utils.hpp"
 #include "../utils/Logger.hpp"
-#include <cstdlib>					// std::exit
+#include <cstdlib>					// std::exit, std::getenv
 #include <cstring>					// std::strcpy, strerror
+
+static std::string toAbsolutePath(const std::string &path)
+{
+	if (!path.empty() && path[0] == '/')
+		return path;
+	const char *cwd = std::getenv("PWD");
+	if (cwd)
+		return std::string(cwd) + "/" + path;
+	return path;
+}
 #include <fcntl.h>					// fcntl, F_SETFL, O_NONBLOCK
 #include <iostream>					// std::cerr
 #include <unistd.h>					// fork, pipe, close, dup2, access, X_OK, R_OK, chdir, execve, read, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO

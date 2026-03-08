@@ -53,11 +53,6 @@ bool isDirectory(const std::string &path);
  */
 std::string getFileExtension(const std::string &path);
 
-/**
- * @brief Gets the current date and time formatted for HTTP headers.
- * @return A string representing the current date and time in HTTP format.
- */
-std::string getHttpDate();
 
 /**
  * @brief Reads the entire content of a file into a string.
@@ -130,12 +125,6 @@ int parseIntSafe(const std::string &str, const std::string &context);
 std::string toLowercase(const std::string &str);
 
 
-/**
- * @brief Converts a relative path to absolute using the process working directory.
- * @param path The path to resolve (returned as-is if already absolute).
- * @return The absolute path, or the original path if PWD is unavailable.
- */
-std::string toAbsolutePath(const std::string &path);
 
 /**
  * @brief Joins a root directory and a relative path, avoiding double slashes.
