@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Router.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/03 13:39:25 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				const std::vector<std::string> &indexes = match.location->getIndex();
 				for (size_t i = 0; i < indexes.size(); i++)
 				{
-					std::string indexPath = match.location->getRoot() + "/" + indexes[i];
+					std::string indexPath = buildPath(match.location->getRoot(), indexes[i]);
 					if (fileExists(indexPath))
 					{
 						pathPart = "/" + indexes[i];
@@ -119,7 +119,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				const std::vector<std::string> &locIndexes = match.location->getIndex();
 				for (size_t i = 0; i < locIndexes.size(); i++)
 				{
-					std::string idxPath = match.location->getRoot() + "/" + locIndexes[i];
+					std::string idxPath = buildPath(match.location->getRoot(), locIndexes[i]);
 					if (fileExists(idxPath))
 					{
 						relativePath = "/" + locIndexes[i];
@@ -128,7 +128,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				}
 			}
 
-			match.filePath = match.location->getRoot() + relativePath;
+			match.filePath = buildPath(match.location->getRoot(), relativePath);
 			match.pathInfo = relativePath; // Store for CGI PATH_INFO
 
 			// Security check bound to the matched location root
@@ -144,7 +144,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				const std::vector<std::string> &locIndexes = match.location->getIndex();
 				for (size_t i = 0; i < locIndexes.size(); ++i)
 				{
-					std::string idxCandidate = match.filePath + "/" + locIndexes[i];
+					std::string idxCandidate = buildPath(match.filePath, locIndexes[i]);
 					if (fileExists(idxCandidate))
 					{
 						match.filePath = idxCandidate;

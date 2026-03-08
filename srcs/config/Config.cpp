@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/02 15:45:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -345,6 +345,10 @@ bool Config::validate() const {
 			// Check Path starts with '/'
 			if (path.empty() || path[0] != '/')
 				errors.push_back(locPrefix + "Invalid path (must start with /)");
+
+			// Check root is defined
+			if (loc.getRoot().empty())
+				errors.push_back(locPrefix + "Missing root directive");
 
 			// Check CGI extension has corresponding CGI path
 			if (!loc.getCgiExtension().empty() && loc.getCgiPath().empty())

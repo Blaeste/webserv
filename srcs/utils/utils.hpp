@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   utils.hpp                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/06 10:44:24 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/08 12:50:29 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -165,3 +165,11 @@ bool isValidHttpMethod(const std::string &method);
  * @return The absolute path, or the original path if PWD is unavailable.
  */
 std::string buildAbsolutePath(const std::string &path);
+
+/**
+ * @brief Joins a root directory and a relative path, avoiding double slashes.
+ * @param root The root directory (e.g., "www").
+ * @param path The relative path to append (e.g., "/index.html").
+ * @return The combined path (e.g., "www/index.html").
+ */
+std::string buildPath(const std::string &root, const std::string &path);
