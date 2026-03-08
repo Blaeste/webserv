@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:25:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,41 @@
 #include "../utils/Logger.hpp"
 #include "../cgi/CGI.hpp"
 #include "../utils/utils.hpp"
+#include <fcntl.h>				// open, O_RDONLY
 #include <iostream>				// std::cout
 #include <limits>				// std::numeric_limits
 #include <sstream>				// std::stringstream
+#include <stdexcept>			// std::runtime_error
 #include <sys/socket.h>			// recv, send
+#include <unistd.h>				// read, close
+
+// Static helper(s) ------------------------------------------------------------
+static std::string generateSessionId()
+{
+	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+	const size_t idLength = 32;
+	const size_t charsetSize = sizeof(charset) - 1;
+
+	// Open urandom (regular disk file, exempt from poll() readiness checks)
+	int fd = open("/dev/urandom", O_RDONLY);
+	if (fd < 0)
+		throw std::runtime_error("Failed to open /dev/urandom (generateSessionId)");
+
+	// Read random bytes
+	unsigned char randomBytes[idLength];
+	if (read(fd, randomBytes, idLength) != (ssize_t)idLength)
+	{
+		close(fd);
+		throw std::runtime_error("Failed to read from /dev/urandom (generateSessionId)");
+	}
+	close(fd);
+
+	// Build session id from random bytes
+	std::string id;
+	for (size_t i = 0; i < idLength; i++)
+		id += charset[randomBytes[i] % charsetSize];
+	return id;
+}
 
 // Constructor -----------------------------------------------------------------
 // Initialize socket and activity timestamp

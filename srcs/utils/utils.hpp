@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:23:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -80,12 +80,6 @@ std::string intToString(int value);
  * @return A vector containing the names of all entries in the directory (excluding "." and "..").
  */
 std::vector<std::string> listDirectory(const std::string &path, const std::string &caller);
-
-/**
- * @brief Generates a random session identifier for HTTP session management.
- * @return A unique string suitable for use as a session_id cookie value.
- */
-std::string generateSessionId();
 
 /**
  * @brief Closes a file descriptor and logs an error if the operation fails.

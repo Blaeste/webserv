@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 13:34:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:15:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -149,11 +149,13 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 	// Validate interpreter is executable and script is readable
 	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
 
+	// Check that the CGI interpreter exists and has execute permission
 	if (access(interpreter.c_str(), X_OK) != 0) {
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Interpreter not executable: " + interpreter);
 		return NULL;
 	}
 
+	// Check that the CGI script exists and has read permission
 	if (access(match.filePath.c_str(), R_OK) != 0) {
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Script not readable: " + match.filePath);
 		return NULL;

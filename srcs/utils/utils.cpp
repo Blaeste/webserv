@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:11:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 14:33:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,6 +96,7 @@ std::string readFile(const std::string &path)
 	std::string result;
 	ssize_t bytes_read;
 
+	// Regular disk files are exempt from poll() readiness checks
 	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
 		result.append(buffer, bytes_read);
 
@@ -114,34 +115,6 @@ std::string intToString(int value)
 	return ss.str();
 }
 
-std::string generateSessionId()
-{
-
-	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	const size_t idLength = 32;
-	const size_t charsetSize = sizeof(charset) - 1;
-
-	// Open urandom
-	int fd = open("/dev/urandom", O_RDONLY);
-	if (fd < 0)
-		throw std::runtime_error("Failed to open /dev/urandom (generateSesssionId)");
-
-	// Read urandom
-	unsigned char randomBytes[idLength];
-	if (read(fd, randomBytes, idLength) != (ssize_t)idLength)
-	{
-		close(fd);
-		throw std::runtime_error("Failed to read from /dev/urandom (generateSesssionId)");
-	}
-	close(fd);
-
-	// Generate session id based on urandom read
-	std::string id;
-	for (size_t i = 0; i < idLength; i++)
-		id += charset[randomBytes[i] % charsetSize];
-	return id;
-}
-
 void safeClose(int fd, const std::string &caller)
 {
 	if (close(fd) < 0)
@@ -153,46 +126,64 @@ void safeClose(int fd, const std::string &caller)
 	}
 }
 
+std::vector<std::string> splitTokens(const std::string &str, char delimiter)
+{
+	std::vector<std::string> result;
+	std::string buffer;
+
+	for (size_t i = 0; i < str.length(); i++)
+	{
+		bool isDelim = (delimiter == ' ')
+			? (str[i] == ' ' || str[i] == '\t' || str[i] == '\n' || str[i] == '\r')
+			: (str[i] == delimiter);
+
+		if (isDelim)
+		{
+			if (!buffer.empty())
+			{
+				result.push_back(buffer);
+				buffer.clear();
+			}
+		}
+		else
+			buffer += str[i];
+	}
+
+	if (!buffer.empty())
+		result.push_back(buffer);
+
+	return result;
+}
+
 // Normalize a path by splitting components and resolving '.' and '..'.
 // This does not touch the filesystem (no realpath), so it works with
 // non-existent paths as long as the resulting layout is under the intended root.
 static std::string normalizePath(const std::string &raw)
 {
+	std::vector<std::string> parts = splitTokens(raw, '/');
 	std::vector<std::string> stack;
-	size_t i = 0;
 
-	while (i < raw.size())
+	for (size_t i = 0; i < parts.size(); ++i)
 	{
-		// Skip repeated '/'
-		while (i < raw.size() && raw[i] == '/')
-			++i;
-		size_t start = i;
-		while (i < raw.size() && raw[i] != '/')
-			++i;
-
-		if (start == i)
+		if (parts[i] == ".")
 			continue;
-
-		std::string part = raw.substr(start, i - start);
-		if (part == "." || part.empty())
-			continue;
-		if (part == "..")
+		if (parts[i] == "..")
 		{
 			if (!stack.empty())
-				stack.pop_back(); // climb up one level when possible
-			continue;
+				stack.pop_back();
 		}
-		stack.push_back(part);
+		else
+			stack.push_back(parts[i]);
 	}
 
-	std::string normalized = "/";
-	for (size_t j = 0; j < stack.size(); ++j)
+	std::string result = "/";
+	for (size_t i = 0; i < stack.size(); ++i)
 	{
-		normalized += stack[j];
-		if (j + 1 < stack.size())
-			normalized += "/";
+		if (i > 0)
+			result += "/";
+		result += stack[i];
 	}
-	return normalized;
+	return result;
 }
 
 bool isPathSafe(const std::string &path, const std::string &root)
@@ -239,49 +230,6 @@ std::string sizetToString(size_t n)
 	std::stringstream ss;
 	ss << n;
 	return ss.str();
-}
-
-std::vector<std::string> splitTokens(const std::string &str, char delimiter)
-{
-
-	std::vector<std::string> result;
-	std::string buffer;
-
-	for (size_t i = 0; i < str.length(); i++)
-	{
-
-		bool isDelimiter = false;
-
-		// If delimiter is ' '  accept /t /n /r
-		if (delimiter == ' ')
-		{
-			if (str[i] == ' ' || str[i] == '\t' || str[i] == '\n' || str[i] == '\r')
-				isDelimiter = true;
-		}
-		else
-		{
-			if (str[i] == delimiter)
-				isDelimiter = true;
-		}
-
-		if (isDelimiter)
-		{
-			if (!buffer.empty())
-			{
-				result.push_back(buffer);
-				buffer.clear();
-			}
-		}
-		else
-		{
-			buffer += str[i];
-		}
-	}
-
-	if (!buffer.empty())
-		result.push_back(buffer);
-
-	return result;
 }
 
 int getSocketPort(int fd)
@@ -331,13 +279,13 @@ int parseIntSafe(const std::string &str, const std::string &context)
 
 std::string toLowercase(const std::string &str)
 {
-    std::string result = str;
-    for (std::string::size_type i = 0; i < result.size(); ++i)
-    {
-        unsigned char c = static_cast<unsigned char>(result[i]);
-        result[i] = static_cast<char>(std::tolower(c));
-    }
-    return result;
+	std::string result = str;
+	for (std::string::size_type i = 0; i < result.size(); ++i)
+	{
+		unsigned char c = static_cast<unsigned char>(result[i]);
+		result[i] = static_cast<char>(std::tolower(c));
+	}
+	return result;
 }
 
 bool isValidHttpMethod(const std::string &method)
