@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/03 20:49:45 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/08 15:27:17 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -34,7 +34,9 @@ CXX = c++
 CXXFLAGS = -Wall -Wextra -Werror -O3 -std=c++98
 
 # Compile multi-cpu (linux only comment it on other system)
+ifeq ($(MAKELEVEL),0)
 MAKEFLAGS += -j$(shell nproc)
+endif
 
 # ============================================================================ #
 #                               SOURCE FILES                                   #
@@ -108,7 +110,8 @@ fclean: clean
 	echo "✓ Executable removed"
 
 # Rebuild everything from scratch
-re: fclean all
+re: fclean
+	@$(MAKE) --no-print-directory all
 
 # Ensure xterm is installed (WSL2 / Debian-based)
 ensure-xterm:

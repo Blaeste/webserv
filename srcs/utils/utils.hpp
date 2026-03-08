@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:53:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:26:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -129,12 +129,6 @@ int parseIntSafe(const std::string &str, const std::string &context);
  */
 std::string toLowercase(const std::string &str);
 
-/**
- * @brief Checks if the given HTTP method is valid.
- * @param method The HTTP method to validate (e.g., "GET", "POST
- * @return true if the method is valid, false otherwise.
- */
-bool isValidHttpMethod(const std::string &method);
 
 /**
  * @brief Converts a relative path to absolute using the process working directory.

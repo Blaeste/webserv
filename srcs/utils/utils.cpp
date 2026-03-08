@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 15:01:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:28:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,6 @@
 #include <iostream>			// std::cerr
 #include <limits>			// std::numeric_limits
 #include <netinet/in.h>		// sockaddr_in, ntohs
-#include <set>				// std::set
 #include <sstream>			// std::stringstream
 #include <stdexcept>		// std::runtime_error
 #include <sys/stat.h>		// stat, S_ISDIR, struct stat
@@ -251,22 +250,6 @@ std::string toLowercase(const std::string &str)
 		result[i] = static_cast<char>(std::tolower(c));
 	}
 	return result;
-}
-
-bool isValidHttpMethod(const std::string &method)
-{
-	static std::set<std::string> validMethods;
-
-	if (validMethods.empty())
-	{
-		validMethods.insert("GET");
-		validMethods.insert("POST");
-		validMethods.insert("DELETE");
-		validMethods.insert("PUT");
-		validMethods.insert("HEAD");
-		validMethods.insert("OPTIONS");
-	}
-	return validMethods.find(method) != validMethods.end();
 }
 
 std::string urlDecode(const std::string &url)

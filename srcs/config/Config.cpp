@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 14:44:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/08 15:26:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,24 @@
 #include "Config.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>				// std::cerr
+#include <set>					// std::set
 #include <stdexcept>			// std::runtime_error
+
+static bool isValidHttpMethod(const std::string &method)
+{
+	static std::set<std::string> validMethods;
+
+	if (validMethods.empty())
+	{
+		validMethods.insert("GET");
+		validMethods.insert("POST");
+		validMethods.insert("DELETE");
+		validMethods.insert("PUT");
+		validMethods.insert("HEAD");
+		validMethods.insert("OPTIONS");
+	}
+	return validMethods.find(method) != validMethods.end();
+}
 
 // Private method(s) -----------------------------------------------------------
 std::string Config::removeComments(const std::string &content) {
