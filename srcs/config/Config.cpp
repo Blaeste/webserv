@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 10:48:46 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 11:38:01 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -179,6 +179,8 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 		// Remove ";" at the end
 		if (line[line.length() - 1] == ';')
 			line = line.substr(0, line.length() - 1);
+		else
+			throw std::runtime_error("Config syntax error: missing ';' at end of directive: " + line);
 
 		// Extract tokens from the line
 		std::vector<std::string> tokens = splitTokens(line, ' ');
@@ -201,6 +203,8 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 			server.setMaxBodySize(parseSize(tokens[1], "Server #" + intToString(serverIndex)));
 		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
 			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)));
+		else
+			std::cerr << "Warning [Serveur #" << serverIndex << "]: Unknown directive '" << tokens[0] << "'\n";
 	}
 
 	// Parse each location block
@@ -242,6 +246,8 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 		// Remove ";" at the end
 		if (line[line.length() - 1] == ';')
 			line = line.substr(0, line.length() - 1);
+		else
+			throw std::runtime_error("Config syntax error: missing ';' at end of directive: " + line);
 
 		// Extract tokens from the line
 		std::vector<std::string> tokens = splitTokens(line, ' ');
@@ -269,6 +275,8 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 				location.addAllowedMethod(tokens[j]);
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			location.setMaxBodySize(parseSize(tokens[1], "Location"));
+		else
+			std::cerr << "Warning [Location '" << path << "']: Unknown directive '" << tokens[0] << "'\n";
 	}
 }
 
