@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:07:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,10 +19,6 @@
 # include <string>			// std::string
 # include <vector>			// std::vector
 
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::vector<UploadedFile>	fileVector;
-
 // Structure(s) ----------------------------------------------------------------
 
 struct	UploadedFile
@@ -31,6 +27,10 @@ struct	UploadedFile
 	std::string	contentType; // MIME type (e.g., "image/png")
 	std::string	content;	 // Raw file content
 };
+
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::vector<UploadedFile>	fileVector;
 
 // Class -----------------------------------------------------------------------
 

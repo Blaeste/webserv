@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:08:13 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,7 +17,7 @@
 
 # include "Client.hpp"
 # include "Router.hpp"
-# include "../config/Config.hpp"
+# include "../config/ConfigParser.hpp"
 # include <map>						// std::map
 # include <string>					// std::string
 # include <vector>					// std::vector
@@ -67,7 +67,7 @@ class	Server
 			CLIENT_PROCESSING_TIMEOUT		= 180,	// 3 minutes - request processing timeout, including CGI execution
 			DEFAULT_CGI_EXECUTION_TIMEOUT	= 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
 		};
-		serverVector		_configs;				// Server configurations
+		serverBlockVector	_configs;				// Server configurations
 		PollfdVector		_pollFds;				// Poll file descriptors for I/O multiplexing
 		ClientMap			_clients;				// Active client connections
 		socketTypeMap		_socketTypes;			// Socket type mapping
@@ -98,8 +98,8 @@ class	Server
 		/** @brief Processes POLLOUT for the client at _pollFds[clientIndex]. */
 		void				handleClientWrite(size_t clientIndex);
 		
-		/** @brief Picks the ServerConfig matching the Host header, or falls back to the first config. */
-		const ServerConfig*	selectConfig(const HttpRequest& request, int clientFd) const;
+		/** @brief Picks the ServerBlock matching the Host header, or falls back to the first config. */
+		const ServerBlock*	selectConfig(const HttpRequest& request, int clientFd) const;
 
 		/** @brief Reads available CGI stdout/stderr and triggers response finalization on EOF. */
 		void				handleCGIPipe(size_t pipeIndex);
@@ -123,7 +123,7 @@ class	Server
 
 		// Special member function(s)
 
-		explicit Server(const Config& config);
+		explicit Server(const ConfigParser& config);
 		~Server();
 
 		// Setter(s)

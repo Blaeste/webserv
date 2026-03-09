@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:08:22 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,10 +31,6 @@
 #define BOLD		"\033[1m"
 #define CLEARLINE	"\033[K"
 
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::map<int, RequestData>	requestMap;
-
 // Structure(s) ----------------------------------------------------------------
 
 struct RequestData
@@ -48,6 +44,10 @@ struct RequestData
 	std::string		requestStartTime;	// Timestamp when request was received
 	int				displayLine;		// Terminal line number for in-place update
 };
+
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<int, RequestData>	requestMap;
 
 // Class -----------------------------------------------------------------------
 

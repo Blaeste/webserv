@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,7 +51,7 @@ int Server::_s_sigpipe[2] = {-1, -1}; // Self-pipe for signal handling in poll()
 
 // Special member function(s) --------------------------------------------------
 
-Server::Server(const Config& config)
+Server::Server(const ConfigParser& config)
 	: _configs(config.getServers())
 	, _running(false)
 	, _lastSessionCleanup(0)
@@ -344,7 +344,7 @@ void Server::handleClientRead(size_t clientIndex)
 	Client& client = it->second;
 
 	// Get config early for logging
-	const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
+	const ServerBlock* config = selectConfig(client.getRequest(), clientFd);
 
 	// Read data from socket
 	if (!client.readData(config))
@@ -355,7 +355,7 @@ void Server::handleClientRead(size_t clientIndex)
 	}
 
 	// Log request start after headers are parsed so Host-based vhost is accurate
-	const ServerConfig* effectiveCfg = selectConfig(client.getRequest(), clientFd);
+	const ServerBlock* effectiveCfg = selectConfig(client.getRequest(), clientFd);
 	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && effectiveCfg)
 	{
 		std::string method = client.getRequest().getMethod();
@@ -384,7 +384,7 @@ void Server::handleClientRead(size_t clientIndex)
 
 	// Early size guard: if body already exceeds configured limit (location override
 	// server default if defined), send 413 and close.
-	const ServerConfig* earlyCfg = effectiveCfg;
+	const ServerBlock* earlyCfg = effectiveCfg;
 	if (!client.isResponseReady() && earlyCfg)
 	{
 		// Default to server-level limit
@@ -422,7 +422,7 @@ void Server::handleClientRead(size_t clientIndex)
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
 
-		const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
+		const ServerBlock* config = selectConfig(client.getRequest(), clientFd);
 		if (!config)
 		{
 			client.buildErrorResponse(500, NULL);
@@ -453,7 +453,7 @@ void Server::handleClientRead(size_t clientIndex)
 		if (match.statusCode == 200 && match.isCGI)
 		{
 			// Start CGI asynchronously
-			const ServerConfig* cgiConfig = selectConfig(client.getRequest(), clientFd);
+			const ServerBlock* cgiConfig = selectConfig(client.getRequest(), clientFd);
 			size_t cgiExecutionTimeout = cgiConfig ? cgiConfig->getCgiTimeout() : static_cast<size_t>(DEFAULT_CGI_EXECUTION_TIMEOUT);
 
 			// Store timing info for CGI logging
@@ -569,7 +569,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	// If the next request is already complete (pipeline), chain it
 	if (client.isRequestComplete())
 	{
-		const ServerConfig* cfg = selectConfig(client.getRequest(), clientFd);
+		const ServerBlock* cfg = selectConfig(client.getRequest(), clientFd);
 		if (!cfg)
 		{
 			client.buildErrorResponse(500, NULL);
@@ -747,7 +747,7 @@ void Server::finalizeCGI(Client& client, CgiProcess* cgi, int clientFd)
 
 	if (cgiError)
 	{
-		const ServerConfig* cfg = selectConfig(client.getRequest(), clientFd);
+		const ServerBlock* cfg = selectConfig(client.getRequest(), clientFd);
 		client.buildErrorResponse(500, cfg);
 	}
 	else
@@ -776,7 +776,7 @@ void Server::finalizeCGI(Client& client, CgiProcess* cgi, int clientFd)
 	setPollEvents(clientFd, POLLOUT);
 }
 
-const ServerConfig* Server::selectConfig(const HttpRequest& request, int clientFd) const
+const ServerBlock* Server::selectConfig(const HttpRequest& request, int clientFd) const
 {
 	std::string host = request.getHeader("Host");
 	int localPort = getSocketPort(clientFd);
@@ -787,7 +787,7 @@ const ServerConfig* Server::selectConfig(const HttpRequest& request, int clientF
 		host = host.substr(0, colonPos);
 
 	// Virtual host lookup: match server_name against Host header
-	const ServerConfig* firstConfig = NULL;
+	const ServerBlock* firstConfig = NULL;
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
 		if (_configs[i].getPort() != localPort)
@@ -835,7 +835,7 @@ void Server::handleCGITimeouts()
 			}
 
 			// Build 504 Gateway Timeout response
-			const ServerConfig* cfg = selectConfig(client.getRequest(), it->first);
+			const ServerBlock* cfg = selectConfig(client.getRequest(), it->first);
 			client.buildErrorResponse(504, cfg);
 
 			// Log the timeout event so it appears in server logs

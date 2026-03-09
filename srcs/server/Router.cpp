@@ -6,23 +6,23 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/09 13:17:35 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 
 #include "Router.hpp"
-#include "../config/ServerConfig.hpp"
+#include "../config/ServerBlock.hpp"
 #include "../http/HttpRequest.hpp"
 #include "../utils/utils.hpp"
 
 // Private method(s) -----------------------------------------------------------
 
 // Find location with longest matching path prefix
-const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const
+const Location* Router::findMatchingLocation(const ServerBlock& config, const std::string& uri) const
 {
-	const LocationVector& locations = config.getLocations();
+	const locationVector& locations = config.getLocations();
 	const Location* bestMatch = NULL;
 	size_t longestMatch = 0;
 	for (size_t i = 0; i < locations.size(); i++)
@@ -48,7 +48,7 @@ const Location* Router::findMatchingLocation(const ServerConfig& config, const s
 // Public method(s) ------------------------------------------------------------
 
 // Match request to appropriate route and determine response type
-RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const
+RouteMatch Router::matchRoute(const ServerBlock& config, const HttpRequest& request) const
 {
 	std::string uri = request.getUri();
 	RouteMatch match;

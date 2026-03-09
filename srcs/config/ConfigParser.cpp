@@ -1,18 +1,18 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.cpp                                         :+:      :+:    :+:   */
+/*   ConfigParser.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
+/*   Created: 2026/03/09 15:36:08 by gdosch            #+#    #+#             */
+/*   Updated: 2026/03/09 15:36:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 
-#include "Config.hpp"
+#include "ConfigParser.hpp"
 #include "../utils/utils.hpp"
 #include <iostream>				// std::cerr
 #include <set>					// std::set
@@ -74,7 +74,7 @@ static bool isKnownLocationDirective(const std::string &directive)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Config::removeComments(const std::string& content)
+std::string ConfigParser::removeComments(const std::string& content)
 {
 	std::string result;
 	result.reserve(content.size());
@@ -101,7 +101,7 @@ std::string Config::removeComments(const std::string& content)
 	return result;
 }
 
-blockVector Config::extractBlocks(const std::string& content, const std::string& keyword)
+blockVector ConfigParser::extractBlocks(const std::string& content, const std::string& keyword)
 {
 	blockVector blocks;
 	blocks.reserve(8); // classical prealloc
@@ -189,7 +189,7 @@ blockVector Config::extractBlocks(const std::string& content, const std::string&
 	return blocks;
 }
 
-void Config::parseServerBlock(const std::string& block, ServerConfig& server, size_t serverIndex)
+void ConfigParser::parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex)
 {
 	// Extract all location blocks first
 	blockVector locationBlocks = extractBlocks(block, "location");
@@ -265,7 +265,7 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 	}
 }
 
-void Config::parseLocationBlock(const std::string& block, Location& location)
+void ConfigParser::parseLocationBlock(const std::string& block, Location& location)
 {
 	// Extract path from header
 	size_t openBrace = block.find("{");
@@ -341,7 +341,7 @@ void Config::parseLocationBlock(const std::string& block, Location& location)
 	}
 }
 
-size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
+size_t ConfigParser::parseSize(const std::string& sizeStr, const std::string& context)
 {
 	if (sizeStr.empty())
 	{
@@ -397,7 +397,7 @@ size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
 	return num * multiplier;
 }
 
-bool Config::validate() const
+bool ConfigParser::validate() const
 {
 	stringVector errors;
 
@@ -408,7 +408,7 @@ bool Config::validate() const
 	// Check each server
 	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		const ServerConfig& server = _servers[i];
+		const ServerBlock& server = _servers[i];
 		int port = server.getPort();
 		std::string serverName = server.getServerName();
 
@@ -436,7 +436,7 @@ bool Config::validate() const
 			errors.push_back(prefix + "Invalid max body size (0 bytes not allowed)");
 
 		// Check locations
-		const LocationVector& locations = server.getLocations();
+		const locationVector& locations = server.getLocations();
 		for (size_t j = 0; j < locations.size(); j++)
 		{
 			const Location& loc = locations[j];
@@ -528,7 +528,7 @@ bool Config::validate() const
 
 // Public method(s) ------------------------------------------------------------
 
-bool Config::parse(const std::string& filePath)
+bool ConfigParser::parse(const std::string& filePath)
 {
 	try {
 
@@ -542,13 +542,13 @@ bool Config::parse(const std::string& filePath)
 		blockVector serverBlocks = extractBlocks(content, "server");
 		for (size_t i = 0; i < serverBlocks.size(); i++)
 		{
-			ServerConfig server;
+			ServerBlock server;
 			parseServerBlock(serverBlocks[i].content, server, i);
 			_servers.push_back(server);
 		}
 		return validate();
 	} catch (const std::exception& e) {
-		std::cerr << "Config::parse error: " << e.what() << std::endl;
+		std::cerr << "ConfigParser::parse error: " << e.what() << std::endl;
 		return false;
 	}
 }

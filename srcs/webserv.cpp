@@ -6,13 +6,13 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:58:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 // Include(s) ------------------------------------------------------------------
 
-#include "config/Config.hpp"
+#include "config/ConfigParser.hpp"
 #include "server/Server.hpp"
 #include <iostream>				// std::cout, std::cerr
 #include <cstdlib>				// EXIT_SUCCESS, EXIT_FAILURE
@@ -38,13 +38,13 @@ int main(int argc, char** argv)
 		std::string configPath = (argc == 2) ? argv[1] : "config/default.conf";
 
 		std::cout << MAGENTA "[ Welcome to webserv ]" RESET << std::endl;
-		Config config;
-		if (!config.parse(configPath))
+		ConfigParser configParser;
+		if (!configParser.parse(configPath))
 		{
 			std::cerr << "Error: Failed to parse configuration file" << std::endl;
 			return 1;
 		}
-		Server server(config);
+		Server server(configParser);
 		server.run();
 	}
 	catch (const std::exception& e)

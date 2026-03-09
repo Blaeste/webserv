@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:37:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,7 +92,7 @@ void Client::markCloseAfterResponse()
 	_closeAfterResponse = true;
 }
 
-void Client::setCGITiming(const ServerConfig& config)
+void Client::setCGITiming(const ServerBlock& config)
 {
 	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;
@@ -100,7 +100,7 @@ void Client::setCGITiming(const ServerConfig& config)
 
 // Public method(s) ------------------------------------------------------------
 
-bool Client::readData(const ServerConfig* config)
+bool Client::readData(const ServerBlock* config)
 {
 	// Set start time on very first read (before any parsing)
 	if (_requestStartTime == 0)
@@ -134,7 +134,7 @@ bool Client::readData(const ServerConfig* config)
 	return true;
 }
 
-void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions)
+void Client::buildResponse(const ServerBlock& config, Router& router, std::map<std::string, SessionData>& sessions)
 {
 	// Match route to get location-specific settings
 	RouteMatch match = router.matchRoute(config, _request);
@@ -259,7 +259,7 @@ void Client::buildResponseFromCGI(const CgiResult &result)
 	applyConnectionHeader();
 }
 
-void Client::buildErrorResponse(int statusCode, const ServerConfig* config)
+void Client::buildErrorResponse(int statusCode, const ServerBlock* config)
 {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
@@ -273,7 +273,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig* config)
 		if (!customPath.empty())
 		{
 			// Resolve against the root of the first location (typically "/")
-			const LocationVector& locations = config->getLocations();
+			const locationVector& locations = config->getLocations();
 			for (size_t i = 0; i < locations.size(); ++i)
 			{
 				if (locations[i].getPath() == "/")

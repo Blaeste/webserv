@@ -1,27 +1,23 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   Config.hpp                                         :+:      :+:    :+:   */
+/*   ConfigParser.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:07:02 by gdosch           ###   ########.fr       */
+/*   Created: 2026/03/09 15:36:15 by gdosch            #+#    #+#             */
+/*   Updated: 2026/03/09 15:36:16 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef CONFIG_HPP
-# define CONFIG_HPP
+#ifndef CONFIGPARSER_HPP
+# define CONFIGPARSER_HPP
 
 // Include(s) ------------------------------------------------------------------
 
-# include "ServerConfig.hpp"
+# include "ServerBlock.hpp"
 # include <string>				// std::string
 # include <vector>				// std::vector
-
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::vector<BlockInfo>		blockVector;
 
 // Structure(s) ----------------------------------------------------------------
 
@@ -32,9 +28,13 @@ struct	BlockInfo
 	size_t		endPos;		// End position in original file
 };
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::vector<BlockInfo>		blockVector;
+
 // Class -----------------------------------------------------------------------
 
-class	Config
+class	ConfigParser
 {
 	private:
 
@@ -44,7 +44,7 @@ class	Config
 
 		// Attribute(s)
 
-		serverVector		_servers;	// List of parsed server configurations
+		serverBlockVector	_servers;	// List of parsed server configurations
 		std::string			_filePath;	// Path to the configuration file
 
 		// Private Method(s)
@@ -55,8 +55,8 @@ class	Config
 		/** @brief Extracts all blocks matching keyword (e.g., "server", "location") with their positions. */
 		blockVector			extractBlocks(const std::string& content, const std::string& keyword);
 
-		/** @brief Parses a server block and fills the given ServerConfig. */
-		void				parseServerBlock(const std::string& block, ServerConfig& server, size_t serverIndex);
+		/** @brief Parses a server block and fills the given ServerBlock. */
+		void				parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex);
 
 		/** @brief Parses a location block and fills the given Location. */
 		void				parseLocationBlock(const std::string& block, Location& location);
@@ -75,7 +75,7 @@ class	Config
 
 		// Getter(s)
 
-		const serverVector&	getServers() const	{ return _servers; }
+		const serverBlockVector&	getServers() const	{ return _servers; }
 
 		// Public Method(s)
 

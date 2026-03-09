@@ -1,17 +1,17 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ServerConfig.hpp                                   :+:      :+:    :+:   */
+/*   ServerBlock.hpp                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/12/16 10:20:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:07:15 by gdosch           ###   ########.fr       */
+/*   Created: 2026/03/09 15:36:32 by gdosch            #+#    #+#             */
+/*   Updated: 2026/03/09 15:37:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef SERVERCONFIG_HPP
-# define SERVERCONFIG_HPP
+#ifndef SERVERBLOCK_HPP
+# define SERVERBLOCK_HPP
 
 // Include(s) ------------------------------------------------------------------
 
@@ -26,7 +26,7 @@ typedef	std::map<int, std::string>	errorPageMap;
 
 // Class -----------------------------------------------------------------------
 
-class ServerConfig
+class ServerBlock
 {
 	private:
 
@@ -43,14 +43,14 @@ class ServerConfig
 		std::string				_serverName;	// Server name (e.g., "localhost")
 		errorPageMap			_errorPages;	// Error pages by status code
 		size_t					_maxBodySize;	// Max request body size in bytes
-		LocationVector			_locations;		// Location configurations
+		locationVector			_locations;		// Location configurations
 		size_t					_cgiTimeout;	// CGI execution timeout in seconds
 
 	public:
 
 		// Default constructor
 
-		ServerConfig();
+		ServerBlock();
 
 		// Getter(s)
 
@@ -58,7 +58,7 @@ class ServerConfig
 		const std::string&		getServerName() const							{ return _serverName; }
 		const errorPageMap&		getErrorPages() const							{ return _errorPages; }
 		size_t					getMaxBodySize() const							{ return _maxBodySize; }
-		const LocationVector&	getLocations() const							{ return _locations; }
+		const locationVector&	getLocations() const							{ return _locations; }
 		size_t					getCgiTimeout() const							{ return _cgiTimeout; }
 
 		std::string				getErrorPage(int code) const;
@@ -75,6 +75,6 @@ class ServerConfig
 
 // Typedef(s) - class-dependent ------------------------------------------------
 
-typedef	std::vector<ServerConfig>	serverVector;
+typedef	std::vector<ServerBlock>	serverBlockVector;
 
 #endif
