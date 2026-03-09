@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:46:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:06:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ static int getSocketPort(int fd)
 {
 	sockaddr_in addr;
 	socklen_t len = sizeof(addr);
-	if (getsockname(fd, (sockaddr *)&addr, &len) == 0)
+	if (getsockname(fd, (sockaddr*)&addr, &len) == 0)
 		return ntohs(addr.sin_port);
 	return -1;
 }
@@ -51,7 +51,7 @@ int Server::_s_sigpipe[2] = {-1, -1}; // Self-pipe for signal handling in poll()
 
 // Special member function(s) --------------------------------------------------
 
-Server::Server(const Config &config)
+Server::Server(const Config& config)
 	: _configs(config.getServers())
 	, _running(false)
 	, _lastSessionCleanup(0)
@@ -66,7 +66,7 @@ Server::~Server()
 	// Kill all active CGI processes and clean up
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
-		CGIProcess *cgi = it->second.getCGIProcess();
+		CgiProcess* cgi = it->second.getCgiProcess();
 		if (cgi)
 		{
 			kill(cgi->pid, SIGKILL);
@@ -119,7 +119,7 @@ void Server::run()
 				continue;
 
 			int fd = _pollFds[i].fd;
-			std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
+			socketTypeMap::iterator typeIt = _socketTypes.find(fd);
 			if (typeIt == _socketTypes.end())
 				continue;
 			SocketType type = typeIt->second;
@@ -165,7 +165,7 @@ void Server::run()
 
 		// --- GARBAGE COLLECTOR ---
 		// Clean up all soft-deleted entries in one pass
-		for (std::vector<pollfd>::iterator it = _pollFds.begin(); it != _pollFds.end(); )
+		for (PollfdVector::iterator it = _pollFds.begin(); it != _pollFds.end(); )
 		{
 			if (it->fd == -1)
 				it = _pollFds.erase(it);
@@ -213,7 +213,7 @@ void Server::setupListenSockets()
 
         // Bind the socket fd to the address structure above
         // After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
-        if (bind(listenFd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+        if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
         {
             safeClose(listenFd, "Server");
             throw std::runtime_error("bind() failed");
@@ -245,7 +245,7 @@ void Server::acceptNewClient(int listenSocket)
 	socklen_t addrLen = sizeof(clientAddr);
 
 	// Accept a new incoming connection (non-blocking)
-	int clientFd = accept(listenSocket, (struct sockaddr *)&clientAddr, &addrLen);
+	int clientFd = accept(listenSocket, (struct sockaddr*)&clientAddr, &addrLen);
 	if (clientFd < 0)
 	{
 		Logger::logMessage(RED "[Server] Error: " RESET "acceptNewClient: accept failed on fd " + intToString(listenSocket));
@@ -253,7 +253,7 @@ void Server::acceptNewClient(int listenSocket)
 	}
 
 	// Get client IP
-	unsigned char *ip = reinterpret_cast<unsigned char *>(&clientAddr.sin_addr);
+	unsigned char* ip = reinterpret_cast<unsigned char*>(&clientAddr.sin_addr);
 	std::stringstream ipStream;
 	ipStream << static_cast<int>(ip[0]) << "." << static_cast<int>(ip[1]) << "."
 			 << static_cast<int>(ip[2]) << "." << static_cast<int>(ip[3]);
@@ -264,7 +264,7 @@ void Server::acceptNewClient(int listenSocket)
 	{
 		setNonBlocking(clientFd);
 	}
-	catch (const std::exception &e)
+	catch (const std::exception& e)
 	{
 		Logger::logMessage(RED "[Server] Error: " RESET "acceptNewClient: " + std::string(e.what()) + " for fd " + intToString(clientFd) + RESET);
 		safeClose(clientFd, "Server");
@@ -292,11 +292,11 @@ void Server::handleClientTimeouts()
 		{
 			int fd = it->first;
 
-			Client &client = it->second;
+			Client& client = it->second;
 			Server::logClientResponse(client);
 
 			// Clean up any CGI active befor removing client
-			CGIProcess *cgi = client.getCGIProcess();
+			CgiProcess* cgi = client.getCgiProcess();
 
 			if (cgi)
 			{
@@ -318,7 +318,7 @@ void Server::handleClientTimeouts()
 					safeClose(cgi->pipeErr, "Server");
 				}
 				delete cgi;
-				client.setCGIProcess(NULL);
+				client.setCgiProcess(NULL);
 			}
 
 			++it;
@@ -341,10 +341,10 @@ void Server::handleClientRead(size_t clientIndex)
 		Logger::logMessage(RED "[Server] Error: " RESET "handleClientRead: client not found for fd " + intToString(clientFd));
 		return;
 	}
-	Client &client = it->second;
+	Client& client = it->second;
 
 	// Get config early for logging
-	const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+	const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
 
 	// Read data from socket
 	if (!client.readData(config))
@@ -355,7 +355,7 @@ void Server::handleClientRead(size_t clientIndex)
 	}
 
 	// Log request start after headers are parsed so Host-based vhost is accurate
-	const ServerConfig *effectiveCfg = selectConfig(client.getRequest(), clientFd);
+	const ServerConfig* effectiveCfg = selectConfig(client.getRequest(), clientFd);
 	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && effectiveCfg)
 	{
 		std::string method = client.getRequest().getMethod();
@@ -384,14 +384,14 @@ void Server::handleClientRead(size_t clientIndex)
 
 	// Early size guard: if body already exceeds configured limit (location override
 	// server default if defined), send 413 and close.
-	const ServerConfig *earlyCfg = effectiveCfg;
+	const ServerConfig* earlyCfg = effectiveCfg;
 	if (!client.isResponseReady() && earlyCfg)
 	{
 		// Default to server-level limit
 		size_t maxBodySize = earlyCfg->getMaxBodySize();
 
 		// If we can resolve a location, prefer its specific limit when set
-		HttpRequest &earlyRequest = const_cast<HttpRequest &>(client.getRequest());
+		HttpRequest& earlyRequest = const_cast<HttpRequest&>(client.getRequest());
 		RouteMatch earlyMatch = _router.matchRoute(*earlyCfg, earlyRequest);
 		if (earlyMatch.location && earlyMatch.location->getMaxBodySize() > 0)
 			maxBodySize = earlyMatch.location->getMaxBodySize();
@@ -422,7 +422,7 @@ void Server::handleClientRead(size_t clientIndex)
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
 
-		const ServerConfig *config = selectConfig(client.getRequest(), clientFd);
+		const ServerConfig* config = selectConfig(client.getRequest(), clientFd);
 		if (!config)
 		{
 			client.buildErrorResponse(500, NULL);
@@ -432,7 +432,7 @@ void Server::handleClientRead(size_t clientIndex)
 		}
 
 		// Match route to determine effective body size limit (location overrides server)
-		HttpRequest &request = const_cast<HttpRequest &>(client.getRequest());
+		HttpRequest& request = const_cast<HttpRequest&>(client.getRequest());
 		RouteMatch match = _router.matchRoute(*config, request);
 		size_t maxBodySize = config->getMaxBodySize();
 		if (match.location && match.location->getMaxBodySize() > 0)
@@ -453,7 +453,7 @@ void Server::handleClientRead(size_t clientIndex)
 		if (match.statusCode == 200 && match.isCGI)
 		{
 			// Start CGI asynchronously
-			const ServerConfig *cgiConfig = selectConfig(client.getRequest(), clientFd);
+			const ServerConfig* cgiConfig = selectConfig(client.getRequest(), clientFd);
 			size_t cgiExecutionTimeout = cgiConfig ? cgiConfig->getCgiTimeout() : static_cast<size_t>(DEFAULT_CGI_EXECUTION_TIMEOUT);
 
 			// Store timing info for CGI logging
@@ -464,8 +464,8 @@ void Server::handleClientRead(size_t clientIndex)
 			for (size_t i = 0; i < _pollFds.size(); i++)
 				fdsToClose.push_back(_pollFds[i].fd);
 
-			CGI cgi;
-			CGIProcess *cgiProc = cgi.startAsync(match, request, fdsToClose);
+			Cgi cgi;
+			CgiProcess* cgiProc = cgi.startAsync(match, request, fdsToClose);
 			if (cgiProc)
 				cgiProc->executionTimeout = cgiExecutionTimeout;
 			else
@@ -476,7 +476,7 @@ void Server::handleClientRead(size_t clientIndex)
 				return;
 			}
 
-			client.setCGIProcess(cgiProc);
+			client.setCgiProcess(cgiProc);
 
 			// Disable POLLIN on client socket while CGI is running
 			_pollFds[clientIndex].events = 0;
@@ -533,7 +533,7 @@ void Server::handleClientWrite(size_t clientIndex)
 		Logger::logMessage(RED "[Server] Error: " RESET "handleClientWrite: client not found for fd " + intToString(clientFd));
 		return;
 	}
-	Client &client = it->second;
+	Client& client = it->second;
 
 	// Update activity timestamp during progressive sending
 	client.updateActivity();
@@ -569,7 +569,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	// If the next request is already complete (pipeline), chain it
 	if (client.isRequestComplete())
 	{
-		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
+		const ServerConfig* cfg = selectConfig(client.getRequest(), clientFd);
 		if (!cfg)
 		{
 			client.buildErrorResponse(500, NULL);
@@ -580,7 +580,7 @@ void Server::handleClientWrite(size_t clientIndex)
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
 		size_t declSize = std::numeric_limits<size_t>::max();
 		{
-			const std::string &m = client.getRequest().getMethod();
+			const std::string& m = client.getRequest().getMethod();
 			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
 				declSize = client.getRequest().getContentLength();
 		}
@@ -628,7 +628,7 @@ void Server::removeClient(int fd)
 void Server::handleSocketError(size_t i)
 {
 	int fd = _pollFds[i].fd;
-	std::map<int, SocketType>::iterator typeIt = _socketTypes.find(fd);
+	socketTypeMap::iterator typeIt = _socketTypes.find(fd);
 	if (typeIt == _socketTypes.end())
 	{
 		_pollFds[i].fd = -1;
@@ -652,8 +652,8 @@ void Server::handleSocketError(size_t i)
 	{
 		for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 		{
-			Client &client = it->second;
-			CGIProcess *cgi = client.getCGIProcess();
+			Client& client = it->second;
+			CgiProcess* cgi = client.getCgiProcess();
 			if (!cgi)
 				continue;
 
@@ -700,7 +700,7 @@ void Server::handleSocketError(size_t i)
 	safeClose(fd, "Server");
 }
 
-void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
+void Server::finalizeCGI(Client& client, CgiProcess* cgi, int clientFd)
 {
 	// Remove all CGI pipes from poll
 	if (cgi->pipeOut != -1)
@@ -747,14 +747,14 @@ void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
 
 	if (cgiError)
 	{
-		const ServerConfig *cfg = selectConfig(client.getRequest(), clientFd);
+		const ServerConfig* cfg = selectConfig(client.getRequest(), clientFd);
 		client.buildErrorResponse(500, cfg);
 	}
 	else
 	{
-		CGIResult result;
+		CgiResult result;
 		result.output = cgi->output;
-		CGI cgiParser;
+		Cgi cgiParser;
 		cgiParser.parseHeaders(cgi->output, result);
 		client.buildResponseFromCGI(result);
 	}
@@ -769,14 +769,14 @@ void Server::finalizeCGI(Client &client, CGIProcess *cgi, int clientFd)
 
 	// Clean up CGI process
 	delete cgi;
-	client.setCGIProcess(NULL);
+	client.setCgiProcess(NULL);
 	client.setState(STATE_KEEPALIVE);
 
 	// Enable POLLOUT on client socket to send the response
 	setPollEvents(clientFd, POLLOUT);
 }
 
-const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientFd) const
+const ServerConfig* Server::selectConfig(const HttpRequest& request, int clientFd) const
 {
 	std::string host = request.getHeader("Host");
 	int localPort = getSocketPort(clientFd);
@@ -787,7 +787,7 @@ const ServerConfig *Server::selectConfig(const HttpRequest &request, int clientF
 		host = host.substr(0, colonPos);
 
 	// Virtual host lookup: match server_name against Host header
-	const ServerConfig *firstConfig = NULL;
+	const ServerConfig* firstConfig = NULL;
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
 		if (_configs[i].getPort() != localPort)
@@ -806,8 +806,8 @@ void Server::handleCGITimeouts()
 
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
-		Client &client = it->second;
-		CGIProcess *cgi = client.getCGIProcess();
+		Client& client = it->second;
+		CgiProcess* cgi = client.getCgiProcess();
 		if (!cgi)
 			continue;
 		if (now - cgi->startTime > cgi->executionTimeout)
@@ -835,7 +835,7 @@ void Server::handleCGITimeouts()
 			}
 
 			// Build 504 Gateway Timeout response
-			const ServerConfig *cfg = selectConfig(client.getRequest(), it->first);
+			const ServerConfig* cfg = selectConfig(client.getRequest(), it->first);
 			client.buildErrorResponse(504, cfg);
 
 			// Log the timeout event so it appears in server logs
@@ -844,7 +844,7 @@ void Server::handleCGITimeouts()
 
 			// Clean up CGI
 			delete cgi;
-			client.setCGIProcess(NULL);
+			client.setCgiProcess(NULL);
 			client.setState(STATE_KEEPALIVE);
 
 			// Enable POLLOUT to send the error response
@@ -860,8 +860,8 @@ void Server::handleCGIPipe(size_t pipeIndex)
 	// Find the client that owns this CGI pipe
 	for (std::map<int, Client>::iterator it = _clients.begin(); it != _clients.end(); ++it)
 	{
-		Client &client = it->second;
-		CGIProcess *cgi = client.getCGIProcess();
+		Client& client = it->second;
+		CgiProcess* cgi = client.getCgiProcess();
 		if (!cgi)
 			continue;
 
@@ -902,7 +902,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 		{
 			if ((_pollFds[pipeIndex].revents & POLLOUT) && !cgi->inputWritten)
 			{
-				const std::string &body = client.getRequest().getBody();
+				const std::string& body = client.getRequest().getBody();
 				size_t remaining = body.size() - cgi->bytesWritten;
 
 				if (remaining > 0)
@@ -1004,12 +1004,12 @@ void Server::installSignals()
 	signal(SIGPIPE, SIG_IGN);
 }
 
-void Server::logClientResponse(Client &client)
+void Server::logClientResponse(Client& client)
 {
 	time_t end = std::time(NULL);
 	time_t responseTime = end - client.getRequestStartTime();
 
-	const std::string &method = client.getRequest().getMethod();
+	const std::string& method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
 	size_t reqSize = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
 

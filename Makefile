@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/08 18:29:44 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/09 13:34:00 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -76,8 +76,11 @@ HTTP_H = $(addprefix srcs/http/, $(HTTP_HEADERS))
 SERVER_H = $(addprefix srcs/server/, $(SERVER_HEADERS))
 UTILS_H = $(addprefix srcs/utils/, $(UTILS_HEADERS))
 
+# Common headers
+COMMON_H = srcs/types.hpp
+
 # All header file
-HEADERS = $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)
+HEADERS = $(COMMON_H) $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)
 
 # ============================================================================ #
 #                                  RULES                                       #

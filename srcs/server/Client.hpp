@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:38:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:03:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,20 +17,21 @@
 
 # include "../http/HttpRequest.hpp"
 # include "../http/HttpResponse.hpp"
-# include <string>					// std::string
-# include <ctime>					// time_t, std::time
+# include <string>						// std::string
+# include <ctime>						// time_t, std::time
 
 // Forward declaration(s) ------------------------------------------------------
 
+class	Location;
 class	ServerConfig;
 class	Router;
 struct	SessionData;
-struct	CGIProcess;
-struct	CGIResult;
+struct	CgiProcess;
+struct	CgiResult;
 
 // Enum(s) ---------------------------------------------------------------------
 
-enum ClientState
+enum	ClientState
 {
 	STATE_KEEPALIVE, // Reading request or writing response
 	STATE_PROCESSING // Processing request (buildResponse, CGI execution)
@@ -38,7 +39,7 @@ enum ClientState
 
 // Class -----------------------------------------------------------------------
 
-class Client
+class	Client
 {
 	private:
 
@@ -55,7 +56,7 @@ class Client
 		bool				_requestLogged;			// Flag to track if request start was logged
 		std::string			_sessionId;				// Session identifier for this client
 		ClientState			_state;					// Current state (keepalive or processing)
-		CGIProcess*			_cgiProcess;			// Active CGI process (NULL if none)
+		CgiProcess*			_CgiProcess;			// Active CGI process (NULL if none)
 		std::string			_cachedResponse;		// Cached response for progressive sending
 		size_t				_bytesSent;				// Bytes already sent from cached response
 		time_t				_cgiStartTime;			// Start time for CGI timeout tracking
@@ -66,7 +67,7 @@ class Client
 		// Private method(s)
 
 		/** @brief Creates or validates the session cookie and updates the sessions map. */
-		void				handleSession(std::map<std::string, SessionData> &sessions);
+		void				handleSession(std::map<std::string, SessionData>& sessions);
 
 		/** @brief Sets Connection header to "keep-alive" or "close" based on _closeAfterResponse. */
 		void				applyConnectionHeader();
@@ -75,7 +76,7 @@ class Client
 
 		// Default constructor
 
-		Client(int socket, const std::string &clientIp);
+		Client(int socket, const std::string& clientIp);
 
 		// Getter(s)
 
@@ -89,14 +90,14 @@ class Client
 		bool				isResponseReady() const				{ return _responseReady; }
 		bool				shouldCloseAfterResponse() const	{ return _closeAfterResponse; }
 		bool				isRequestLogged() const				{ return _requestLogged; }
-		CGIProcess*			getCGIProcess() const				{ return _cgiProcess; }
+		CgiProcess*			getCgiProcess() const				{ return _CgiProcess; }
 		time_t				getRequestStartTime() const			{ return _requestStartTime; }
 
 		// Setter(s)
 
 		void				updateActivity()					{ _lastActivity = std::time(NULL); }
 		void				setState(ClientState state)			{ _state = state; }
-		void				setCGIProcess(CGIProcess *cgi)		{ _cgiProcess = cgi; }
+		void				setCgiProcess(CgiProcess* cgi)		{ _CgiProcess = cgi; }
 		void				markRequestLogged()					{ _requestLogged = true; }
 
 		// Public method(s)
@@ -108,24 +109,24 @@ class Client
 		void				markCloseAfterResponse();
 
 		/** @brief Records CGI start time and stores config reference for timeout enforcement. */
-		void				setCGITiming(const ServerConfig &config);
+		void				setCGITiming(const ServerConfig& config);
 
 		// Public method(s)
 
 		/** @brief Reads from socket into the request parser; returns false on disconnect or error. */
-		bool				readData(const ServerConfig *config = NULL);
+		bool				readData(const ServerConfig* config = NULL);
 
 		/** @brief Routes the request and builds the appropriate HTTP response. */
-		void				buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions);
+		void				buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions);
 
 		/** @brief Builds the response from a completed CGI execution result. */
-		void				buildResponseFromCGI(const CGIResult &result);
+		void				buildResponseFromCGI(const CgiResult& result);
 
 		/**
 		 * @brief Builds an error response, resolving a custom error page from config if available.
 		 * @param config Optional — used to look up configured error_page paths.
 		 */
-		void				buildErrorResponse(int statusCode, const ServerConfig *config = NULL);
+		void				buildErrorResponse(int statusCode, const ServerConfig* config = NULL);
 
 		/** @brief Sends the cached response progressively; returns true when fully sent. */
 		bool				sendResponse();

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:48:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:08:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,10 +31,10 @@
 // Normalize a path by splitting components and resolving '.' and '..'.
 // This does not touch the filesystem (no realpath), so it works with
 // non-existent paths as long as the resulting layout is under the intended root.
-static std::string normalizePath(const std::string &raw)
+static std::string normalizePath(const std::string& raw)
 {
-	std::vector<std::string> parts = splitTokens(raw, '/');
-	std::vector<std::string> stack;
+	stringVector parts = splitTokens(raw, '/');
+	stringVector stack;
 
 	for (size_t i = 0; i < parts.size(); ++i)
 	{
@@ -61,7 +61,7 @@ static std::string normalizePath(const std::string &raw)
 
 // Function(s) -----------------------------------------------------------------
 
-std::string trim(const std::string &str)
+std::string trim(const std::string& str)
 {
 	static const std::string whitespace = " \t\n\r\f\v";
 
@@ -79,12 +79,12 @@ std::string trim(const std::string &str)
 	return str.substr(start, end - start + 1);
 }
 
-bool fileExists(const std::string &path)
+bool fileExists(const std::string& path)
 {
 	return (access(path.c_str(), F_OK) == 0);
 }
 
-bool isDirectory(const std::string &path)
+bool isDirectory(const std::string& path)
 {
 	struct stat sb;
 
@@ -96,7 +96,7 @@ bool isDirectory(const std::string &path)
 	return S_ISDIR(sb.st_mode);
 }
 
-std::string getFileExtension(const std::string &path)
+std::string getFileExtension(const std::string& path)
 {
 	size_t pos = path.find_last_of('.');
 	size_t slash = path.find_last_of('/');
@@ -117,7 +117,7 @@ std::string getFileExtension(const std::string &path)
 	return path.substr(pos);
 }
 
-std::string readFile(const std::string &path)
+std::string readFile(const std::string& path)
 {
 	int fd = open(path.c_str(), O_RDONLY);
 	if (fd < 0)
@@ -146,7 +146,7 @@ std::string intToString(long long value)
 	return ss.str();
 }
 
-void safeClose(int fd, const std::string &caller)
+void safeClose(int fd, const std::string& caller)
 {
 	if (close(fd) < 0)
 	{
@@ -157,9 +157,9 @@ void safeClose(int fd, const std::string &caller)
 	}
 }
 
-std::vector<std::string> splitTokens(const std::string &str, char delimiter)
+stringVector splitTokens(const std::string& str, char delimiter)
 {
-	std::vector<std::string> result;
+	stringVector result;
 	std::string buffer;
 
 	for (size_t i = 0; i < str.length(); i++)
@@ -186,7 +186,7 @@ std::vector<std::string> splitTokens(const std::string &str, char delimiter)
 	return result;
 }
 
-bool isPathSafe(const std::string &path, const std::string &root)
+bool isPathSafe(const std::string& path, const std::string& root)
 {
 	// Decode percent-encoding to reject encoded traversal attempts early.
 	std::string decodedPath = urlDecode(path);
@@ -225,12 +225,12 @@ void setNonBlocking(int fd)
 		throw std::runtime_error("fcntl(F_SETFL) failed");
 }
 
-int parseIntSafe(const std::string &str, const std::string &context)
+int parseIntSafe(const std::string& str, const std::string& context)
 {
 	if (str.empty())
 		throw std::runtime_error("parseIntSafe [" + context + "]: empty string");
 
-	char *endptr;
+	char* endptr;
 	errno = 0;
 	long val = std::strtol(str.c_str(), &endptr, 10);
 
@@ -243,7 +243,7 @@ int parseIntSafe(const std::string &str, const std::string &context)
 	return static_cast<int>(val);
 }
 
-std::string toLowercase(const std::string &str)
+std::string toLowercase(const std::string& str)
 {
 	std::string result = str;
 	for (std::string::size_type i = 0; i < result.size(); ++i)
@@ -254,7 +254,7 @@ std::string toLowercase(const std::string &str)
 	return result;
 }
 
-std::string urlDecode(const std::string &url)
+std::string urlDecode(const std::string& url)
 {
 	std::string decoded;
 
@@ -264,7 +264,7 @@ std::string urlDecode(const std::string &url)
 		{
 			// Decode %XX
 			char hex[3] = {url[i + 1], url[i + 2], '\0'};
-			char *endptr;
+			char* endptr;
 			long value = std::strtol(hex, &endptr, 16);
 
 			// Valid hex
@@ -284,7 +284,7 @@ std::string urlDecode(const std::string &url)
 	return decoded;
 }
 
-std::string joinPath(const std::string &root, const std::string &path)
+std::string joinPath(const std::string& root, const std::string& path)
 {
 	if (root.empty())
 		return joinPath(".", path);

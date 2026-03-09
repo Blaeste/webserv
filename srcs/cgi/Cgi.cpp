@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:29:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:53:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,18 +26,20 @@
 #include <unistd.h>					// fork, pipe, close, dup2, access, X_OK, R_OK, chdir, execve, read, STDIN_FILENO, STDOUT_FILENO, STDERR_FILENO
 
 // Static helper(s) ------------------------------------------------------------
-static std::string toAbsolutePath(const std::string &path)
+
+static std::string toAbsolutePath(const std::string& path)
 {
 	if (!path.empty() && path[0] == '/')
 		return path;
-	const char *cwd = std::getenv("PWD");
+	const char* cwd = std::getenv("PWD");
 	if (cwd)
 		return std::string(cwd) + "/" + path;
 	return path;
 }
 
-// Private method(s)
-std::string CGI::readFromPipe(int fd) {
+// Private method(s) -----------------------------------------------------------
+
+std::string Cgi::readFromPipe(int fd) {
 	char buffer[4096];
 	std::string result;
 	ssize_t bytesRead;
@@ -48,7 +50,7 @@ std::string CGI::readFromPipe(int fd) {
 	return result;
 }
 
-void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) {
+void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request) {
 	std::string uri = request.getUri();
 	size_t pos = uri.find('?');
 
@@ -94,8 +96,8 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 		_env["CONTENT_LENGTH"] = intToString(request.getBody().size());
 
 	// Pass all HTTP headers as HTTP_* variables
-	const std::map<std::string, std::string>& headers = request.getHeaders();
-	for (std::map<std::string, std::string>::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+	const headerMap& headers = request.getHeaders();
+	for (headerMap::const_iterator it = headers.begin(); it != headers.end(); ++it) {
 		std::string key = it->first;
 
 		// Skip content-type and content-length (already set above)
@@ -114,8 +116,9 @@ void CGI::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 	}
 }
 
-// Public method(s)
-void CGI::parseHeaders(const std::string& output, CGIResult& result) {
+// Public method(s) ------------------------------------------------------------
+
+void Cgi::parseHeaders(const std::string& output, CgiResult& result) {
 	// Truncate display for large outputs
 	std::string displayOutput = output;
 	if (displayOutput.size() > 500)
@@ -155,7 +158,7 @@ void CGI::parseHeaders(const std::string& output, CGIResult& result) {
 	result.output = body;
 }
 
-CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose) {
+CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose) {
 
 	setupEnvironment(match, request);
 
@@ -174,7 +177,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 		return NULL;
 	}
 
-	CGIProcess* cgi = new CGIProcess();
+	CgiProcess* cgi = new CgiProcess();
 
 	// Create pipes for CGI communication
 	int pipeOut[2];  // CGI stdout
@@ -237,7 +240,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 
 		// Prepare environment variables
 		std::vector<char*> envp;
-		for (std::map<std::string, std::string>::const_iterator it = _env.begin();
+		for (envMap::const_iterator it = _env.begin();
 			it != _env.end(); ++it) {
 			std::string envStr = it->first + "=" + it->second;
 			char* element = new char[envStr.length() + 1];
@@ -254,7 +257,7 @@ CGIProcess* CGI::startAsync(const RouteMatch& match, const HttpRequest& request,
 			NULL
 		};
 
-		execve(interpreter.c_str(), argv, &envp[0]);
+		execve(interpreter.c_str(), argv,& envp[0]);
 
 		// If execve fails
 		std::cerr << "CGI: execve failed for: " << interpreter << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;

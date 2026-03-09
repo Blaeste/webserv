@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 10:48:46 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 13:55:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,7 @@
 
 // Static helper(s) ------------------------------------------------------------
 
-static bool isValidHttpMethod(const std::string &method)
+static bool isValidHttpMethod(const std::string& method)
 {
 	static std::set<std::string> validMethods;
 
@@ -38,11 +38,11 @@ static bool isValidHttpMethod(const std::string &method)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Config::removeComments(const std::string &content) {
+std::string Config::removeComments(const std::string& content) {
 
 	std::string result;
 	result.reserve(content.size());
-	std::vector<std::string> lines = splitTokens(content, '\n');
+	stringVector lines = splitTokens(content, '\n');
 
 	for (size_t i = 0; i < lines.size(); i++) {
 
@@ -64,9 +64,9 @@ std::string Config::removeComments(const std::string &content) {
 	return result;
 }
 
-std::vector<BlockInfo> Config::extractBlocks(const std::string &content, const std::string &keyword) {
+blockVector Config::extractBlocks(const std::string& content, const std::string& keyword) {
 
-	std::vector<BlockInfo> blocks;
+	blockVector blocks;
 	blocks.reserve(8); // classical prealloc
 	size_t pos = 0;
 	size_t keywordLen = keyword.length();
@@ -145,10 +145,10 @@ std::vector<BlockInfo> Config::extractBlocks(const std::string &content, const s
 	return blocks;
 }
 
-void Config::parseServerBlock(const std::string &block, ServerConfig &server, size_t serverIndex) {
+void Config::parseServerBlock(const std::string& block, ServerConfig& server, size_t serverIndex) {
 
 	// Extract all location blocks first
-	std::vector<BlockInfo> locationBlocks = extractBlocks(block, "location");
+	blockVector locationBlocks = extractBlocks(block, "location");
 
 	// Build cleanBlock by skipping location blocks
 	std::string cleanBlock;
@@ -168,7 +168,7 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 		cleanBlock.append(block, lastPos, block.size() - lastPos);
 
 	// Parse directives (listen, server_name, etc.)
-	std::vector<std::string> lines = splitTokens(cleanBlock, '\n');
+	stringVector lines = splitTokens(cleanBlock, '\n');
 	for (size_t i = 0; i < lines.size(); i++) {
 
 		// trim each line
@@ -181,7 +181,7 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 			line = line.substr(0, line.length() - 1);
 
 		// Extract tokens from the line
-		std::vector<std::string> tokens = splitTokens(line, ' ');
+		stringVector tokens = splitTokens(line, ' ');
 
 		if (tokens.empty())
 			continue;
@@ -211,14 +211,14 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 	}
 }
 
-void Config::parseLocationBlock(const std::string &block, Location &location) {
+void Config::parseLocationBlock(const std::string& block, Location& location) {
 	// Extract path from header
 	size_t openBrace = block.find("{");
 	if (openBrace == std::string::npos)
 		return;
 
 	std::string header = block.substr(0, openBrace);
-	std::vector<std::string> headerTokens = splitTokens(trim(header), ' ');
+	stringVector headerTokens = splitTokens(trim(header), ' ');
 	std::string path = "/";
 
 	if (headerTokens.size() >= 2)
@@ -232,7 +232,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 	std::string content = block.substr(openBrace + 1, closeBrace - openBrace - 1);
 
 	// Parse lines
-	std::vector<std::string> lines = splitTokens(content, '\n');
+	stringVector lines = splitTokens(content, '\n');
 	for (size_t i = 0; i < lines.size(); i++) {
 		// trim each line
 		std::string line = trim(lines[i]);
@@ -244,7 +244,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 			line = line.substr(0, line.length() - 1);
 
 		// Extract tokens from the line
-		std::vector<std::string> tokens = splitTokens(line, ' ');
+		stringVector tokens = splitTokens(line, ' ');
 		if (tokens.empty())
 			continue;
 
@@ -272,7 +272,7 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 	}
 }
 
-size_t Config::parseSize(const std::string &sizeStr, const std::string &context) {
+size_t Config::parseSize(const std::string& sizeStr, const std::string& context) {
 
 	if (sizeStr.empty())
 	{
@@ -325,7 +325,7 @@ size_t Config::parseSize(const std::string &sizeStr, const std::string &context)
 
 bool Config::validate() const {
 
-	std::vector<std::string> errors;
+	stringVector errors;
 
 	// Check if there are at least one server
 	if (_servers.empty())
@@ -334,7 +334,7 @@ bool Config::validate() const {
 	// Check each server
 	for (size_t i = 0; i < _servers.size(); i++) {
 
-		const ServerConfig &server = _servers[i];
+		const ServerConfig& server = _servers[i];
 		int port = server.getPort();
 		std::string serverName = server.getServerName();
 
@@ -360,10 +360,10 @@ bool Config::validate() const {
 			errors.push_back(prefix + "Invalid max body size (0 bytes not allowed)");
 
 		// Check locations
-		const std::vector<Location> &locations = server.getLocations();
+		const LocationVector& locations = server.getLocations();
 		for (size_t j = 0; j < locations.size(); j++) {
 
-			const Location &loc = locations[j];
+			const Location& loc = locations[j];
 			std::string path = loc.getPath();
 			std::string locPrefix = prefix + "Location '" + path + "': ";
 
@@ -380,9 +380,9 @@ bool Config::validate() const {
 				errors.push_back(locPrefix + "CGI extension without CGI path");
 
 			// Check HTTP methods are valid
-			const std::vector<std::string> &methods = loc.getAllowedMethods();
+			const stringVector& methods = loc.getAllowedMethods();
 			for (size_t k = 0; k < methods.size(); k++) {
-				const std::string &method = methods[k];
+				const std::string& method = methods[k];
 				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
 			}
@@ -401,12 +401,12 @@ bool Config::validate() const {
 			errors.push_back(prefix + "Missing root location '/'");
 
 		// Check error pages
-		const std::map<int, std::string> &errorPages = server.getErrorPages();
+		const std::map<int, std::string>& errorPages = server.getErrorPages();
 
 		for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); ++it) {
 
 			int code = it->first;
-			const std::string &pagePath = it->second;
+			const std::string& pagePath = it->second;
 
 			// Check HTTP error code range (4xx and 5xx only) (redirection not supported 3xx)
 			if (code < 400 || code > 599)
@@ -445,7 +445,7 @@ bool Config::validate() const {
 
 // Public method(s) ------------------------------------------------------------
 
-bool Config::parse(const std::string &filePath) {
+bool Config::parse(const std::string& filePath) {
 	try {
 
 		std::string content = readFile(filePath);
@@ -455,7 +455,7 @@ bool Config::parse(const std::string &filePath) {
 		// Remove Comment
 		content = removeComments(content);
 
-		std::vector<BlockInfo> serverBlocks = extractBlocks(content, "server");
+		blockVector serverBlocks = extractBlocks(content, "server");
 		for (size_t i = 0; i < serverBlocks.size(); i++) {
 			ServerConfig server;
 			parseServerBlock(serverBlocks[i].content, server, i);
