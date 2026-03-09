@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:46:16 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:07:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,10 @@
 # include <string>				// std::string
 # include <vector>				// std::vector
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::vector<BlockInfo>		blockVector;
+
 // Structure(s) ----------------------------------------------------------------
 
 struct	BlockInfo
@@ -27,10 +31,6 @@ struct	BlockInfo
 	size_t		startPos;	// Start position in original file
 	size_t		endPos;		// End position in original file
 };
-
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::vector<BlockInfo>		blockVector;
 
 // Class -----------------------------------------------------------------------
 
