@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:38:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 09:39:30 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,12 +77,18 @@ std::string HttpResponse::getStatusMessage(int code) const
 		return "Method Not Allowed";
 	case 413:
 		return "Payload Too Large";
+	case 414:
+		return "URI Too Long";
+	case 431:
+		return "Request Header Fields Too Large";
 	case 500:
 		return "Internal Server Error";
 	case 501:
 		return "Not Implemented";
 	case 504:
 		return "Gateway Timeout";
+	case 505:
+		return "HTTP Version Not Supported";
 	default:
 		return "Unknown";
 	}
