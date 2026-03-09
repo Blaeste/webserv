@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:30:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 10:07:28 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -382,6 +382,35 @@ bool Config::validate() const {
 				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
 			}
+		}
+
+		// Check error pages
+		const std::map<int, std::string> &errorPages = server.getErrorPages();
+
+		for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); ++it) {
+
+			int code = it->first;
+			const std::string &pagePath = it->second;
+
+			// Check HTTP error code range (4xx and 5xx only) (redirection not supported 3xx)
+			if (code < 400 || code > 599)
+				errors.push_back(prefix + "Invalid error_page code " + intToString(code) + " (must be 400-599)");
+
+			// Check that the error page file exists (resolve against "/" location root)
+			std::string resolvedPath;
+			for (size_t j = 0; j < locations.size(); ++j) {
+				if (locations[j].getPath() == "/") {
+					resolvedPath = joinPath(locations[j].getRoot(), pagePath);
+					break;
+				}
+			}
+
+			if (resolvedPath.empty())
+				resolvedPath = joinPath(".", pagePath);
+
+			// If not found just display warning non blocking
+			if (!fileExists(resolvedPath))
+				std::cerr << "Warning [" << prefix << "] error_page " << intToString(code) << " file not found: " << resolvedPath << std::endl;
 		}
 	}
 
