@@ -36,6 +36,42 @@ static bool isValidHttpMethod(const std::string& method)
 	return validMethods.find(method) != validMethods.end();
 }
 
+static bool isKnownServerDirective(const std::string &directive)
+{
+	static std::set<std::string> valideDirectives;
+
+	if (valideDirectives.empty())
+	{
+		valideDirectives.insert("listen");
+		valideDirectives.insert("server_name");
+		valideDirectives.insert("error_page");
+		valideDirectives.insert("client_max_body_size");
+		valideDirectives.insert("cgi_timeout");
+	}
+
+	return valideDirectives.find(directive) != valideDirectives.end();
+}
+
+static bool isKnownLocationDirective(const std::string &directive)
+{
+	static std::set<std::string> valideDirectives;
+
+	if (valideDirectives.empty())
+	{
+		valideDirectives.insert("root");
+		valideDirectives.insert("upload_path");
+		valideDirectives.insert("cgi_extension");
+		valideDirectives.insert("cgi_path");
+		valideDirectives.insert("autoindex");
+		valideDirectives.insert("return");
+		valideDirectives.insert("index");
+		valideDirectives.insert("allowed_methods");
+		valideDirectives.insert("client_max_body_size");
+	}
+
+	return valideDirectives.find(directive) != valideDirectives.end();
+}
+
 // Private method(s) -----------------------------------------------------------
 
 std::string Config::removeComments(const std::string& content) {
@@ -179,6 +215,8 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 		// Remove ";" at the end
 		if (line[line.length() - 1] == ';')
 			line = line.substr(0, line.length() - 1);
+		else
+			throw std::runtime_error("Config syntax error: missing ';' at end of directive: " + line);
 
 		// Extract tokens from the line
 		stringVector tokens = splitTokens(line, ' ');
@@ -201,6 +239,13 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 			server.setMaxBodySize(parseSize(tokens[1], "Server #" + intToString(serverIndex)));
 		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
 			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)));
+		else
+		{
+			if(isKnownServerDirective(tokens[0]))
+				std::cerr << "Warning [Serveur #" << serverIndex << "]: directive require value '" << tokens[0] << "'\n";
+			else
+				std::cerr << "Warning [Serveur #" << serverIndex << "]: Unknown directive '" << tokens[0] << "'\n";
+		}
 	}
 
 	// Parse each location block
@@ -242,6 +287,8 @@ void Config::parseLocationBlock(const std::string& block, Location& location) {
 		// Remove ";" at the end
 		if (line[line.length() - 1] == ';')
 			line = line.substr(0, line.length() - 1);
+		else
+			throw std::runtime_error("Config syntax error: missing ';' at end of directive: " + line);
 
 		// Extract tokens from the line
 		stringVector tokens = splitTokens(line, ' ');
@@ -265,10 +312,21 @@ void Config::parseLocationBlock(const std::string& block, Location& location) {
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addIndex(tokens[j]);
 		else if (tokens[0] == "allowed_methods" && tokens.size() >= 2)
+		{
+			// clear old default location
+			location.clearAllowedMethods();
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addAllowedMethod(tokens[j]);
+		}
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			location.setMaxBodySize(parseSize(tokens[1], "Location"));
+		else
+		{
+			if(isKnownLocationDirective(tokens[0]))
+				std::cerr << "Warning [Location '" << path << "']: directive require value '" << tokens[0] << "'\n";
+			else
+				std::cerr << "Warning [Location '" << path << "']: Unknown directive '" << tokens[0] << "'\n";
+		}
 	}
 }
 
@@ -385,6 +443,14 @@ bool Config::validate() const {
 				const std::string& method = methods[k];
 				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
+			}
+		}
+
+		// Check for duplicate loc path
+		for (size_t j = 0; j < locations.size(); j++) {
+			for (size_t k = j + 1; k < locations.size(); k++) {
+				if (locations[j].getPath() == locations[k].getPath())
+					errors.push_back(prefix + "Duplicate location '" + locations[j].getPath() + "'");
 			}
 		}
 

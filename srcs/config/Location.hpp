@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
 /*   Updated: 2026/03/09 13:57:32 by gdosch           ###   ########.fr       */
@@ -77,7 +77,10 @@ class Location
 		void				addIndex(const std::string& index);
 
 		/** @brief Returns true if method is in the allowed list. */
-		bool				isMethodAllowed(const std::string& method) const;
+		bool							isMethodAllowed(const std::string& method) const;
+
+		/** @brief Clear defautl allowed method */
+		void							clearAllowedMethods() { _allowedMethods.clear(); }
 };
 
 // Typedef(s) - class-dependent ------------------------------------------------

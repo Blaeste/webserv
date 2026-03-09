@@ -3,7 +3,7 @@
 /*                                                        :::      ::::::::   */
 /*   Config.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:17 by eschwart          #+#    #+#             */
 /*   Updated: 2026/03/09 13:56:44 by gdosch           ###   ########.fr       */
@@ -65,6 +65,7 @@ class	Config
 		 * @param sizeStr Value with optional unit suffix: B, K, M, G (e.g., "10M", "500K").
 		 */
 		size_t				parseSize(const std::string& sizeStr, const std::string& context);
+
 
 	public:
 
