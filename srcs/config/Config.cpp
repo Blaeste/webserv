@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:21:35 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 13:54:10 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -312,8 +312,12 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addIndex(tokens[j]);
 		else if (tokens[0] == "allowed_methods" && tokens.size() >= 2)
+		{
+			// clear old default location
+			location.clearAllowedMethods();
 			for (size_t j = 1; j < tokens.size(); j++)
 				location.addAllowedMethod(tokens[j]);
+		}
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			location.setMaxBodySize(parseSize(tokens[1], "Location"));
 		else

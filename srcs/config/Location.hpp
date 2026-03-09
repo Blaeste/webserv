@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
+/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:55 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:32:29 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:53:41 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,6 +77,10 @@ class Location
 
 		/** @brief Returns true if method is in the allowed list. */
 		bool							isMethodAllowed(const std::string &method) const;
+
+		/** @brief Clear defautl allowed method */
+		void							clearAllowedMethods() { _allowedMethods.clear(); }
+
 };
 
 #endif
