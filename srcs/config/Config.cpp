@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 11:51:21 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 13:21:35 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,6 +34,42 @@ static bool isValidHttpMethod(const std::string &method)
 		validMethods.insert("OPTIONS");
 	}
 	return validMethods.find(method) != validMethods.end();
+}
+
+static bool isKnownServerDirective(const std::string &directive)
+{
+	static std::set<std::string> valideDirectives;
+
+	if (valideDirectives.empty())
+	{
+		valideDirectives.insert("listen");
+		valideDirectives.insert("server_name");
+		valideDirectives.insert("error_page");
+		valideDirectives.insert("client_max_body_size");
+		valideDirectives.insert("cgi_timeout");
+	}
+
+	return valideDirectives.find(directive) != valideDirectives.end();
+}
+
+static bool isKnownLocationDirective(const std::string &directive)
+{
+	static std::set<std::string> valideDirectives;
+
+	if (valideDirectives.empty())
+	{
+		valideDirectives.insert("root");
+		valideDirectives.insert("upload_path");
+		valideDirectives.insert("cgi_extension");
+		valideDirectives.insert("cgi_path");
+		valideDirectives.insert("autoindex");
+		valideDirectives.insert("return");
+		valideDirectives.insert("index");
+		valideDirectives.insert("allowed_methods");
+		valideDirectives.insert("client_max_body_size");
+	}
+
+	return valideDirectives.find(directive) != valideDirectives.end();
 }
 
 // Private method(s) -----------------------------------------------------------
@@ -204,7 +240,12 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
 			server.setCgiTimeout(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)));
 		else
-			std::cerr << "Warning [Serveur #" << serverIndex << "]: Unknown directive '" << tokens[0] << "'\n";
+		{
+			if(isKnownServerDirective(tokens[0]))
+				std::cerr << "Warning [Serveur #" << serverIndex << "]: directive require value '" << tokens[0] << "'\n";
+			else
+				std::cerr << "Warning [Serveur #" << serverIndex << "]: Unknown directive '" << tokens[0] << "'\n";
+		}
 	}
 
 	// Parse each location block
@@ -276,7 +317,12 @@ void Config::parseLocationBlock(const std::string &block, Location &location) {
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			location.setMaxBodySize(parseSize(tokens[1], "Location"));
 		else
-			std::cerr << "Warning [Location '" << path << "']: Unknown directive '" << tokens[0] << "'\n";
+		{
+			if(isKnownLocationDirective(tokens[0]))
+				std::cerr << "Warning [Location '" << path << "']: directive require value '" << tokens[0] << "'\n";
+			else
+				std::cerr << "Warning [Location '" << path << "']: Unknown directive '" << tokens[0] << "'\n";
+		}
 	}
 }
 
