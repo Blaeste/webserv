@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 10:07:28 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 10:18:30 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,7 +192,11 @@ void Config::parseServerBlock(const std::string &block, ServerConfig &server, si
 		else if (tokens[0] == "server_name" && tokens.size() >= 2)
 			server.setServerName(tokens[1]);
 		else if (tokens[0] == "error_page" && tokens.size() >= 3)
-			server.addErrorPage(parseIntSafe(tokens[1].c_str(), "Server #" + intToString(serverIndex)), tokens[2]);
+		{
+			std::string path = tokens[tokens.size() - 1]; // last token = path
+			for (size_t j = 1; j < tokens.size() - 1; j++) // all the other are error code
+				server.addErrorPage(parseIntSafe(tokens[j].c_str(), "Server #" + intToString(serverIndex)), path);
+		}
 		else if (tokens[0] == "client_max_body_size" && tokens.size() >= 2)
 			server.setMaxBodySize(parseSize(tokens[1], "Server #" + intToString(serverIndex)));
 		else if (tokens[0] == "cgi_timeout" && tokens.size() >= 2)
