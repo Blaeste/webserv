@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:01:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:50:39 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 // Include(s) ------------------------------------------------------------------
 
-# include "../types.hpp"
+# include "../webserv.hpp"
 # include <string>			// std::string
 
 // Fallback define(s) - Only on Linux / Mac ------------------------------------
@@ -28,11 +28,18 @@
 
 class	HttpRequest;
 
+// Constant(s) -----------------------------------------------------------------
+
+enum { HTTP_DATE_BUFFER_SIZE = 100 };
+
 // Class -----------------------------------------------------------------------
 
 class	HttpResponse
 {
 	private:
+
+		// Constant(s)
+		static const int	UPLOAD_FILE_PERMISSIONS = 0644;
 
 		// Attribute(s)
 		int					_statusCode;	// HTTP status code

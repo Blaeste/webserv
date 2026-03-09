@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:26:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,7 +41,7 @@ static std::string toAbsolutePath(const std::string& path)
 
 std::string Cgi::readFromPipe(int fd)
 {
-	char buffer[4096];
+	char buffer[READ_BUFFER_SIZE];
 	std::string result;
 	ssize_t bytesRead;
 	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
@@ -126,8 +126,8 @@ void Cgi::parseHeaders(const std::string& output, CgiResult& result)
 {
 	// Truncate display for large outputs
 	std::string displayOutput = output;
-	if (displayOutput.size() > 500)
-		displayOutput = displayOutput.substr(0, 500) + "... [truncated, total " + intToString(output.size()) + " bytes]";
+	if (displayOutput.size() > CGI_OUTPUT_DISPLAY_LIMIT)
+		displayOutput = displayOutput.substr(0, CGI_OUTPUT_DISPLAY_LIMIT) + "... [truncated, total " + intToString(output.size()) + " bytes]";
 
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos)

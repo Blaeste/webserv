@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:53:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 // Include(s) ------------------------------------------------------------------
 
-# include "../types.hpp"
+# include "../webserv.hpp"
 # include <map>				// std::map
 # include <string>			// std::string
 # include <vector>			// std::vector
@@ -78,6 +78,9 @@ typedef	std::map<std::string, std::string>	envMap;
 class	Cgi
 {
 	private:
+
+		// Constant(s)
+		enum { CGI_OUTPUT_DISPLAY_LIMIT = 500 };
 
 		// Attribute(s)
 		envMap _env;	// Environment variables for CGI execution

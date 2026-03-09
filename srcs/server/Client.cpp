@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:02:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,12 @@
 
 // Static helper(s) ------------------------------------------------------------
 
+enum { SESSION_ID_LENGTH = 32 };
+
 static std::string generateSessionId()
 {
 	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	const size_t idLength = 32;
+	const size_t idLength = SESSION_ID_LENGTH;
 	const size_t charsetSize = sizeof(charset) - 1;
 
 	// Open urandom (regular disk file, exempt from poll() readiness checks)
@@ -105,7 +107,7 @@ bool Client::readData(const ServerConfig* config)
 		_requestStartTime = std::time(NULL);
 
 	// Read data from socket into buffer and parse request
-	char buffer[4096];
+	char buffer[READ_BUFFER_SIZE];
 	int bytesRead = recv(_socket, buffer, sizeof(buffer), 0);
 	if (bytesRead <= 0)
 		return false;

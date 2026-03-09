@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:08:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 // Include(s) ------------------------------------------------------------------
 
-# include "../types.hpp"
+# include "../webserv.hpp"
 # include <string>			// std::string
 # include <vector>			// std::vector
 

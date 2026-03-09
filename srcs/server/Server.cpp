@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:06:19 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -103,8 +103,8 @@ void Server::run()
 		handleCGITimeouts();
 		handleSessionTimeouts();
 
-		// Poll for events on all sockets (1 second timeout)
-		if (poll(&_pollFds[0], _pollFds.size(), 1000) < 0)
+		// Poll for events on all sockets
+		if (poll(&_pollFds[0], _pollFds.size(), POLL_TIMEOUT_MS) < 0)
 			continue;
 
 		// Process events on each socket
@@ -220,7 +220,7 @@ void Server::setupListenSockets()
         }
 
 		// Start listening for incoming connections
-		if (listen(listenFd, 128) < 0)
+		if (listen(listenFd, LISTEN_BACKLOG) < 0)
 		{
 			safeClose(listenFd, "Server");
 			throw std::runtime_error("listen() failed");
@@ -868,7 +868,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 		// Handle pipeErr (reading CGI stderr)
 		if (cgi->pipeErr == pipeFd && (_pollFds[pipeIndex].revents & POLLIN))
 		{
-			char buffer[4096];
+			char buffer[READ_BUFFER_SIZE];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
 			if (bytes > 0)
@@ -887,7 +887,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 		// Handle pipeOut (reading CGI stdout)
 		if (cgi->pipeOut == pipeFd && (_pollFds[pipeIndex].revents & POLLIN))
 		{
-			char buffer[4096];
+			char buffer[READ_BUFFER_SIZE];
 			ssize_t bytes = read(pipeFd, buffer, sizeof(buffer));
 
 			if (bytes > 0)
@@ -960,7 +960,7 @@ void Server::handleSessionTimeouts()
 // Drain pipe so it doesn't remain readable and stop server
 void Server::handleSignalPipeReadable()
 {
-	char buf[64];
+	char buf[SIGNAL_PIPE_BUFFER_SIZE];
 	ssize_t bytes = read(_s_sigpipe[0], buf, sizeof(buf));
 	(void)bytes;
 	_running = false;

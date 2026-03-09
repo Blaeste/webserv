@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:29 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:30:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,10 +17,10 @@
 // Default constructor ---------------------------------------------------------
 
 ServerConfig::ServerConfig()
-	: _port(8080)
+	: _port(DEFAULT_PORT)
 	, _serverName("localhost")
-	, _maxBodySize(1048576)
-	, _cgiTimeout(90)
+	, _maxBodySize(DEFAULT_MAX_BODY_SIZE)
+	, _cgiTimeout(DEFAULT_CGI_TIMEOUT)
 {}
 
 // Getter(s) -------------------------------------------------------------------

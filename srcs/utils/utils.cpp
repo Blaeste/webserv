@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:08:26 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -123,7 +123,7 @@ std::string readFile(const std::string& path)
 	if (fd < 0)
 		throw std::runtime_error("Failed to open file: " + path);
 
-	char buffer[4096];
+	char buffer[READ_BUFFER_SIZE];
 	std::string result;
 	ssize_t bytes_read;
 

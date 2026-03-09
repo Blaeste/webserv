@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:00:49 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,7 @@ static std::string getHttpDate()
 	struct tm* gmt = std::gmtime(&now);
 	if (!gmt)
 		return "";
-	char buffer[100];
+	char buffer[HTTP_DATE_BUFFER_SIZE];
 	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
 	return std::string(buffer);
 }
@@ -351,7 +351,7 @@ int HttpResponse::handleUpload(const HttpRequest& request, const std::string& up
 
 		// Open file for writing
 		// Security: O_NOFOLLOW prevents symlink attacks (don't follow symbolic links)
-		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0644);
+		int fd = open(filePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, UPLOAD_FILE_PERMISSIONS);
 
 		if (fd < 0)
 		{

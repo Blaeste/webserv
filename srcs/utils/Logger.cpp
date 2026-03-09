@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:33:00 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ std::string Logger::getCurrentTime()
 	std::tm* tm_info = std::localtime(&now);
 	if (!tm_info)
 		return "00:00:00";
-	char buffer[10];
+	char buffer[TIME_BUFFER_SIZE];
 	std::strftime(buffer, sizeof(buffer), "%H:%M:%S", tm_info);
 	return std::string(buffer);
 }
@@ -376,5 +376,5 @@ bool Logger::isLogging()
 
 void Logger::printSeparator()
 {
-	std::cout << GREY << std::string(145, '-') << RESET;
+	std::cout << GREY << std::string(LOG_SEPARATOR_WIDTH, '-') << RESET;
 }

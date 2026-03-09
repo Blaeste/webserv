@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:16:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 15:00:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,14 +35,14 @@
 
 struct RequestData
 {
-	std::string		method;
-	std::string		uri;
-	std::string		clientIP;
-	std::string		serverName;
-	int				serverPort;
-	size_t			declaredSize;
-	std::string		requestStartTime;
-	int				displayLine;
+	std::string		method;				// HTTP method (GET, POST, etc.)
+	std::string		uri;				// Request URI path
+	std::string		clientIP;			// Client IP address
+	std::string		serverName;			// Matched server name
+	int				serverPort;			// Listening port
+	size_t			declaredSize;		// Content-Length from request headers
+	std::string		requestStartTime;	// Timestamp when request was received
+	int				displayLine;		// Terminal line number for in-place update
 };
 
 // Typedef(s) ------------------------------------------------------------------
@@ -57,12 +57,16 @@ class Logger
 
 		// Constant(s)
 
-		static const size_t		SERVER_PORT_FIELD_WIDTH = 20;
-		static const size_t		IP_FIELD_WIDTH = 15;
-		static const size_t		METHOD_FIELD_WIDTH = 7;
-		static const size_t		URI_FIELD_WIDTH = 55;
-		static const size_t		RESPONSE_SIZE_FIELD_WIDTH = 4;
-		static const size_t		STATUS_FIELD_WIDTH = 5;
+		enum {
+			TIME_BUFFER_SIZE			= 10,				// "HH:MM:SS\0" fits in 10 bytes
+			LOG_SEPARATOR_WIDTH			= 145,				// Dash separator line width in characters
+			SERVER_PORT_FIELD_WIDTH		= 20,				// Column width for "server:port"
+			IP_FIELD_WIDTH				= 15,				// Column width for client IP address
+			METHOD_FIELD_WIDTH			= 7,				// Column width for HTTP method (e.g., "DELETE")
+			URI_FIELD_WIDTH				= 55,				// Column width for request URI
+			RESPONSE_SIZE_FIELD_WIDTH	= 4,				// Column width for response body size
+			STATUS_FIELD_WIDTH			= 5					// Column width for HTTP status code
+		};
 
 		// Attribute(s)
 

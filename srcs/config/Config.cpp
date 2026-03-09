@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:30:44 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -416,7 +416,7 @@ bool Config::validate() const
 		std::string prefix = "Server " + intToString(i) + " (" + serverName + "): ";
 
 		// Check port range
-		if (port < 1 || port > 65535)
+		if (port < 1 || port > MAX_PORT_NUMBER)
 			errors.push_back(prefix + "Invalid port " + intToString(port));
 
 		// Check for duplicate Port

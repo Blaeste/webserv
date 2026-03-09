@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:59:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:54:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,7 @@
 
 // Include(s) ------------------------------------------------------------------
 
-# include "../types.hpp"
+# include "../webserv.hpp"
 # include <string>			// std::string
 # include <vector>			// std::vector
 
@@ -39,33 +39,37 @@ class	HttpRequest
 	private:
 
 		// Constant(s)
-		static const size_t	MAX_REQUEST_SIZE = 110 * 1024 * 1024;	// 110 MB
-		static const size_t	MAX_URI_LENGTH = 8192;
-		static const size_t	MAX_HEADER_COUNT = 100;
-		static const size_t	MAX_HEADER_SIZE = 8192;
-		static const size_t	MAX_REQUEST_LINE_SIZE = 16384;
-		static const size_t	MAX_METHOD_LENGTH = 16;
-		static const size_t	MAX_CHUNK_SIZE = 5 * 1024 * 1024;		// 5 MB
-		static const size_t	MAX_BODY_SIZE = 110 * 1024 * 1024;		// 110 MB
+
+		enum {
+			MAX_REQUEST_SIZE		= 110 * 1048576,	// 110 MB
+			MAX_URI_LENGTH			= 8192,
+			MAX_HEADER_COUNT		= 100,
+			MAX_HEADER_SIZE			= 8192,
+			MAX_REQUEST_LINE_SIZE	= 16384,
+			MAX_METHOD_LENGTH		= 16,
+			MAX_CHUNK_SIZE			= 5 * 1048576,		// 5 MB
+			MAX_BODY_SIZE			= 110 * 1048576		// 110 MB
+		};
 
 		// Attribute(s)
-		std::string			_method;			// Method (GET, POST, etc.)
-		std::string			_uri;				// URI (/index.html, /api/data, etc.)
-		std::string			_version;			// HTTP version (HTTP/1.1)
-		headerMap			_headers;			// Headers
-		std::string			_body;				// Body
-		std::string			_rawData;			// Raw request data
-		bool				_isComplete;		// Is the request complete
-		int					_errorCode;			// HTTP error code
-		fileVector			_uploadedFiles;		// Uploaded files (for multipart/form-data)
-		bool				_headersParsed;		// Have we already parsed the headers
-		size_t				_bodyStart;			// Offset to body start inside _rawData
-		bool				_isChunked;			// Transfer-Encoding: chunked detected
-		size_t				_contentLength;		// Parsed Content-Length when present
-		size_t				_chunkParsePos;		// Cursor while parsing chunked body
-		size_t				_chunkTotalSize;	// Accumulated chunk payload size
-		bool				_chunkDone;			// Final chunk parsed
-		size_t				_consumedBytes;		// Octets consommés dans _rawData pour cette requête
+
+		std::string			_method;					// Method (GET, POST, etc.)
+		std::string			_uri;						// URI (/index.html, /api/data, etc.)
+		std::string			_version;					// HTTP version (HTTP/1.1)
+		headerMap			_headers;					// Headers
+		std::string			_body;						// Body
+		std::string			_rawData;					// Raw request data
+		bool				_isComplete;				// Is the request complete
+		int					_errorCode;					// HTTP error code
+		fileVector			_uploadedFiles;				// Uploaded files (for multipart/form-data)
+		bool				_headersParsed;				// Have we already parsed the headers
+		size_t				_bodyStart;					// Offset to body start inside _rawData
+		bool				_isChunked;					// Transfer-Encoding: chunked detected
+		size_t				_contentLength;				// Parsed Content-Length when present
+		size_t				_chunkParsePos;				// Cursor while parsing chunked body
+		size_t				_chunkTotalSize;			// Accumulated chunk payload size
+		bool				_chunkDone;					// Final chunk parsed
+		size_t				_consumedBytes;				// Octets consommés dans _rawData pour cette requête
 
 		// Private method(s)
 

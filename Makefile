@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/09 13:34:00 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/09 14:59:36 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -57,7 +57,7 @@ SERVER = $(addprefix srcs/server/, $(SERVER_FILES))
 UTILS = $(addprefix srcs/utils/, $(UTILS_FILES))
 
 # All source files
-SRCS = srcs/main.cpp $(CGI) $(CONFIG) $(HTTP) $(SERVER) $(UTILS)
+SRCS = srcs/webserv.cpp $(CGI) $(CONFIG) $(HTTP) $(SERVER) $(UTILS)
 
 # Object files (mirror source structure in obj/ directory)
 OBJS = $(SRCS:srcs/%.cpp=obj/%.o)
@@ -77,7 +77,7 @@ SERVER_H = $(addprefix srcs/server/, $(SERVER_HEADERS))
 UTILS_H = $(addprefix srcs/utils/, $(UTILS_HEADERS))
 
 # Common headers
-COMMON_H = srcs/types.hpp
+COMMON_H = srcs/webserv.hpp
 
 # All header file
 HEADERS = $(COMMON_H) $(CGI_H) $(CONFIG_H) $(HTTP_H) $(SERVER_H) $(UTILS_H)

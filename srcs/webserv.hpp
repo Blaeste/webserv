@@ -1,23 +1,27 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   types.hpp                                          :+:      :+:    :+:   */
+/*   webserv.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2026/03/09 13:34:19 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/09 14:14:12 by gdosch           ###   ########.fr       */
+/*   Created: 2026/03/09 14:58:01 by gdosch            #+#    #+#             */
+/*   Updated: 2026/03/09 14:58:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#ifndef TYPES_HPP
-# define TYPES_HPP
+#ifndef WEBSERV_HPP
+# define WEBSERV_HPP
 
 // Include(s) ------------------------------------------------------------------
 
 # include <map>		// std::map
 # include <string>	// std::string
 # include <vector>	// std::vector
+
+// Constant(s) -----------------------------------------------------------------
+
+enum { READ_BUFFER_SIZE = 4096 };	// Shared I/O buffer size for pipes and sockets
 
 // Common typedef(s) -----------------------------------------------------------
 
