@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 10:18:30 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 10:48:46 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -387,6 +387,18 @@ bool Config::validate() const {
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
 			}
 		}
+
+		// Check that root location "/" exist
+		bool hasRootLocation = false;
+
+		for (size_t j = 0; j < locations.size(); j++) {
+			if (locations[j].getPath() == "/") {
+				hasRootLocation = true;
+				break;
+			}
+		}
+		if (!hasRootLocation)
+			errors.push_back(prefix + "Missing root location '/'");
 
 		// Check error pages
 		const std::map<int, std::string> &errorPages = server.getErrorPages();

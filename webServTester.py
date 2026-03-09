@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    webServTester.py                                   :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
+#    By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/01/16 11:30:57 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/05 13:09:27 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/09 10:54:10 by eschwart         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -507,6 +507,11 @@ server {{
 	listen 8099;
 	server_name localhost;
 	client_max_body_size 1M;
+
+	location / {{
+		root {tmpdir};
+		allowed_methods GET;
+	}}
 
 	location /tmpcgi {{
 		root {tmpdir};
@@ -1211,7 +1216,7 @@ def test_three_requests_pipeline():
 def test_very_small_timeout():
 	# Test with very short timeout
 	try:
-		r = safe_get(f"{BASE_URL}/", timeout=0.001)	
+		r = safe_get(f"{BASE_URL}/", timeout=0.001)
 		test("Very short timeout handled", r.status_code == 200)
 	except:
 		test("Very short timeout causes exception (expected)", True)
