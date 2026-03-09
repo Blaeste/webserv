@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:07:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:33:00 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,24 +19,24 @@
 
 // Static variable(s) initialization -------------------------------------------
 
-requestMap Logger::_activeRequests;
-std::string Logger::_lastMethod;
-std::string Logger::_lastUri;
-std::string Logger::_lastClientIP;
-size_t Logger::_requestCount = 0;
-time_t Logger::_minTime = std::numeric_limits<time_t>::max();
-time_t Logger::_maxTime = 0;
-std::string Logger::_lastServerName;
-int Logger::_lastServerPort = 0;
-size_t Logger::_lastEndRequestSize = std::numeric_limits<size_t>::max();
-int Logger::_lastEndStatus = -1;
-size_t Logger::_groupEndCount = 0;
-bool Logger::_firstLog = true;
-bool Logger::_pendingRequest = false;
-std::string Logger::_lastRequestStartTime;
-int Logger::_lastDisplayedRequestId = -1;
-int Logger::_currentLine = 0;
-bool Logger::_s_logging = false;
+requestMap	Logger::_activeRequests;
+std::string	Logger::_lastMethod;
+std::string	Logger::_lastUri;
+std::string	Logger::_lastClientIP;
+size_t		Logger::_requestCount			= 0;
+time_t		Logger::_minTime				= std::numeric_limits<time_t>::max();
+time_t		Logger::_maxTime				= 0;
+std::string	Logger::_lastServerName;
+int			Logger::_lastServerPort			= 0;
+size_t		Logger::_lastEndRequestSize		= std::numeric_limits<size_t>::max();
+int			Logger::_lastEndStatus			= -1;
+size_t		Logger::_groupEndCount			= 0;
+bool		Logger::_firstLog				= true;
+bool		Logger::_pendingRequest			= false;
+std::string	Logger::_lastRequestStartTime;
+int			Logger::_lastDisplayedRequestId	= -1;
+int			Logger::_currentLine			= 0;
+bool		Logger::_s_logging				= false;
 
 // Private method(s) -----------------------------------------------------------
 
@@ -105,7 +105,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
 		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
 	std::string displayServerName = serverName;
-	if (displayServerName.length() > maxServerNameLen) {
+	if (displayServerName.length() > maxServerNameLen)
+	{
 		if (maxServerNameLen < 2)
 			displayServerName = displayServerName.substr(0, maxServerNameLen);
 		else
@@ -133,7 +134,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		if (sz == std::numeric_limits<size_t>::max() && includeCompletion
 			&& requestSize != std::numeric_limits<size_t>::max())
 			sz = requestSize;
-		if (sz != std::numeric_limits<size_t>::max()) {
+		if (sz != std::numeric_limits<size_t>::max())
+		{
 			std::string s = formatSize(sz);
 			hintStr = std::string(" ") + YELLOW + "(" + s + ")" + RESET;
 			hintLen = 3 + s.length();
@@ -143,7 +145,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	// Compute count suffix for grouped requests
 	std::string countStr;
 	size_t countLen = 0;
-	if (_requestCount > 1) {
+	if (_requestCount > 1)
+	{
 		std::stringstream ss;
 		ss << "(x" << _requestCount << ")";
 		countLen = ss.str().length();
@@ -162,7 +165,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::stringstream uriField;
 	size_t usedLen = displayUri.length() + hintLen;
 	uriField << displayUri << hintStr;
-	if (countLen > 0) {
+	if (countLen > 0)
+	{
 		size_t gap = (usedLen + countLen < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - usedLen - countLen : 1;
 		uriField << std::string(gap, ' ') << countStr;
 	} else {
@@ -175,7 +179,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
-	if (includeCompletion && _maxTime) {
+	if (includeCompletion && _maxTime)
+	{
 		if (_requestCount > 1 && _minTime != _maxTime)
 			timingStr << _minTime << "-";
 		timingStr << _maxTime << "s";
@@ -206,7 +211,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 void Logger::logRequestStart(int requestId, const std::string& method, const std::string& uri,
 							 const std::string& clientIP, std::string serverName, int port, size_t declaredSize)
 {
-	if (_firstLog) {
+	if (_firstLog)
+	{
 		_s_logging = true;
 		printSeparator();
 		std::cout << std::endl;
@@ -229,7 +235,8 @@ void Logger::logRequestStart(int requestId, const std::string& method, const std
 	bool isGroupableRequest = (_lastMethod == method && _lastUri == uri && _lastClientIP == clientIP
 		&& _lastServerName == serverName && _lastServerPort == port);
 
-	if (_pendingRequest && !isGroupableRequest) {
+	if (_pendingRequest && !isGroupableRequest)
+	{
 		std::cout << std::endl;
 		_currentLine++;
 		_minTime = std::numeric_limits<time_t>::max();
@@ -239,7 +246,8 @@ void Logger::logRequestStart(int requestId, const std::string& method, const std
 		_groupEndCount = 0;
 	}
 
-	if (isGroupableRequest && _pendingRequest) {
+	if (isGroupableRequest && _pendingRequest)
+	{
 		_requestCount++;
 		return;
 	}
@@ -278,7 +286,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 
 	// Break the group if request body size or status differs from previous completion
 	if (isGroupedRequest && _groupEndCount
-		&& (requestSize != _lastEndRequestSize || statusCode != _lastEndStatus)) {
+		&& (requestSize != _lastEndRequestSize || statusCode != _lastEndStatus))
+	{
 		std::cout << std::endl;
 		_currentLine++;
 		_requestCount = 1;
@@ -287,7 +296,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		_groupEndCount = 0;
 	}
 
-	if (isGroupedRequest) {
+	if (isGroupedRequest)
+	{
 		// Part of the current group - update timing and overwrite current line
 		if (responseTime < _minTime) _minTime = responseTime;
 		if (responseTime > _maxTime) _maxTime = responseTime;
@@ -296,7 +306,9 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		_groupEndCount++;
 		flushRequestLine(requestId, true, statusCode, requestSize, responseSize);
 		_lastDisplayedRequestId = requestId;
-	} else if (it != _activeRequests.end()) {
+	}
+	else if (it != _activeRequests.end())
+	{
 		// Non-grouped request on a previous line - overwrite it in place
 		int linesUp = _currentLine - it->second.displayLine;
 
@@ -329,7 +341,8 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 void Logger::logMessage(const std::string& message)
 {
 	// Finalize current line if we're mid-display
-	if (_pendingRequest) {
+	if (_pendingRequest)
+	{
 		std::cout << std::endl;
 		_currentLine++;
 	}
@@ -341,11 +354,11 @@ void Logger::logMessage(const std::string& message)
 
 	// Message content
 	std::cout << message;
-	for (size_t i = 0; i < message.length(); i++) {
+	for (size_t i = 0; i < message.length(); i++)
 		if (message[i] == '\n')
 			_currentLine++;
-	}
-	if (message.empty() || message[message.length() - 1] != '\n') {
+	if (message.empty() || message[message.length() - 1] != '\n')
+	{
 		std::cout << std::endl;
 		_currentLine++;
 	}

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:55:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:30:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,21 +74,22 @@ static bool isKnownLocationDirective(const std::string &directive)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Config::removeComments(const std::string& content) {
-
+std::string Config::removeComments(const std::string& content)
+{
 	std::string result;
 	result.reserve(content.size());
 	stringVector lines = splitTokens(content, '\n');
 
-	for (size_t i = 0; i < lines.size(); i++) {
+	for (size_t i = 0; i < lines.size(); i++)
+	{
 
 		std::string line = lines[i];
 
 		// find # pos
 		size_t commentPos = line.find('#');
 
-		if (commentPos != std::string::npos) {
-
+		if (commentPos != std::string::npos)
+		{
 			// Keep only part before #
 			line = line.substr(0, commentPos);
 		}
@@ -100,14 +101,15 @@ std::string Config::removeComments(const std::string& content) {
 	return result;
 }
 
-blockVector Config::extractBlocks(const std::string& content, const std::string& keyword) {
-
+blockVector Config::extractBlocks(const std::string& content, const std::string& keyword)
+{
 	blockVector blocks;
 	blocks.reserve(8); // classical prealloc
 	size_t pos = 0;
 	size_t keywordLen = keyword.length();
 
-	while (pos < content.length()) {
+	while (pos < content.length())
+	{
 		// Search for keyword
 		size_t keywordPos = content.find(keyword, pos);
 		if (keywordPos == std::string::npos)
@@ -121,18 +123,22 @@ blockVector Config::extractBlocks(const std::string& content, const std::string&
 		// Check if only whitespace between keyword and "{"
 		// For "location", we accept any path (location /api, location /uploads, etc.)
 		// For "server", only whitespace is allowed
-		if (keyword != "location") {
+		if (keyword != "location")
+		{
 			std::string between = content.substr(keywordPos + keywordLen, openBracePos - (keywordPos + keywordLen));
-			if (between.find_first_not_of(" \t\n\r") != std::string::npos) {
+			if (between.find_first_not_of(" \t\n\r") != std::string::npos)
+			{
 				pos = keywordPos + keywordLen;
 				continue;
 			}
 		}
 
 		// Check if keyword have whitespace before it
-		if (keywordPos > 0) {
+		if (keywordPos > 0)
+		{
 			char before = content[keywordPos - 1];
-			if (before != ' ' && before != '\t' && before != '\n' && before != '\r') {
+			if (before != ' ' && before != '\t' && before != '\n' && before != '\r')
+			{
 				pos = keywordPos + 1;
 				continue;
 			}
@@ -143,10 +149,12 @@ blockVector Config::extractBlocks(const std::string& content, const std::string&
 		int braceCount = 0; // int here because braceCount can be neg
 		size_t i = openBracePos;
 		size_t closeBrace = std::string::npos;
-		while (i < content.length()) {
+		while (i < content.length())
+		{
 			if (content[i] == '{')
 				braceCount++;
-			else if (content[i] == '}') {
+			else if (content[i] == '}')
+			{
 				braceCount--;
 				if (braceCount < 0)
 					throw std::runtime_error("Config syntax error: unmatched '}'");
@@ -181,8 +189,8 @@ blockVector Config::extractBlocks(const std::string& content, const std::string&
 	return blocks;
 }
 
-void Config::parseServerBlock(const std::string& block, ServerConfig& server, size_t serverIndex) {
-
+void Config::parseServerBlock(const std::string& block, ServerConfig& server, size_t serverIndex)
+{
 	// Extract all location blocks first
 	blockVector locationBlocks = extractBlocks(block, "location");
 
@@ -191,8 +199,8 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 	cleanBlock.reserve(block.size());
 	size_t lastPos = 0;
 
-	for (size_t i = 0; i < locationBlocks.size(); i++) {
-
+	for (size_t i = 0; i < locationBlocks.size(); i++)
+	{
 		// Copy until start of the block
 		cleanBlock.append(block, lastPos, locationBlocks[i].startPos - lastPos);
 		// Jump to next block
@@ -205,8 +213,8 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 
 	// Parse directives (listen, server_name, etc.)
 	stringVector lines = splitTokens(cleanBlock, '\n');
-	for (size_t i = 0; i < lines.size(); i++) {
-
+	for (size_t i = 0; i < lines.size(); i++)
+	{
 		// trim each line
 		std::string line = trim(lines[i]);
 		if (line.empty())
@@ -249,14 +257,16 @@ void Config::parseServerBlock(const std::string& block, ServerConfig& server, si
 	}
 
 	// Parse each location block
-	for (size_t i = 0; i < locationBlocks.size(); i++) {
+	for (size_t i = 0; i < locationBlocks.size(); i++)
+	{
 		Location loc;
 		parseLocationBlock(locationBlocks[i].content, loc);
 		server.addLocation(loc);
 	}
 }
 
-void Config::parseLocationBlock(const std::string& block, Location& location) {
+void Config::parseLocationBlock(const std::string& block, Location& location)
+{
 	// Extract path from header
 	size_t openBrace = block.find("{");
 	if (openBrace == std::string::npos)
@@ -278,7 +288,8 @@ void Config::parseLocationBlock(const std::string& block, Location& location) {
 
 	// Parse lines
 	stringVector lines = splitTokens(content, '\n');
-	for (size_t i = 0; i < lines.size(); i++) {
+	for (size_t i = 0; i < lines.size(); i++)
+	{
 		// trim each line
 		std::string line = trim(lines[i]);
 		if (line.empty())
@@ -330,8 +341,8 @@ void Config::parseLocationBlock(const std::string& block, Location& location) {
 	}
 }
 
-size_t Config::parseSize(const std::string& sizeStr, const std::string& context) {
-
+size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
+{
 	if (sizeStr.empty())
 	{
 		std::cerr << "Warning [" << context << "]: Size '" << sizeStr << "' Empty size value\n";
@@ -346,13 +357,18 @@ size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
 	std::string numStr = sizeStr;
 	size_t multiplier = 1;
 
-	if (lastChar == 'M' || lastChar == 'm') {
+	if (lastChar == 'M' || lastChar == 'm')
+	{
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024 * 1024;
-	} else if (lastChar == 'K' || lastChar == 'k') {
+	}
+	else if (lastChar == 'K' || lastChar == 'k')
+	{
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024;
-	} else if (lastChar == 'G' || lastChar =='g') {
+	}
+	else if (lastChar == 'G' || lastChar =='g')
+	{
 		numStr = sizeStr.substr(0, len - 1);
 		multiplier = 1024 * 1024 * 1024;
 	}
@@ -363,8 +379,8 @@ size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
 		return 0;
 	}
 
-	for (size_t i = 0; i < numStr.length(); i++) {
-
+	for (size_t i = 0; i < numStr.length(); i++)
+	{
 		if (numStr[i] < '0' || numStr[i] > '9')
 		{
 			std::cerr << "Warning [" << context << "]: Size '" << sizeStr << "' contains invalid characters (only digits allowed)\n";
@@ -381,8 +397,8 @@ size_t Config::parseSize(const std::string& sizeStr, const std::string& context)
 	return num * multiplier;
 }
 
-bool Config::validate() const {
-
+bool Config::validate() const
+{
 	stringVector errors;
 
 	// Check if there are at least one server
@@ -390,8 +406,8 @@ bool Config::validate() const {
 		errors.push_back("No server configured");
 
 	// Check each server
-	for (size_t i = 0; i < _servers.size(); i++) {
-
+	for (size_t i = 0; i < _servers.size(); i++)
+	{
 		const ServerConfig& server = _servers[i];
 		int port = server.getPort();
 		std::string serverName = server.getServerName();
@@ -404,8 +420,10 @@ bool Config::validate() const {
 			errors.push_back(prefix + "Invalid port " + intToString(port));
 
 		// Check for duplicate Port
-		for (size_t j = i + 1; j < _servers.size(); j++) {
-			if (_servers[j].getPort() ==  port) {
+		for (size_t j = i + 1; j < _servers.size(); j++)
+		{
+			if (_servers[j].getPort() ==  port)
+			{
 				// Same port ok if different server name
 				if (_servers[j].getServerName() ==  server.getServerName())
 					errors.push_back(prefix + "Duplicate port " +  intToString(port) + " with same server name");
@@ -419,8 +437,8 @@ bool Config::validate() const {
 
 		// Check locations
 		const LocationVector& locations = server.getLocations();
-		for (size_t j = 0; j < locations.size(); j++) {
-
+		for (size_t j = 0; j < locations.size(); j++)
+		{
 			const Location& loc = locations[j];
 			std::string path = loc.getPath();
 			std::string locPrefix = prefix + "Location '" + path + "': ";
@@ -439,7 +457,8 @@ bool Config::validate() const {
 
 			// Check HTTP methods are valid
 			const stringVector& methods = loc.getAllowedMethods();
-			for (size_t k = 0; k < methods.size(); k++) {
+			for (size_t k = 0; k < methods.size(); k++)
+			{
 				const std::string& method = methods[k];
 				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
@@ -447,30 +466,28 @@ bool Config::validate() const {
 		}
 
 		// Check for duplicate loc path
-		for (size_t j = 0; j < locations.size(); j++) {
-			for (size_t k = j + 1; k < locations.size(); k++) {
+		for (size_t j = 0; j < locations.size(); j++)
+			for (size_t k = j + 1; k < locations.size(); k++)
 				if (locations[j].getPath() == locations[k].getPath())
 					errors.push_back(prefix + "Duplicate location '" + locations[j].getPath() + "'");
-			}
-		}
 
 		// Check that root location "/" exist
 		bool hasRootLocation = false;
 
-		for (size_t j = 0; j < locations.size(); j++) {
-			if (locations[j].getPath() == "/") {
+		for (size_t j = 0; j < locations.size(); j++)
+			if (locations[j].getPath() == "/")
+			{
 				hasRootLocation = true;
 				break;
 			}
-		}
 		if (!hasRootLocation)
 			errors.push_back(prefix + "Missing root location '/'");
 
 		// Check error pages
 		const std::map<int, std::string>& errorPages = server.getErrorPages();
 
-		for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); ++it) {
-
+		for (std::map<int, std::string>::const_iterator it = errorPages.begin(); it != errorPages.end(); ++it)
+		{
 			int code = it->first;
 			const std::string& pagePath = it->second;
 
@@ -480,12 +497,12 @@ bool Config::validate() const {
 
 			// Check that the error page file exists (resolve against "/" location root)
 			std::string resolvedPath;
-			for (size_t j = 0; j < locations.size(); ++j) {
-				if (locations[j].getPath() == "/") {
+			for (size_t j = 0; j < locations.size(); ++j)
+				if (locations[j].getPath() == "/")
+				{
 					resolvedPath = joinPath(locations[j].getRoot(), pagePath);
 					break;
 				}
-			}
 
 			if (resolvedPath.empty())
 				resolvedPath = joinPath(".", pagePath);
@@ -496,8 +513,8 @@ bool Config::validate() const {
 		}
 	}
 
-	if (!errors.empty()) {
-
+	if (!errors.empty())
+	{
 		std::string msg = "Config validation failed:\n";
 
 		for (size_t i = 0; i < errors.size(); i++)
@@ -511,7 +528,8 @@ bool Config::validate() const {
 
 // Public method(s) ------------------------------------------------------------
 
-bool Config::parse(const std::string& filePath) {
+bool Config::parse(const std::string& filePath)
+{
 	try {
 
 		std::string content = readFile(filePath);
@@ -522,7 +540,8 @@ bool Config::parse(const std::string& filePath) {
 		content = removeComments(content);
 
 		blockVector serverBlocks = extractBlocks(content, "server");
-		for (size_t i = 0; i < serverBlocks.size(); i++) {
+		for (size_t i = 0; i < serverBlocks.size(); i++)
+		{
 			ServerConfig server;
 			parseServerBlock(serverBlocks[i].content, server, i);
 			_servers.push_back(server);

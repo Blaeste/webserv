@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:06:32 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:23:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@
 
 // Structure(s) ----------------------------------------------------------------
 
-struct SessionData
+struct	SessionData
 {
 	time_t		lastActive;	// Timestamp of last session activity
 	std::string	username;	// Username associated with the session
@@ -35,7 +35,7 @@ struct SessionData
 
 // Enum(s) ---------------------------------------------------------------------
 
-enum SocketType
+enum	SocketType
 {
 	SOCKET_LISTEN,
 	SOCKET_CLIENT,
@@ -58,11 +58,11 @@ class	Server
 
 		// Attribute(s)
 		enum {
-			SESSION_TIMEOUT = 1800,				// 30 minutes
-			SESSION_CLEANUP_INTERVAL = 60,		// 1 minute
-			CLIENT_KEEPALIVE_TIMEOUT = 75,		// 75 seconds - prevents zombie connections and would serve as keep-alive timeout if implemented
-			CLIENT_PROCESSING_TIMEOUT = 180,	// 3 minutes - request processing timeout, including CGI execution
-			DEFAULT_CGI_EXECUTION_TIMEOUT = 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
+							SESSION_TIMEOUT = 1800,				// 30 minutes
+							SESSION_CLEANUP_INTERVAL = 60,		// 1 minute
+							CLIENT_KEEPALIVE_TIMEOUT = 75,		// 75 seconds - max idle time on keep-alive connections
+							CLIENT_PROCESSING_TIMEOUT = 180,	// 3 minutes - request processing timeout, including CGI execution
+							DEFAULT_CGI_EXECUTION_TIMEOUT = 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
 		};
 		serverVector		_configs;				// Server configurations
 		PollfdVector		_pollFds;				// Poll file descriptors for I/O multiplexing

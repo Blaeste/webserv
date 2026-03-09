@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:53:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:26:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,8 @@ static std::string toAbsolutePath(const std::string& path)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Cgi::readFromPipe(int fd) {
+std::string Cgi::readFromPipe(int fd)
+{
 	char buffer[4096];
 	std::string result;
 	ssize_t bytesRead;
@@ -50,7 +51,8 @@ std::string Cgi::readFromPipe(int fd) {
 	return result;
 }
 
-void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request) {
+void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request)
+{
 	std::string uri = request.getUri();
 	size_t pos = uri.find('?');
 
@@ -97,7 +99,8 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 	// Pass all HTTP headers as HTTP_* variables
 	const headerMap& headers = request.getHeaders();
-	for (headerMap::const_iterator it = headers.begin(); it != headers.end(); ++it) {
+	for (headerMap::const_iterator it = headers.begin(); it != headers.end(); ++it)
+	{
 		std::string key = it->first;
 
 		// Skip content-type and content-length (already set above)
@@ -106,7 +109,8 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 		// Transform: user-agent → HTTP_USER_AGENT
 		std::string envKey = "HTTP_";
-		for (size_t i = 0; i < key.length(); ++i) {
+		for (size_t i = 0; i < key.length(); ++i)
+		{
 			if (key[i] == '-')
 				envKey += '_';
 			else
@@ -118,14 +122,16 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request) 
 
 // Public method(s) ------------------------------------------------------------
 
-void Cgi::parseHeaders(const std::string& output, CgiResult& result) {
+void Cgi::parseHeaders(const std::string& output, CgiResult& result)
+{
 	// Truncate display for large outputs
 	std::string displayOutput = output;
 	if (displayOutput.size() > 500)
 		displayOutput = displayOutput.substr(0, 500) + "... [truncated, total " + intToString(output.size()) + " bytes]";
 
 	size_t headersEnd = output.find("\r\n\r\n");
-	if (headersEnd == std::string::npos) {
+	if (headersEnd == std::string::npos)
+	{
 		// No headers separator, treat all as body
 		result.output = output;
 		return;
@@ -135,14 +141,16 @@ void Cgi::parseHeaders(const std::string& output, CgiResult& result) {
 
 	// Parse headers line by line
 	size_t pos = 0;
-	while (pos < headersBlock.length()) {
+	while (pos < headersBlock.length())
+	{
 		size_t lineEnd = headersBlock.find("\r\n", pos);
 		if (lineEnd == std::string::npos)
 			lineEnd = headersBlock.length();
 		std::string line = headersBlock.substr(pos, lineEnd - pos);
 
 		// Check for Status header
-		if (!line.find("Status: ")) {
+		if (!line.find("Status: "))
+		{
 			std::string statusLine = line.substr(8); // Skip "Status: "
 			// Extract status code (first 3 digits)
 			if (statusLine.length() >= 3)
@@ -158,21 +166,23 @@ void Cgi::parseHeaders(const std::string& output, CgiResult& result) {
 	result.output = body;
 }
 
-CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose) {
-
+CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose)
+{
 	setupEnvironment(match, request);
 
 	// Validate interpreter is executable and script is readable
 	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
 
 	// Check that the CGI interpreter exists and has execute permission
-	if (access(interpreter.c_str(), X_OK) != 0) {
+	if (access(interpreter.c_str(), X_OK) != 0)
+	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Interpreter not executable: " + interpreter);
 		return NULL;
 	}
 
 	// Check that the CGI script exists and has read permission
-	if (access(match.filePath.c_str(), R_OK) != 0) {
+	if (access(match.filePath.c_str(), R_OK) != 0)
+	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Script not readable: " + match.filePath);
 		return NULL;
 	}
@@ -184,7 +194,8 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	int pipeIn[2];   // CGI stdin
 	int pipeErr[2];  // CGI stderr
 
-	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1) {
+	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1)
+	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: pipe failed");
 		delete cgi;
 		return NULL;
@@ -193,7 +204,8 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	cgi->startTime = std::time(NULL);
 	pid_t pid = fork();
 
-	if (pid == -1) {
+	if (pid == -1)
+	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Fork failed");
 		close(pipeOut[0]); close(pipeOut[1]);
 		close(pipeIn[0]); close(pipeIn[1]);
@@ -202,7 +214,8 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 		return NULL;
 	}
 
-	if (!pid) {
+	if (!pid)
+	{
 		// Child process - execute CGI script
 		close(pipeOut[0]);  // Close read end
 		close(pipeIn[1]);   // Close write end
@@ -230,18 +243,20 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 		std::string scriptPath = match.filePath;
 		std::string scriptName = scriptPath; // Will hold just the filename after chdir
 		size_t lastSlash = scriptPath.find_last_of('/');
-		if (lastSlash != std::string::npos) {
+		if (lastSlash != std::string::npos)
+		{
 			std::string scriptDir = scriptPath.substr(0, lastSlash);
 			scriptName = scriptPath.substr(lastSlash + 1); // Extract filename only
-			if (chdir(scriptDir.c_str()) != 0) {
+			if (chdir(scriptDir.c_str()) != 0)
+			{
 				std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
 			}
 		}
 
 		// Prepare environment variables
 		std::vector<char*> envp;
-		for (envMap::const_iterator it = _env.begin();
-			it != _env.end(); ++it) {
+		for (envMap::const_iterator it = _env.begin(); it != _env.end(); ++it)
+		{
 			std::string envStr = it->first + "=" + it->second;
 			char* element = new char[envStr.length() + 1];
 			std::strcpy(element, envStr.c_str());
@@ -251,7 +266,8 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 
 		// Execute CGI with absolute interpreter path
 		// Use scriptName (basename) after chdir
-		char* argv[] = {
+		char* argv[] =
+		{
 			const_cast<char*>(interpreter.c_str()),
 			const_cast<char*>(scriptName.c_str()),
 			NULL
@@ -280,7 +296,8 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	fcntl(cgi->pipeErr, F_SETFL, O_NONBLOCK);
 
 	// If POST request, mark that we need to write body
-	if (request.getMethod() == "POST" && !request.getBody().empty()) {
+	if (request.getMethod() == "POST" && !request.getBody().empty())
+	{
 		cgi->inputWritten = false;
 		cgi->bytesWritten = 0;
 	} else {
