@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:45:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:06:32 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,11 +18,11 @@
 # include "Client.hpp"
 # include "Router.hpp"
 # include "../config/Config.hpp"
-# include <map>					// std::map
-# include <string>				// std::string
-# include <vector>				// std::vector
-# include <ctime>				// time_t
-# include <poll.h>				// pollfd
+# include <map>						// std::map
+# include <string>					// std::string
+# include <vector>					// std::vector
+# include <ctime>					// time_t
+# include <poll.h>					// pollfd
 
 // Structure(s) ----------------------------------------------------------------
 
@@ -43,9 +43,16 @@ enum SocketType
 	SOCKET_CGI
 };
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<int, SocketType>			socketTypeMap;
+typedef	std::map<std::string, SessionData>	SessionMap;
+typedef std::map<int, Client>				ClientMap;
+typedef	std::vector<pollfd>					PollfdVector;
+
 // Class -----------------------------------------------------------------------
 
-class Server
+class	Server
 {
 	private:
 
@@ -57,16 +64,15 @@ class Server
 			CLIENT_PROCESSING_TIMEOUT = 180,	// 3 minutes - request processing timeout, including CGI execution
 			DEFAULT_CGI_EXECUTION_TIMEOUT = 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
 		};
-
-		std::vector<ServerConfig>			_configs;				// Server configurations
-		std::vector<pollfd>					_pollFds;				// Poll file descriptors for I/O multiplexing
-		std::map<int, Client>				_clients;				// Active client connections
-		std::map<int, SocketType>			_socketTypes;			// Socket type mapping
-		bool								_running;				// Server running state
-		Router								_router;				// Request router
-		std::map<std::string, SessionData>	_sessions;				// Active user sessions
-		static int							_s_sigpipe[2];			// Self-pipe for signal handling
-		time_t								_lastSessionCleanup;	// Timestamp of last session cleanup
+		serverVector		_configs;				// Server configurations
+		PollfdVector		_pollFds;				// Poll file descriptors for I/O multiplexing
+		ClientMap			_clients;				// Active client connections
+		socketTypeMap		_socketTypes;			// Socket type mapping
+		bool				_running;				// Server running state
+		Router				_router;				// Request router
+		SessionMap			_sessions;				// Active user sessions
+		static int			_s_sigpipe[2];			// Self-pipe for signal handling
+		time_t				_lastSessionCleanup;	// Timestamp of last session cleanup
 
 		// Private method(s)
 
@@ -78,7 +84,7 @@ class Server
 		void				handleSessionTimeouts();
 		static void			signalHandler(int sig);
 		void				installSignals();
-		void				logClientResponse(Client &client);
+		void				logClientResponse(Client& client);
 
 		/** @brief Creates, binds and adds one listening socket per configured port to the poll set. */
 		void				setupListenSockets();
@@ -96,7 +102,7 @@ class Server
 		void				handleCGIPipe(size_t pipeIndex);
 
 		/** @brief Collects CGI output, parses its headers, and builds the client HTTP response. */
-		void				finalizeCGI(Client &client, CGIProcess *cgi, int clientFd);
+		void				finalizeCGI(Client& client, CgiProcess* cgi, int clientFd);
 
 		/** @brief Handles POLLERR/POLLHUP on _pollFds[i] (client disconnect, broken pipe, etc.). */
 		void				handleSocketError(size_t i);

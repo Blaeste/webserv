@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:36:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:58:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,9 +42,9 @@ bool HttpRequest::setError(int code)
 	return false;
 }
 
-std::map<std::string, std::string> HttpRequest::getCookies() const
+cookieMap HttpRequest::getCookies() const
 {
-	std::map<std::string, std::string> cookies;
+	cookieMap cookies;
 	std::string cookieHeader = getHeader("Cookie");
 	if (cookieHeader.empty())
 		return cookies;
@@ -65,7 +65,7 @@ std::map<std::string, std::string> HttpRequest::getCookies() const
 	return cookies;
 }
 
-bool HttpRequest::appendData(const std::string &data)
+bool HttpRequest::appendData(const std::string& data)
 {
 	if (_isComplete)
 		return true;
@@ -91,9 +91,9 @@ bool HttpRequest::appendData(const std::string &data)
 	return _isComplete;
 }
 
-std::string HttpRequest::getHeader(const std::string &key) const
+std::string HttpRequest::getHeader(const std::string& key) const
 {
-	std::map<std::string, std::string>::const_iterator it = _headers.find(toLowercase(key));
+	headerMap::const_iterator it = _headers.find(toLowercase(key));
 	if (it != _headers.end())
 		return it->second;
 	return "";
@@ -132,7 +132,7 @@ std::string HttpRequest::getLeftover() const
 
 // Private method(s)------------------------------------------------------------
 
-bool HttpRequest::parseRequestLine(const std::string &headerBlock)
+bool HttpRequest::parseRequestLine(const std::string& headerBlock)
 {
 	// Search the first line
 	size_t firstLineEnd = headerBlock.find("\r\n");
@@ -146,7 +146,7 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 	std::string requestLine = headerBlock.substr(0, firstLineEnd);
 
 	// Split on " " : "GET /index.html HTTP/1.1"
-	std::vector<std::string> parts = splitTokens(requestLine, ' ');
+	stringVector parts = splitTokens(requestLine, ' ');
 	if (parts.size() != 3)
 		return setError(400); // Bad request
 
@@ -183,7 +183,7 @@ bool HttpRequest::parseRequestLine(const std::string &headerBlock)
 	return true;
 }
 
-bool HttpRequest::parseHeaders(const std::string &headerBlock)
+bool HttpRequest::parseHeaders(const std::string& headerBlock)
 {
 	// skip first line (request line)
 	size_t pos = headerBlock.find("\r\n") + 2;
@@ -243,7 +243,7 @@ bool HttpRequest::parseHeaders(const std::string &headerBlock)
 
 bool HttpRequest::parseChunked()
 {
-	std::string &data = _rawData;
+	std::string& data = _rawData;
 	size_t pos = _chunkParsePos;
 
 	while (true)
@@ -329,7 +329,7 @@ bool HttpRequest::parseChunked()
 	}
 }
 
-bool HttpRequest::parseMultipart(const std::string &boundary)
+bool HttpRequest::parseMultipart(const std::string& boundary)
 {
 	std::string delimiter = "--" + boundary;
 	std::string endDelimiter = delimiter + "--";
@@ -488,7 +488,7 @@ bool HttpRequest::parse()
 
 					_contentLength = static_cast<size_t>(contentLength);
 
-				} catch (const std::exception &e) {
+				} catch (const std::exception& e) {
 					_isComplete = true;
 					return setError(400); // Bad request
 				}

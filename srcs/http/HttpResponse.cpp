@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   HttpResponse.cpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
+/*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 09:39:30 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 14:00:49 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,7 +28,7 @@
 static std::string getHttpDate()
 {
 	time_t now = std::time(NULL);
-	struct tm *gmt = std::gmtime(&now);
+	struct tm* gmt = std::gmtime(&now);
 	if (!gmt)
 		return "";
 	char buffer[100];
@@ -96,7 +96,7 @@ std::string HttpResponse::getStatusMessage(int code) const
 
 // Public method(s) ------------------------------------------------------------
 
-std::string HttpResponse::build(const std::string &method) const
+std::string HttpResponse::build(const std::string& method) const
 {
 	std::string response;
 
@@ -110,7 +110,7 @@ std::string HttpResponse::build(const std::string &method) const
 		response += "Connection: close\r\n"; // default if not specified
 
 	// Custom Headers
-	std::map<std::string, std::string>::const_iterator it;
+	headerMap::const_iterator it;
 
 	for (it = _headers.begin(); it != _headers.end(); ++it)
 		response += it->first + ": " + it->second + "\r\n";
@@ -129,7 +129,7 @@ std::string HttpResponse::build(const std::string &method) const
 	return response;
 }
 
-int HttpResponse::serveFile(const std::string &path, const std::string &root)
+int HttpResponse::serveFile(const std::string& path, const std::string& root)
 {
 	// Check if it's a directory + security check
 	if (isDirectory(path) || !isPathSafe(path, root))
@@ -152,7 +152,7 @@ int HttpResponse::serveFile(const std::string &path, const std::string &root)
 			std::string ext = getFileExtension(path);
 			contentType = MimeTypes::get(ext);
 		}
-		catch (const std::exception &)
+		catch (const std::exception&)
 		{
 			// No extension or hidden file → use default MIME type
 		}
@@ -163,7 +163,7 @@ int HttpResponse::serveFile(const std::string &path, const std::string &root)
 		setBody(content);
 		return 200;
 	}
-	catch (const std::exception &e)
+	catch (const std::exception& e)
 	{
 		Logger::logMessage(RED "[HttpResponse] Error: " RESET "serveFile: " + std::string(e.what()));
 		return 500;
@@ -172,7 +172,7 @@ int HttpResponse::serveFile(const std::string &path, const std::string &root)
 
 // Security: Escape HTML special characters to prevent XSS injection
 // Converts &, <, >, " to their HTML entities
-static std::string htmlEscape(const std::string &s)
+static std::string htmlEscape(const std::string& s)
 {
 	std::string out;
 
@@ -194,18 +194,18 @@ static std::string htmlEscape(const std::string &s)
 	return out;
 }
 
-static std::vector<std::string> listDirectory(const std::string &path)
+static stringVector listDirectory(const std::string& path)
 {
-	std::vector<std::string> entries;
+	stringVector entries;
 
-	DIR *dir = opendir(path.c_str());
+	DIR* dir = opendir(path.c_str());
 	if (!dir)
 	{
 		Logger::logMessage(RED "[HttpResponse] Error: " RESET "listDirectory: opendir failed for path: " + path);
 		return entries;
 	}
 
-	struct dirent *entry;
+	struct dirent* entry;
 	while ((entry = readdir(dir)))
 	{
 		std::string name = entry->d_name;
@@ -217,14 +217,14 @@ static std::vector<std::string> listDirectory(const std::string &path)
 	return entries;
 }
 
-int HttpResponse::serveDirectoryListing(const std::string &path, const std::string &uri)
+int HttpResponse::serveDirectoryListing(const std::string& path, const std::string& uri)
 {
 	// Check if path is a directory
 	if (!isDirectory(path))
 		return 404;
 
 	// Get list of files/directories
-	std::vector<std::string> entries = listDirectory(path);
+	stringVector entries = listDirectory(path);
 
 	// Generate HTML page with correct URI for links
 	std::string body =
@@ -264,7 +264,7 @@ int HttpResponse::serveDirectoryListing(const std::string &path, const std::stri
 	return 200;
 }
 
-int HttpResponse::serveDelete(const std::string &path, const std::string &uploadRoot)
+int HttpResponse::serveDelete(const std::string& path, const std::string& uploadRoot)
 {
 	// Check if file exists and not a directory
 	if (isDirectory(path) || !isPathSafe(path, uploadRoot))
@@ -285,7 +285,7 @@ int HttpResponse::serveDelete(const std::string &path, const std::string &upload
 
 // Security: Sanitize filename to prevent path traversal and injection attacks
 // Replaces dangerous characters: "..", "/", "\", null bytes, control chars
-static std::string sanitizeFilename(const std::string &filename)
+static std::string sanitizeFilename(const std::string& filename)
 {
 	std::string safe = filename;
 
@@ -313,7 +313,7 @@ static std::string sanitizeFilename(const std::string &filename)
 
 // Security: Write all data handling partial writes and EINTR interruptions
 // Returns true if all data written successfully, false on error
-static bool writeAll(int fd, const char *buf, size_t len)
+static bool writeAll(int fd, const char* buf, size_t len)
 {
 	size_t off = 0;
 
@@ -328,14 +328,14 @@ static bool writeAll(int fd, const char *buf, size_t len)
 	return true;
 }
 
-int HttpResponse::handleUpload(const HttpRequest &request, const std::string &uploadDir)
+int HttpResponse::handleUpload(const HttpRequest& request, const std::string& uploadDir)
 {
 
 	// Security check: only allow uploads inside the configured upload directory
 	if (!isPathSafe(uploadDir, uploadDir))
 		return 403;
 
-	const std::vector<UploadedFile> &files = request.getUploadedFiles();
+	const std::vector<UploadedFile>& files = request.getUploadedFiles();
 
 	if (files.empty())
 		return 400;
@@ -376,7 +376,7 @@ int HttpResponse::handleUpload(const HttpRequest &request, const std::string &up
 	return 201;
 }
 
-void HttpResponse::serveOptions(const std::vector<std::string> &allowedMethods)
+void HttpResponse::serveOptions(const stringVector& allowedMethods)
 {
 	// Build the Allow header with comma-separated methods
 	std::string allow;

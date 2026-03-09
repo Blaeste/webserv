@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:47:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:07:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,7 +19,7 @@
 
 // Static variable(s) initialization -------------------------------------------
 
-std::map<int, RequestData> Logger::_activeRequests;
+requestMap Logger::_activeRequests;
 std::string Logger::_lastMethod;
 std::string Logger::_lastUri;
 std::string Logger::_lastClientIP;
@@ -43,7 +43,7 @@ bool Logger::_s_logging = false;
 std::string Logger::getCurrentTime()
 {
 	std::time_t now = std::time(NULL);
-	std::tm *tm_info = std::localtime(&now);
+	std::tm* tm_info = std::localtime(&now);
 	if (!tm_info)
 		return "00:00:00";
 	char buffer[10];
@@ -84,7 +84,7 @@ std::string Logger::getStatusColor(int statusCode)
 void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize)
 {
 	// Look up request data for this specific request
-	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
+	requestMap::iterator it = _activeRequests.find(requestId);
 	std::string method = it->second.method;
 	std::string uri = it->second.uri;
 	std::string clientIP = it->second.clientIP;
@@ -203,8 +203,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 // Public method(s) ------------------------------------------------------------
 
-void Logger::logRequestStart(int requestId, const std::string &method, const std::string &uri,
-							 const std::string &clientIP, std::string serverName, int port, size_t declaredSize)
+void Logger::logRequestStart(int requestId, const std::string& method, const std::string& uri,
+							 const std::string& clientIP, std::string serverName, int port, size_t declaredSize)
 {
 	if (_firstLog) {
 		_s_logging = true;
@@ -267,7 +267,7 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 		return;
 
 	// Check if this request is part of the currently displayed group
-	std::map<int, RequestData>::iterator it = _activeRequests.find(requestId);
+	requestMap::iterator it = _activeRequests.find(requestId);
 	if (it == _activeRequests.end())
 		return; // already logged or unknown request
 	bool isGroupedRequest = (it->second.method == _lastMethod &&
@@ -326,7 +326,7 @@ void Logger::logRequestEnd(int requestId, int statusCode, size_t requestSize, si
 	_activeRequests.erase(requestId);
 }
 
-void Logger::logMessage(const std::string &message)
+void Logger::logMessage(const std::string& message)
 {
 	// Finalize current line if we're mid-display
 	if (_pendingRequest) {

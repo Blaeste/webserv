@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:39:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 14:02:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,7 +55,7 @@ static std::string generateSessionId()
 // Constructor -----------------------------------------------------------------
 
 // Initialize socket and activity timestamp
-Client::Client(int socket, const std::string &clientIp)
+Client::Client(int socket, const std::string& clientIp)
 	: _socket(socket)
 	, _clientIp(clientIp)
 	, _lastActivity(std::time(NULL))
@@ -64,7 +64,7 @@ Client::Client(int socket, const std::string &clientIp)
 	, _closeAfterResponse(false)
 	, _requestLogged(false)
 	, _state(STATE_KEEPALIVE)
-	, _cgiProcess(NULL)
+	, _CgiProcess(NULL)
 	, _bytesSent(0)
 	, _cgiStartTime(0)
 	, _requestStartTime(0)
@@ -90,7 +90,7 @@ void Client::markCloseAfterResponse()
 	_closeAfterResponse = true;
 }
 
-void Client::setCGITiming(const ServerConfig &config)
+void Client::setCGITiming(const ServerConfig& config)
 {
 	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;
@@ -98,7 +98,7 @@ void Client::setCGITiming(const ServerConfig &config)
 
 // Public method(s) ------------------------------------------------------------
 
-bool Client::readData(const ServerConfig *config)
+bool Client::readData(const ServerConfig* config)
 {
 	// Set start time on very first read (before any parsing)
 	if (_requestStartTime == 0)
@@ -132,7 +132,7 @@ bool Client::readData(const ServerConfig *config)
 	return true;
 }
 
-void Client::buildResponse(const ServerConfig &config, Router &router, std::map<std::string, SessionData> &sessions)
+void Client::buildResponse(const ServerConfig& config, Router& router, std::map<std::string, SessionData>& sessions)
 {
 	// Match route to get location-specific settings
 	RouteMatch match = router.matchRoute(config, _request);
@@ -155,7 +155,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 
 	if (_request.getUri() == "/counter-api")
 	{
-		SessionData &session = sessions[_sessionId];
+		SessionData& session = sessions[_sessionId];
 
 		std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
 		_response.setStatus(200);
@@ -181,7 +181,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 		{
 			buildErrorResponse(match.statusCode, &config);
 			std::string allow;
-			const std::vector<std::string> &methods = match.location->getAllowedMethods();
+			const stringVector& methods = match.location->getAllowedMethods();
 			for (size_t i = 0; i < methods.size(); ++i)
 			{
 				if (i > 0)
@@ -242,7 +242,7 @@ void Client::buildResponse(const ServerConfig &config, Router &router, std::map<
 	applyConnectionHeader();
 }
 
-void Client::buildResponseFromCGI(const CGIResult &result)
+void Client::buildResponseFromCGI(const CgiResult &result)
 {
 	if (result.statusCode == 200)
 	{
@@ -257,7 +257,7 @@ void Client::buildResponseFromCGI(const CGIResult &result)
 	applyConnectionHeader();
 }
 
-void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
+void Client::buildErrorResponse(int statusCode, const ServerConfig* config)
 {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
@@ -271,7 +271,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 		if (!customPath.empty())
 		{
 			// Resolve against the root of the first location (typically "/")
-			const std::vector<Location> &locations = config->getLocations();
+			const LocationVector& locations = config->getLocations();
 			for (size_t i = 0; i < locations.size(); ++i)
 			{
 				if (locations[i].getPath() == "/")
@@ -300,7 +300,7 @@ void Client::buildErrorResponse(int statusCode, const ServerConfig *config)
 		{
 			_response.setBody(readFile(errorPage));
 		}
-		catch (const std::exception &e)
+		catch (const std::exception& e)
 		{
 			Logger::logMessage(RED "[Client] Error: " RESET "buildErrorResponse: readFile failed: " + std::string(e.what()));
 			_response.setBody("<html><body><h1>" + intToString(statusCode) + " Error</h1></body></html>");
@@ -401,9 +401,9 @@ void Client::applyConnectionHeader()
 
 // Private method(s) -----------------------------------------------------------
 
-void Client::handleSession(std::map<std::string, SessionData> &sessions)
+void Client::handleSession(std::map<std::string, SessionData>& sessions)
 {
-	std::map<std::string, std::string> cookies = _request.getCookies();
+	cookieMap cookies = _request.getCookies();
 	std::string sessionId;
 
 	if (cookies.find("session_id") != cookies.end())

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:16:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:53:20 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,11 +15,12 @@
 
 // Include(s) ------------------------------------------------------------------
 
-# include <map>			// std::map
-# include <string>		// std::string
-# include <vector>		// std::vector
-# include <ctime>		// time_t, std::time
-# include <sys/types.h>	// pid_t
+# include "../types.hpp"
+# include <map>				// std::map
+# include <string>			// std::string
+# include <vector>			// std::vector
+# include <ctime>			// time_t, std::time
+# include <sys/types.h>		// pid_t
 
 // Forward declaration(s) ------------------------------------------------------
 
@@ -28,7 +29,7 @@ struct	RouteMatch;
 
 // Structure(s) ----------------------------------------------------------------
 
-struct CGIProcess
+struct	CgiProcess
 {
 	// Attribute(s)
 	pid_t		pid;				// Process ID of the CGI script
@@ -43,7 +44,7 @@ struct CGIProcess
 	time_t		executionTimeout;	// Maximum execution time in seconds
 
 	// Default constructor
-	CGIProcess()
+	CgiProcess()
 		: pid(-1)
 		, pipeOut(-1)
 		, pipeIn(-1)
@@ -54,7 +55,7 @@ struct CGIProcess
 	{}
 };
 
-struct CGIResult
+struct	CgiResult
 {
 	// Attribute(s)
 	int statusCode;				// HTTP status code from CGI response
@@ -62,25 +63,29 @@ struct CGIResult
 	std::string contentType;	// Content-Type header from CGI response
 
 	// Default constructor
-	CGIResult()
+	CgiResult()
 		: statusCode(200)
 		, contentType("text/html")
 	{}
 };
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<std::string, std::string>	envMap;
+
 // Class -----------------------------------------------------------------------
 
-class CGI
+class	Cgi
 {
 	private:
 
 		// Attribute(s)
-		std::map<std::string, std::string> _env;	// Environment variables for CGI execution
+		envMap _env;	// Environment variables for CGI execution
 
 		// Private method(s)
 
 		/** @brief Populates _env with CGI/1.1 variables derived from the request and route. */
-		void		setupEnvironment(const RouteMatch& match, const HttpRequest &request);
+		void		setupEnvironment(const RouteMatch& match, const HttpRequest& request);
 
 		/** @brief Reads all available data from a pipe fd into a string. */
 		std::string	readFromPipe(int fd);
@@ -90,14 +95,14 @@ class CGI
 		// Public method(s)
 
 		/** @brief Parses CGI response headers (Status, Content-Type) and splits body into result. */
-		void		parseHeaders(const std::string& output, CGIResult& result);
+		void		parseHeaders(const std::string& output, CgiResult& result);
 
 		/**
 		 * @brief Forks a CGI process, sets up stdin/stdout/stderr pipes, and returns the process handle.
 		 * @param fdsToClose List of server fds to close in the child to prevent fd leaks across CGI processes.
-		 * @return Heap-allocated CGIProcess on success, NULL on fork/pipe/access failure.
+		 * @return Heap-allocated CgiProcess on success, NULL on fork/pipe/access failure.
 		 */
-		CGIProcess*	startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose);
+		CgiProcess*	startAsync(const RouteMatch& match, const HttpRequest& request, const std::vector<int>& fdsToClose);
 };
 
 #endif

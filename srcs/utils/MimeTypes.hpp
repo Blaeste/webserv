@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:47 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 19:47:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:43:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -18,6 +18,10 @@
 # include <map>		// std::map
 # include <string>	// std::string
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<std::string, std::string>	mimeTypeMap;
+
 // Class -----------------------------------------------------------------------
 
 class MimeTypes
@@ -26,19 +30,19 @@ class MimeTypes
 
 		// Attribute(s)
 
-		static const std::map<std::string, std::string>	_types; // MIME type mappings by file extension
+		static const mimeTypeMap	_types; // MIME type mappings by file extension
 
 		// Private method(s)
 
 		/** @brief Builds and returns the static extension→MIME type map. */
-		static std::map<std::string, std::string>	createMap();
+		static mimeTypeMap			createMap();
 
 	public:
 
 		// Public method(s)
 
 		/** @brief Returns the MIME type for extension, or "application/octet-stream" if unknown. */
-		static const std::string&					get(const std::string& extension);
+		static const std::string&	get(const std::string& extension);
 
 };
 

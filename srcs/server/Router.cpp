@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/08 19:40:25 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:17:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,14 +20,14 @@
 // Private method(s) -----------------------------------------------------------
 
 // Find location with longest matching path prefix
-const Location *Router::findMatchingLocation(const ServerConfig &config, const std::string &uri) const
+const Location* Router::findMatchingLocation(const ServerConfig& config, const std::string& uri) const
 {
-	const std::vector<Location> &locations = config.getLocations();
-	const Location *bestMatch = NULL;
+	const LocationVector& locations = config.getLocations();
+	const Location* bestMatch = NULL;
 	size_t longestMatch = 0;
 	for (size_t i = 0; i < locations.size(); i++)
 	{
-		const std::string &path = locations[i].getPath();
+		const std::string& path = locations[i].getPath();
 
 		// Check if URI starts with location path
 		// Must be exact match or followed by '/' to avoid false matches
@@ -48,7 +48,7 @@ const Location *Router::findMatchingLocation(const ServerConfig &config, const s
 // Public method(s) ------------------------------------------------------------
 
 // Match request to appropriate route and determine response type
-RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &request) const
+RouteMatch Router::matchRoute(const ServerConfig& config, const HttpRequest& request) const
 {
 	std::string uri = request.getUri();
 	RouteMatch match;
@@ -92,7 +92,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			// Try index files for root or directory paths
 			if (pathPart == "/" || pathPart.empty())
 			{
-				const std::vector<std::string> &indexes = match.location->getIndex();
+				const stringVector& indexes = match.location->getIndex();
 				for (size_t i = 0; i < indexes.size(); i++)
 				{
 					std::string indexPath = joinPath(match.location->getRoot(), indexes[i]);
@@ -121,7 +121,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			// If we are at the location root, try its index files
 			if (relativePath == "/")
 			{
-				const std::vector<std::string> &locIndexes = match.location->getIndex();
+				const stringVector& locIndexes = match.location->getIndex();
 				for (size_t i = 0; i < locIndexes.size(); i++)
 				{
 					std::string idxPath = joinPath(match.location->getRoot(), locIndexes[i]);
@@ -146,7 +146,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 			// If the resolved path is a directory, try serving an index file inside it
 			if (isDirectory(match.filePath))
 			{
-				const std::vector<std::string> &locIndexes = match.location->getIndex();
+				const stringVector& locIndexes = match.location->getIndex();
 				for (size_t i = 0; i < locIndexes.size(); ++i)
 				{
 					std::string idxCandidate = joinPath(match.filePath, locIndexes[i]);
@@ -168,7 +168,7 @@ RouteMatch Router::matchRoute(const ServerConfig &config, const HttpRequest &req
 				if (cgiExt == getFileExtension(match.filePath))
 						match.isCGI = true;
 				}
-				catch (const std::exception &e)
+				catch (const std::exception& e)
 				{
 					// If getFileExtension fails, not a CGI request
 				}

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/08 16:40:37 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/09 13:52:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,7 +22,7 @@
 #define MAGENTA	"\033[35m"
 #define RESET	"\033[0m"
 
-int main(int argc, char **argv)
+int main(int argc, char** argv)
 {
 	try {
 		// Seed the random number generator for generateSessionId()
