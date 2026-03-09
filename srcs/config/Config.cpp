@@ -6,7 +6,7 @@
 /*   By: eschwart <eschwart@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:20:11 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 11:38:01 by eschwart         ###   ########.fr       */
+/*   Updated: 2026/03/09 11:51:21 by eschwart         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -393,6 +393,14 @@ bool Config::validate() const {
 				const std::string &method = methods[k];
 				if (!isValidHttpMethod(method))
 					errors.push_back(locPrefix + "Invalid HTTP method '" + method + "'");
+			}
+		}
+
+		// Check for duplicate loc path
+		for (size_t j = 0; j < locations.size(); j++) {
+			for (size_t k = j + 1; k < locations.size(); k++) {
+				if (locations[j].getPath() == locations[k].getPath())
+					errors.push_back(prefix + "Duplicate location '" + locations[j].getPath() + "'");
 			}
 		}
 
