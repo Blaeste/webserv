@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:15:35 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 12:53:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,7 +15,6 @@
 #include "config/ConfigParser.hpp"
 #include "server/Server.hpp"
 #include <iostream>				// std::cout, std::cerr
-#include <cstdlib>				// EXIT_SUCCESS, EXIT_FAILURE
 
 // Define(s) -------------------------------------------------------------------
 
@@ -25,9 +24,6 @@
 int main(int argc, char** argv)
 {
 	try {
-		// Seed the random number generator for generateSessionId()
-		std::srand(static_cast<unsigned int>(std::time(0)));
-
 		// Check if have rigth arguments number or go with default config
 		if (argc > 2)
 		{
