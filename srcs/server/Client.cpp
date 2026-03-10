@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:14:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:04:22 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,7 +90,7 @@ void Client::markCloseAfterResponse()
 	_closeAfterResponse = true;
 }
 
-void Client::setCGITiming(const ServerBlock& config)
+void Client::setCgiTiming(const ServerBlock& config)
 {
 	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;

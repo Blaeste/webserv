@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:46:30 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:06:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -100,7 +100,7 @@ void Server::run()
 	{
 		// Check for idle client timeouts
 		handleClientTimeouts();
-		handleCGITimeouts();
+		handleCgiTimeouts();
 		handleSessionTimeouts();
 
 		// Poll for events on all sockets
@@ -160,7 +160,7 @@ void Server::run()
 
 			// Handle CGI pipes
 			if (type == SOCKET_CGI)
-				handleCGIPipe(i);
+				handleCgiPipe(i);
 		}
 
 		// --- GARBAGE COLLECTOR ---
@@ -465,7 +465,7 @@ void Server::handleClientRead(size_t clientIndex)
 
 			// Store timing info for CGI logging
 			if (cgiConfig)
-				client.setCGITiming(*cgiConfig);
+				client.setCgiTiming(*cgiConfig);
 
 			std::vector<int> fdsToClose;
 			for (size_t i = 0; i < _pollFds.size(); i++)
@@ -684,7 +684,7 @@ void Server::handleSocketError(size_t i)
 			// Broken stdout pipe: finalize CGI (build response, cleanup)
 			if (cgi->pipeOut == fd)
 			{
-				finalizeCGI(client, cgi, it->first);
+				finalizeCgi(client, cgi, it->first);
 				return;
 			}
 
@@ -714,7 +714,7 @@ void Server::handleSocketError(size_t i)
 	safeClose(fd, "Server");
 }
 
-void Server::finalizeCGI(Client& client, CgiProcess* cgi, int clientFd)
+void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 {
 	// Remove all CGI pipes from poll
 	if (cgi->pipeOut != -1)
@@ -814,7 +814,7 @@ const ServerBlock* Server::selectConfig(const HttpRequest& request, int clientFd
 	return firstConfig;
 }
 
-void Server::handleCGITimeouts()
+void Server::handleCgiTimeouts()
 {
 	time_t now = std::time(NULL);
 
@@ -867,7 +867,7 @@ void Server::handleCGITimeouts()
 	}
 }
 
-void Server::handleCGIPipe(size_t pipeIndex)
+void Server::handleCgiPipe(size_t pipeIndex)
 {
 	int pipeFd = _pollFds[pipeIndex].fd;
 
@@ -907,7 +907,7 @@ void Server::handleCGIPipe(size_t pipeIndex)
 			if (bytes > 0)
 				cgi->output.append(buffer, bytes);
 			else if (bytes == 0)
-				finalizeCGI(client, cgi, it->first);
+				finalizeCgi(client, cgi, it->first);
 			return;
 		}
 

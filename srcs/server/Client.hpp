@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:54:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:04:04 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -116,7 +116,7 @@ class	Client
 		void				markCloseAfterResponse();
 
 		/** @brief Records CGI start time and stores config reference for timeout enforcement. */
-		void				setCGITiming(const ServerBlock& config);
+		void				setCgiTiming(const ServerBlock& config);
 
 		// Public method(s)
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:57:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 14:07:38 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,7 +84,7 @@ class	Server
 		void				acceptNewClient(int listenSocket);
 		void				handleClientTimeouts();
 		void				removeClient(int fd);
-		void				handleCGITimeouts();
+		void				handleCgiTimeouts();
 		void				removePollFd(int fd);
 		void				handleSessionTimeouts();
 		static void			signalHandler(int sig);
@@ -104,10 +104,10 @@ class	Server
 		const ServerBlock*	selectConfig(const HttpRequest& request, int clientFd) const;
 
 		/** @brief Reads available CGI stdout/stderr and triggers response finalization on EOF. */
-		void				handleCGIPipe(size_t pipeIndex);
+		void				handleCgiPipe(size_t pipeIndex);
 
 		/** @brief Collects CGI output, parses its headers, and builds the client HTTP response. */
-		void				finalizeCGI(Client& client, CgiProcess* cgi, int clientFd);
+		void				finalizeCgi(Client& client, CgiProcess* cgi, int clientFd);
 
 		/** @brief Handles POLLERR/POLLHUP on _pollFds[i] (client disconnect, broken pipe, etc.). */
 		void				handleSocketError(size_t i);
