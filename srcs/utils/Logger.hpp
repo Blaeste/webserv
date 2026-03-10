@@ -105,7 +105,7 @@ class Logger
 
 		/** @brief Records request start and displays the pending log line. */
 		static void				logRequestStart(int requestId, const std::string& method, const std::string& uri, const std::string& clientIP,
-									std::string serverName, int port, size_t declaredSize = std::numeric_limits<size_t>::max());
+									const std::string& serverName, int port, size_t declaredSize = std::numeric_limits<size_t>::max());
 
 		/** @brief Completes the log line with status, sizes and response time. */
 		static void				logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime);

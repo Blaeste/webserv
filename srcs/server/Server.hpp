@@ -87,7 +87,7 @@ class	Server
 		void				handleSessionTimeouts();
 		static void			signalHandler(int sig);
 		void				installSignals();
-		void				logClientResponse(Client& client);
+		void				logClientResponse(const Client& client);
 
 		/** @brief Creates, binds and adds one listening socket per configured port to the poll set. */
 		void				setupListenSockets();

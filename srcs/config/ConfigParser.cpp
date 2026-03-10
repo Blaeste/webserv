@@ -74,7 +74,7 @@ static bool isKnownLocationDirective(const std::string &directive)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string ConfigParser::removeComments(const std::string& content)
+std::string ConfigParser::removeComments(const std::string& content) const
 {
 	std::string result;
 	result.reserve(content.size());
@@ -101,7 +101,7 @@ std::string ConfigParser::removeComments(const std::string& content)
 	return result;
 }
 
-blockVector ConfigParser::extractBlocks(const std::string& content, const std::string& keyword)
+blockVector ConfigParser::extractBlocks(const std::string& content, const std::string& keyword) const
 {
 	blockVector blocks;
 	blocks.reserve(8); // classical prealloc
@@ -189,7 +189,7 @@ blockVector ConfigParser::extractBlocks(const std::string& content, const std::s
 	return blocks;
 }
 
-void ConfigParser::parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex)
+void ConfigParser::parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex) const
 {
 	// Extract all location blocks first
 	blockVector locationBlocks = extractBlocks(block, "location");
@@ -265,7 +265,7 @@ void ConfigParser::parseServerBlock(const std::string& block, ServerBlock& serve
 	}
 }
 
-void ConfigParser::parseLocationBlock(const std::string& block, Location& location)
+void ConfigParser::parseLocationBlock(const std::string& block, Location& location) const
 {
 	// Extract path from header
 	size_t openBrace = block.find("{");
@@ -341,7 +341,7 @@ void ConfigParser::parseLocationBlock(const std::string& block, Location& locati
 	}
 }
 
-size_t ConfigParser::parseSize(const std::string& sizeStr, const std::string& context)
+size_t ConfigParser::parseSize(const std::string& sizeStr, const std::string& context) const
 {
 	if (sizeStr.empty())
 	{

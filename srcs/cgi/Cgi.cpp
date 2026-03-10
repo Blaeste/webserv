@@ -39,7 +39,7 @@ static std::string toAbsolutePath(const std::string& path)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Cgi::readFromPipe(int fd)
+std::string Cgi::readFromPipe(int fd) const
 {
 	char buffer[READ_BUFFER_SIZE];
 	std::string result;
@@ -122,7 +122,7 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request)
 
 // Public method(s) ------------------------------------------------------------
 
-void Cgi::parseHeaders(const std::string& output, CgiResult& result)
+void Cgi::parseHeaders(const std::string& output, CgiResult& result) const
 {
 	// Truncate display for large outputs
 	std::string displayOutput = output;

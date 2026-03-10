@@ -1004,7 +1004,7 @@ void Server::installSignals()
 	signal(SIGPIPE, SIG_IGN);
 }
 
-void Server::logClientResponse(Client& client)
+void Server::logClientResponse(const Client& client)
 {
 	time_t end = std::time(NULL);
 	time_t responseTime = end - client.getRequestStartTime();

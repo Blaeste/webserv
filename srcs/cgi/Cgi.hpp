@@ -91,14 +91,14 @@ class	Cgi
 		void		setupEnvironment(const RouteMatch& match, const HttpRequest& request);
 
 		/** @brief Reads all available data from a pipe fd into a string. */
-		std::string	readFromPipe(int fd);
+		std::string	readFromPipe(int fd) const;
 
 	public:
 
 		// Public method(s)
 
 		/** @brief Parses CGI response headers (Status, Content-Type) and splits body into result. */
-		void		parseHeaders(const std::string& output, CgiResult& result);
+		void		parseHeaders(const std::string& output, CgiResult& result) const;
 
 		/**
 		 * @brief Forks a CGI process, sets up stdin/stdout/stderr pipes, and returns the process handle.

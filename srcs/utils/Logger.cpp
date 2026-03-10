@@ -209,7 +209,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 // Public method(s) ------------------------------------------------------------
 
 void Logger::logRequestStart(int requestId, const std::string& method, const std::string& uri,
-							 const std::string& clientIP, std::string serverName, int port, size_t declaredSize)
+							 const std::string& clientIP, const std::string& serverName, int port, size_t declaredSize)
 {
 	if (_firstLog)
 	{

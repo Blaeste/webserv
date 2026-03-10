@@ -83,7 +83,7 @@ class	Client
 		int					getSocket() const					{ return _socket; };
 		const std::string&	getClientIp() const					{ return _clientIp; };
 		const HttpRequest&	getRequest() const					{ return _request; }
-		int					getResponseStatus()					{ return _response.getStatus(); }
+		int					getResponseStatus() const			{ return _response.getStatus(); }
 		size_t				getResponseBodySize() const			{ return _response.getBody().size(); }
 		size_t				getRequestBodySize() const			{ return _request.getBody().size(); }
 		bool				isRequestComplete() const			{ return _requestComplete; }

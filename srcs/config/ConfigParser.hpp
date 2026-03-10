@@ -50,16 +50,16 @@ class	ConfigParser
 		// Private Method(s)
 
 		/** @brief Strips lines starting with '#' from the raw config content. */
-		std::string			removeComments(const std::string& content);
+		std::string			removeComments(const std::string& content) const;
 
 		/** @brief Extracts all blocks matching keyword (e.g., "server", "location") with their positions. */
-		blockVector			extractBlocks(const std::string& content, const std::string& keyword);
+		blockVector			extractBlocks(const std::string& content, const std::string& keyword) const;
 
 		/** @brief Parses a server block and fills the given ServerBlock. */
-		void				parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex);
+		void				parseServerBlock(const std::string& block, ServerBlock& server, size_t serverIndex) const;
 
 		/** @brief Parses a location block and fills the given Location. */
-		void				parseLocationBlock(const std::string& block, Location& location);
+		void				parseLocationBlock(const std::string& block, Location& location) const;
 
 		/** @brief Validates the parsed configuration (ports, locations, etc.). */
 		bool				validate() const;
@@ -68,7 +68,7 @@ class	ConfigParser
 		 * @brief Parses a human-readable size string into bytes.
 		 * @param sizeStr Value with optional unit suffix: B, K, M, G (e.g., "10M", "500K").
 		 */
-		size_t				parseSize(const std::string& sizeStr, const std::string& context);
+		size_t				parseSize(const std::string& sizeStr, const std::string& context) const;
 
 
 	public:
