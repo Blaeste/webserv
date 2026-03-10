@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 12:53:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:07:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,8 +120,6 @@ class	HttpRequest
 		/** @brief Appends raw socket data and triggers parsing; returns true when request is complete. */
 		bool				appendData(const std::string& data);
 
-		/** @brief Resets all state for reuse on a keep-alive connection. */
-		void				reset();
 };
 
 #endif

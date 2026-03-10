@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 12:54:52 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:16:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,6 +69,9 @@ class	Client
 		std::string			_pendingInput;			// Restes d'une requête suivante déjà reçue
 
 		// Private method(s)
+
+		/** @brief Generates a cryptographically random session ID of SESSION_ID_LENGTH characters. */
+		static std::string	generateSessionId();
 
 		/** @brief Creates or validates the session cookie and updates the sessions map. */
 		void				handleSession(std::map<std::string, SessionData>& sessions);

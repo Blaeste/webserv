@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:14:43 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:07:44 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,28 +96,6 @@ std::string HttpRequest::getHeader(const std::string& key) const
 	if (it != _headers.end())
 		return it->second;
 	return "";
-}
-
-void HttpRequest::reset()
-{
-	_method.clear();
-	_uri.clear();
-	_version.clear();
-	_headers.clear();
-	_body.clear();
-	_rawData.clear();
-	_uploadedFiles.clear();
-
-	_consumedBytes = 0;
-	_isComplete = false;
-	_errorCode = 0;
-	_headersParsed = false;
-	_bodyStart = 0;
-	_isChunked = false;
-	_contentLength = 0;
-	_chunkParsePos = 0;
-	_chunkTotalSize = 0;
-	_chunkDone = false;
 }
 
 std::string HttpRequest::getLeftover() const

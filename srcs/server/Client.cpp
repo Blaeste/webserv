@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 12:53:53 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:14:36 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,10 +25,10 @@
 
 // Static helper(s) ------------------------------------------------------------
 
-static std::string generateSessionId()
+std::string Client::generateSessionId()
 {
 	const char charset[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-	const size_t idLength = SESSION_ID_LENGTH;
+	const size_t idLength = Client::SESSION_ID_LENGTH;
 	const size_t charsetSize = sizeof(charset) - 1;
 
 	// Open urandom (regular disk file, exempt from poll() readiness checks)
@@ -357,7 +357,7 @@ void Client::stashLeftoverFromRequest()
 
 void Client::resetForNextRequest()
 {
-	_request.reset();
+	_request = HttpRequest();
 	_response = HttpResponse();
 	_requestComplete = false;
 	_responseReady = false;
