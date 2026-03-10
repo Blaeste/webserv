@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:18 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 13:58:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:11:27 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@
 #include "../utils/utils.hpp"
 #include <sstream>				// std::istringstream, std::getline
 #include <cctype>				// std::isalpha, std::isalnum, std::isxdigit
-#include <cerrno>				// errno
 #include <cstdlib>				// std::strtoul
 
 // Default constructor ---------------------------------------------------------
@@ -265,21 +264,17 @@ bool HttpRequest::parseChunked()
 			sizeStr = sizeStr.substr(0, semi);
 
 		// Security: Validate chunk size format (must be hex)
-		if (sizeStr.empty() || sizeStr.length() > 16)
+		// Cap at 8 hex digits so the value always fits in unsigned long
+		// (max 0xFFFFFFFF) on any platform, preventing strtoul overflow
+		// without relying on errno.
+		if (sizeStr.empty() || sizeStr.length() > 8)
 			return setError(400); // Bad request
 
-		for (size_t i = 0; i < sizeStr.length(); i++)
-		{
-			unsigned char x = static_cast<unsigned char>(sizeStr[i]);
-			if (!std::isxdigit(x))
-				return setError(400); // Bad request
-		}
-
-		errno = 0;
-		unsigned long v = std::strtoul(sizeStr.c_str(), NULL, 16);
-		if (errno)
+		char* endptr = NULL;
+		unsigned long v = std::strtoul(sizeStr.c_str(), &endptr, 16);
+		// endptr must point to end of string (all chars consumed = valid hex)
+		if (endptr != sizeStr.c_str() + sizeStr.length())
 			return setError(400); // Bad request
-
 		size_t chunkSize = static_cast<size_t>(v);
 		pos = lineEnd + 2; // skip "\r\n"
 

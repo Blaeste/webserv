@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:11:12 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -230,14 +230,22 @@ int parseIntSafe(const std::string& str, const std::string& context)
 	if (str.empty())
 		throw std::runtime_error("parseIntSafe [" + context + "]: empty string");
 
+	// Count digit characters (skip optional leading sign)
+	size_t start = (str[0] == '+' || str[0] == '-') ? 1 : 0;
+	size_t digitCount = str.length() - start;
+
+	// Cap at 10 digits: max 10-digit number (9,999,999,999) always fits in
+	// a 64-bit long, so strtol can never overflow without needing errno.
+	if (digitCount == 0 || digitCount > 10)
+		throw std::runtime_error("parseIntSafe [" + context + "]: value out of range: " + str);
+
 	char* endptr;
-	errno = 0;
 	long val = std::strtol(str.c_str(), &endptr, 10);
 
 	if (endptr == str.c_str() || *endptr != '\0')
 		throw std::runtime_error("parseIntSafe [" + context + "]: invalid input: " + str);
 
-	if (errno == ERANGE || val > std::numeric_limits<int>::max() || val < std::numeric_limits<int>::min())
+	if (val > std::numeric_limits<int>::max() || val < std::numeric_limits<int>::min())
 		throw std::runtime_error("parseIntSafe [" + context + "]: value out of range: " + str);
 
 	return static_cast<int>(val);
