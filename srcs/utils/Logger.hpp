@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:46:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:54:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -142,8 +142,8 @@ class Logger
 		/** @brief Prints a free-form message to stdout (warnings, errors). */
 		static void				logMessage(const std::string& message);
 
-		/** @brief Returns true while Logger is actively writing to stdout. */
-		static bool				isLogging();
+		/** @brief Returns true once the logger has been started (first logRequestStart call). */
+		static bool				hasStarted();
 };
 
 #endif

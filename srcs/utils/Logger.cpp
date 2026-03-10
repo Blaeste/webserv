@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:46:30 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:54:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -369,7 +369,7 @@ void Logger::logMessage(const std::string& message)
 	std::cout.flush();
 }
 
-bool Logger::isLogging()
+bool Logger::hasStarted()
 {
 	return _s_logging;
 }
