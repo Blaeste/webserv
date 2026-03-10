@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 15:36:15 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/10 11:29:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:57:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,7 +40,7 @@ class	ConfigParser
 
 		// Constant(s)
 
-		enum { MAX_PORT_NUMBER = 65535 };
+		static const int	MAX_PORT_NUMBER = 65535;	// Highest valid TCP port number
 
 		// Attribute(s)
 

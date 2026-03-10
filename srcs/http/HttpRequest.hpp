@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:27 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:07:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:54:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,16 +40,14 @@ class	HttpRequest
 
 		// Constant(s)
 
-		enum {
-			MAX_REQUEST_SIZE		= 110 * 1048576,	// 110 MB
-			MAX_URI_LENGTH			= 8192,
-			MAX_HEADER_COUNT		= 100,
-			MAX_HEADER_SIZE			= 8192,
-			MAX_REQUEST_LINE_SIZE	= 16384,
-			MAX_METHOD_LENGTH		= 16,
-			MAX_CHUNK_SIZE			= 5 * 1048576,		// 5 MB
-			MAX_BODY_SIZE			= 110 * 1048576		// 110 MB
-		};
+		static const size_t	MAX_REQUEST_SIZE		= 110 * 1048576;	// 110 MB
+		static const size_t	MAX_URI_LENGTH			= 8192;
+		static const size_t	MAX_HEADER_COUNT		= 100;
+		static const size_t	MAX_HEADER_SIZE			= 8192;
+		static const size_t	MAX_REQUEST_LINE_SIZE	= 16384;
+		static const size_t	MAX_METHOD_LENGTH		= 16;
+		static const size_t	MAX_CHUNK_SIZE			= 5 * 1048576;		// 5 MB
+		static const size_t	MAX_BODY_SIZE			= 110 * 1048576;	// 110 MB
 
 		// Attribute(s)
 

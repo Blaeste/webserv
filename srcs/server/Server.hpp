@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:29:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:57:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -56,17 +56,19 @@ class	Server
 {
 	private:
 
+		// Constant(s)
+
+		static const int	POLL_TIMEOUT_MS					= 1000;	// 1 second
+		static const int	LISTEN_BACKLOG					= 128;	// TCP listen queue size
+		static const size_t	SIGNAL_PIPE_BUFFER_SIZE			= 64;	// Drain buffer for self-pipe
+		static const time_t	SESSION_TIMEOUT					= 1800;	// 30 minutes
+		static const time_t	SESSION_CLEANUP_INTERVAL		= 60;	// 1 minute
+		static const time_t	CLIENT_KEEPALIVE_TIMEOUT		= 75;	// 75 seconds - max idle time on keep-alive connections
+		static const time_t	CLIENT_PROCESSING_TIMEOUT		= 180;	// 3 minutes - request processing timeout, including CGI execution
+		static const time_t	DEFAULT_CGI_EXECUTION_TIMEOUT	= 90;	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
+
 		// Attribute(s)
-		enum {
-			POLL_TIMEOUT_MS					= 1000,	// 1 second
-			LISTEN_BACKLOG					= 128,	// TCP listen queue size
-			SIGNAL_PIPE_BUFFER_SIZE			= 64,	// Drain buffer for self-pipe
-			SESSION_TIMEOUT					= 1800,	// 30 minutes
-			SESSION_CLEANUP_INTERVAL		= 60,	// 1 minute
-			CLIENT_KEEPALIVE_TIMEOUT		= 75,	// 75 seconds - max idle time on keep-alive connections
-			CLIENT_PROCESSING_TIMEOUT		= 180,	// 3 minutes - request processing timeout, including CGI execution
-			DEFAULT_CGI_EXECUTION_TIMEOUT	= 90	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
-		};
+
 		serverBlockVector	_configs;				// Server configurations
 		PollfdVector		_pollFds;				// Poll file descriptors for I/O multiplexing
 		ClientMap			_clients;				// Active client connections

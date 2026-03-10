@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 15:36:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/09 15:37:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:57:50 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,11 +32,9 @@ class ServerBlock
 
 		// Constant(s)
 
-		enum {
-			DEFAULT_PORT			= 8080,
-			DEFAULT_MAX_BODY_SIZE	= 1048576,	// 1 MB
-			DEFAULT_CGI_TIMEOUT		= 90		// 90 seconds
-		};
+		static const int	DEFAULT_PORT			= 8080;		// Default listening port
+		static const size_t	DEFAULT_MAX_BODY_SIZE	= 1048576;	// 1 MB
+		static const size_t	DEFAULT_CGI_TIMEOUT		= 90;		// 90 seconds
 
 		// Attribute(s)
 		int						_port;			// Server port (e.g., 8080)

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 14:44:40 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:39:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,19 +22,6 @@
 #include <dirent.h>					// opendir, readdir, closedir, DIR, struct dirent
 #include <fcntl.h>					// open, O_WRONLY, O_CREAT, O_TRUNC, O_NOFOLLOW
 #include <unistd.h>					// write
-
-// Static helper(s) ------------------------------------------------------------
-
-static std::string getHttpDate()
-{
-	time_t now = std::time(NULL);
-	struct tm* gmt = std::gmtime(&now);
-	if (!gmt)
-		return "";
-	char buffer[HTTP_DATE_BUFFER_SIZE];
-	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
-	return std::string(buffer);
-}
 
 // Default constructor ---------------------------------------------------------
 
@@ -53,7 +40,18 @@ void HttpResponse::setStatus(int code)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string HttpResponse::getStatusMessage(int code) const
+std::string HttpResponse::getHttpDate()
+{
+	time_t now = std::time(NULL);
+	struct tm* gmt = std::gmtime(&now);
+	if (!gmt)
+		return "";
+	char buffer[HTTP_DATE_BUFFER_SIZE];
+	std::strftime(buffer, sizeof(buffer), "%a, %d %b %Y %H:%M:%S GMT", gmt);
+	return std::string(buffer);
+}
+
+std::string HttpResponse::getStatusMessage(int code)
 {
 	switch (code)
 	{

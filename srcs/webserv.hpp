@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 14:58:01 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/09 15:10:24 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:56:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -21,7 +21,7 @@
 
 // Constant(s) -----------------------------------------------------------------
 
-enum { READ_BUFFER_SIZE = 4096 };   // Shared I/O buffer size for pipes and sockets
+static const size_t READ_BUFFER_SIZE = 4096;   // Shared I/O buffer size for pipes and sockets
 
 // Common typedef(s) -----------------------------------------------------------
 

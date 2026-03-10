@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:29:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:33:17 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,7 @@ static std::string toAbsolutePath(const std::string& path)
 
 // Private method(s) -----------------------------------------------------------
 
-std::string Cgi::readFromPipe(int fd) const
+std::string Cgi::readFromPipe(int fd)
 {
 	char buffer[READ_BUFFER_SIZE];
 	std::string result;
@@ -122,7 +122,7 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request)
 
 // Public method(s) ------------------------------------------------------------
 
-void Cgi::parseHeaders(const std::string& output, CgiResult& result) const
+void Cgi::parseHeaders(const std::string& output, CgiResult& result)
 {
 	// Truncate display for large outputs
 	std::string displayOutput = output;

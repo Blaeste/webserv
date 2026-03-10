@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:54:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:54:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -87,16 +87,14 @@ class Logger
 
 		// Constant(s)
 
-		enum {
-			TIME_BUFFER_SIZE			= 10,				// "HH:MM:SS\0" fits in 10 bytes
-			LOG_SEPARATOR_WIDTH			= 145,				// Dash separator line width in characters
-			SERVER_PORT_FIELD_WIDTH		= 20,				// Column width for "server:port"
-			IP_FIELD_WIDTH				= 15,				// Column width for client IP address
-			METHOD_FIELD_WIDTH			= 7,				// Column width for HTTP method (e.g., "DELETE")
-			URI_FIELD_WIDTH				= 55,				// Column width for request URI
-			RESPONSE_SIZE_FIELD_WIDTH	= 4,				// Column width for response body size
-			STATUS_FIELD_WIDTH			= 5					// Column width for HTTP status code
-		};
+		static const size_t	TIME_BUFFER_SIZE			= 10;			// "HH:MM:SS\0" fits in 10 bytes
+		static const size_t	LOG_SEPARATOR_WIDTH			= 145;			// Dash separator line width in characters
+		static const size_t	SERVER_PORT_FIELD_WIDTH		= 20;			// Column width for "server:port"
+		static const size_t	IP_FIELD_WIDTH				= 15;			// Column width for client IP address
+		static const size_t	METHOD_FIELD_WIDTH			= 7;			// Column width for HTTP method (e.g., "DELETE")
+		static const size_t	URI_FIELD_WIDTH				= 55;			// Column width for request URI
+		static const size_t	RESPONSE_SIZE_FIELD_WIDTH	= 4;			// Column width for response body size
+		static const size_t	STATUS_FIELD_WIDTH			= 5;			// Column width for HTTP status code
 
 		// Attribute(s)
 

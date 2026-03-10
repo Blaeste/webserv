@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:33:36 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/09 15:07:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 13:41:25 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,6 @@
 
 class	HttpRequest;
 
-// Constant(s) -----------------------------------------------------------------
-
-enum { HTTP_DATE_BUFFER_SIZE = 100 };
-
 // Class -----------------------------------------------------------------------
 
 class	HttpResponse
@@ -39,9 +35,12 @@ class	HttpResponse
 	private:
 
 		// Constant(s)
-		static const int	UPLOAD_FILE_PERMISSIONS = 0644;
+
+		static const size_t	HTTP_DATE_BUFFER_SIZE	= 100;	// "Www, DD Mmm YYYY HH:MM:SS GMT\0" fits in 100 bytes
+		static const int	UPLOAD_FILE_PERMISSIONS	= 0644;	// Octal: rw-r--r--
 
 		// Attribute(s)
+
 		int					_statusCode;	// HTTP status code
 		std::string			_statusMessage;	// HTTP status message
 		headerMap			_headers;		// Headers
@@ -50,7 +49,10 @@ class	HttpResponse
 		// Private method(s)
 
 		/** @brief Returns the standard HTTP reason phrase for the given status code. */
-		std::string			getStatusMessage(int code) const;
+		static std::string	getStatusMessage(int code);
+
+		/** @brief Returns the current UTC date formatted for the HTTP Date header. */
+		static std::string	getHttpDate();
 
 	public:
 
@@ -61,7 +63,7 @@ class	HttpResponse
 		// Getter(s)
 
 		int					getStatus() const											{ return _statusCode; }
-		const std::string&	getBody() const											{ return _body; }
+		const std::string&	getBody() const												{ return _body; }
 
 		// Setter(s)
 
