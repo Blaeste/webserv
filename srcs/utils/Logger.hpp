@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:29:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:46:59 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,36 @@ struct RequestData
 // Typedef(s) ------------------------------------------------------------------
 
 typedef	std::map<int, RequestData>	requestMap;
+
+// Structure(s) ----------------------------------------------------------------
+
+struct RequestInfo
+{
+	// Fields used by logRequestStart
+	int			 requestId;		// Socket fd used as unique key
+	std::string	 method;		// HTTP method (GET, POST, etc.)
+	std::string	 uri;			// Request URI path
+	std::string	 clientIP;		// Client IP address
+	std::string	 serverName;	// Matched server name
+	int			 port;			// Listening port
+	size_t		 declaredSize;	// Content-Length (max = unknown)
+
+	// Fields used by logRequestEnd
+	int			 statusCode;		// HTTP response status code
+	size_t		 requestSize;	// Request body size (max = unknown)
+	size_t		 responseSize;	// Response body size in bytes
+	time_t		 responseTime;	// Elapsed time in seconds
+
+	RequestInfo()
+		: requestId(-1)
+		, port(0)
+		, declaredSize(std::numeric_limits<size_t>::max())
+		, statusCode(0)
+		, requestSize(std::numeric_limits<size_t>::max())
+		, responseSize(0)
+		, responseTime(0)
+	{}
+};
 
 // Class -----------------------------------------------------------------------
 
@@ -104,11 +134,10 @@ class Logger
 		// Public method(s)
 
 		/** @brief Records request start and displays the pending log line. */
-		static void				logRequestStart(int requestId, const std::string& method, const std::string& uri, const std::string& clientIP,
-									const std::string& serverName, int port, size_t declaredSize = std::numeric_limits<size_t>::max());
+		static void				logRequestStart(const RequestInfo& info);
 
 		/** @brief Completes the log line with status, sizes and response time. */
-		static void				logRequestEnd(int requestId, int statusCode, size_t requestSize, size_t responseSize, time_t responseTime);
+		static void				logRequestEnd(const RequestInfo& info);
 
 		/** @brief Prints a free-form message to stdout (warnings, errors). */
 		static void				logMessage(const std::string& message);

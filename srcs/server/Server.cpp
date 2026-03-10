@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:29:10 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/10 11:46:30 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -370,8 +370,15 @@ void Server::handleClientRead(size_t clientIndex)
 		size_t declSize = std::numeric_limits<size_t>::max();
 		if ((method == "POST" || method == "PUT" || method == "PATCH") && !client.getRequest().isChunked())
 			declSize = client.getRequest().getContentLength();
-		Logger::logRequestStart(client.getSocket(), method, uri, client.getClientIp(),
-						effectiveCfg->getServerName(), effectiveCfg->getPort(), declSize);
+		RequestInfo logInfo;
+		logInfo.requestId   = client.getSocket();
+		logInfo.method      = method;
+		logInfo.uri         = uri;
+		logInfo.clientIP    = client.getClientIp();
+		logInfo.serverName  = effectiveCfg->getServerName();
+		logInfo.port        = effectiveCfg->getPort();
+		logInfo.declaredSize = declSize;
+		Logger::logRequestStart(logInfo);
 		client.markRequestLogged();
 	}
 
@@ -584,8 +591,15 @@ void Server::handleClientWrite(size_t clientIndex)
 			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
 				declSize = client.getRequest().getContentLength();
 		}
-		Logger::logRequestStart(client.getSocket(), client.getRequest().getMethod(), client.getRequest().getUri(),
-							client.getClientIp(), cfg->getServerName(), cfg->getPort(), declSize);
+		RequestInfo logInfo;
+		logInfo.requestId    = client.getSocket();
+		logInfo.method       = client.getRequest().getMethod();
+		logInfo.uri          = client.getRequest().getUri();
+		logInfo.clientIP     = client.getClientIp();
+		logInfo.serverName   = cfg->getServerName();
+		logInfo.port         = cfg->getPort();
+		logInfo.declaredSize = declSize;
+		Logger::logRequestStart(logInfo);
 		client.markRequestLogged();
 		client.buildResponse(*cfg, _router, _sessions);
 		client.stashLeftoverFromRequest();
@@ -1006,12 +1020,14 @@ void Server::installSignals()
 
 void Server::logClientResponse(const Client& client)
 {
-	time_t end = std::time(NULL);
-	time_t responseTime = end - client.getRequestStartTime();
-
 	const std::string& method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
-	size_t reqSize = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
 
-	Logger::logRequestEnd(client.getSocket(), client.getResponseStatus(), reqSize, client.getResponseBodySize(), responseTime);
+	RequestInfo info;
+	info.requestId    = client.getSocket();
+	info.statusCode   = client.getResponseStatus();
+	info.requestSize  = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
+	info.responseSize = client.getResponseBodySize();
+	info.responseTime = std::time(NULL) - client.getRequestStartTime();
+	Logger::logRequestEnd(info);
 }
