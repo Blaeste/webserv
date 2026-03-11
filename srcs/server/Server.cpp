@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/11 22:47:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/11 23:45:47 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -133,33 +133,32 @@ void Server::setupListenSockets()
 		port.push_back(_configs[i].getPort());
 
 		// Create a TCP socket (file descriptor = entry point for network communication)
-        int listenFd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
-        if (listenFd < 0)
-            throw std::runtime_error("socket() failed");
+		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
+		if (listenFd < 0)
+			throw std::runtime_error("socket() failed");
 
-        // Allow reuse of the port immediately after server restart
-        // Without this, bind() would fail with "Address already in use" for ~60s (TIME_WAIT state)
-        int opt = 1;
-        if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
-        {
-            safeClose(listenFd, "Server");
-            throw std::runtime_error("setsockopt() failed");
-        }
+		// Allow reuse of the port immediately after server restart
+		// Without this, bind() would fail with "Address already in use" for ~60s (TIME_WAIT state)
+		int opt = 1;
+		if (setsockopt(listenFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0)
+		{
+			safeClose(listenFd, "Server");
+			throw std::runtime_error("setsockopt() failed");
+		}
 
-        // Define the local address the socket will be bound to (IP + port)
-        struct sockaddr_in addr;
-        std::memset(&addr, 0, sizeof(addr));
-        addr.sin_family = AF_INET;                        // IPv4 address family
-        addr.sin_addr.s_addr = INADDR_ANY;                // Accept connections on all local network interfaces (0.0.0.0)
-        addr.sin_port = htons(_configs[i].getPort());     // Port from config, converted to network byte order (big-endian)
+		// Define the local address the socket will be bound to (IP + port)
+		struct sockaddr_in addr = {};
+		addr.sin_family = AF_INET;						// IPv4 address family
+		addr.sin_port = htons(_configs[i].getPort());	// Port from config, converted to network byte order (big-endian)
+		addr.sin_addr.s_addr = INADDR_ANY;				// Accept connections on all local network interfaces (0.0.0.0)
 
-        // Bind the socket fd to the address structure above
-        // After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
-        if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
-        {
-            safeClose(listenFd, "Server");
-            throw std::runtime_error("bind() failed");
-        }
+		// Bind the socket fd to the address structure above
+		// After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
+		if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
+		{
+			safeClose(listenFd, "Server");
+			throw std::runtime_error("bind() failed");
+		}
 
 		// Start listening for incoming connections
 		if (listen(listenFd, LISTEN_BACKLOG) < 0)
@@ -215,7 +214,7 @@ void Server::killCgiProcess(Client& client)
 	kill(cgi->pid, SIGKILL);
 	waitpid(cgi->pid, NULL, 0);
 	if (cgi->pipeOut != -1) closePollFd(cgi->pipeOut);
-	if (cgi->pipeIn  != -1) closePollFd(cgi->pipeIn);
+	if (cgi->pipeIn != -1) closePollFd(cgi->pipeIn);
 	if (cgi->pipeErr != -1) closePollFd(cgi->pipeErr);
 	delete cgi;
 	client.setCgiProcess(NULL);
@@ -259,18 +258,16 @@ void Server::setPollEvents(int fd, short events)
 	}
 }
 
-
 const ServerBlock* Server::selectConfig(const HttpRequest& request, int clientFd) const
 {
-	std::string host = request.getHeader("Host");
-	int localPort = getSocketPort(clientFd);
-
 	// Remove port from Host header if present
+	std::string host = request.getHeader("Host");
 	size_t colonPos = host.find(':');
 	if (colonPos != std::string::npos)
-		host = host.substr(0, colonPos);
+		host.erase(colonPos);
 
 	// Virtual host lookup: match server_name against Host header
+	const int localPort = getSocketPort(clientFd);
 	const ServerBlock* firstConfig = NULL;
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
@@ -336,14 +333,17 @@ void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 
 	// Build response based on CGI result
 	bool hasContentType = (cgi->output.find("Content-Type:") != std::string::npos)
-						|| (cgi->output.find("Content-type:") != std::string::npos);
+		|| (cgi->output.find("Content-type:") != std::string::npos);
 	bool cgiError = (WIFEXITED(status) && WEXITSTATUS(status))
-				 || WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
+		|| WIFSIGNALED(status) || cgi->output.empty() || !hasContentType;
 
 	if (cgiError)
 	{
 		const ServerBlock* cfg = selectConfig(client.getRequest(), clientFd);
 		client.buildErrorResponse(500, cfg);
+		Server::logClientResponse(client);
+		if (!cgi->errorOutput.empty())
+			Logger::logMessage(RED "[CGI] Error:\n" RESET + cgi->errorOutput);
 	}
 	else
 	{
@@ -352,14 +352,6 @@ void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 		Cgi cgiParser;
 		cgiParser.parseHeaders(cgi->output, result);
 		client.buildResponseFromCGI(result);
-	}
-
-	// Log CGI errors
-	if (cgiError)
-	{
-		Server::logClientResponse(client);
-		if (!cgi->errorOutput.empty())
-			Logger::logMessage(RED "[CGI] Error:\n" RESET + cgi->errorOutput);
 	}
 
 	// Clean up CGI process
