@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/11 19:16:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/11 22:47:15 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -399,8 +399,7 @@ void Server::handleSocketError(size_t i)
 	socketTypeMap::iterator typeIt = _socketTypes.find(fd);
 	if (typeIt == _socketTypes.end())
 	{
-		_pollFds[i].fd = -1;
-		safeClose(fd, "Server");
+		closePollFd(fd);
 		return;
 	}
 	SocketType type = typeIt->second;
@@ -430,10 +429,7 @@ void Server::handleSocketError(size_t i)
 			// Broken stderr pipe
 			if (cgi->pipeErr == fd)
 			{
-				_pollFds[i].fd = -1;
-				_socketTypes.erase(fd);
-				safeClose(cgi->pipeErr, "Server");
-				cgi->pipeErr = -1;
+				closePollFd(cgi->pipeErr);
 				return;
 			}
 
@@ -448,10 +444,7 @@ void Server::handleSocketError(size_t i)
 			if (cgi->pipeIn == fd)
 			{
 				cgi->inputWritten = true;
-				_pollFds[i].fd = -1;
-				_socketTypes.erase(fd);
-				safeClose(cgi->pipeIn, "Server");
-				cgi->pipeIn = -1;
+				closePollFd(cgi->pipeIn);
 				return;
 			}
 		}
@@ -465,9 +458,7 @@ void Server::handleSocketError(size_t i)
 		   << " (type=" << type << "), removing to prevent busy-loop";
 		Logger::logMessage(ss.str());
 	}
-	_pollFds[i].fd = -1;
-	_socketTypes.erase(fd);
-	safeClose(fd, "Server");
+	closePollFd(fd);
 }
 
 // Drain pipe so it doesn't remain readable and stop server
@@ -813,10 +804,7 @@ void Server::handleCgiPipe(size_t pipeIndex)
 			else if (bytes == 0)
 			{
 				// EOF or error on stderr
-				_pollFds[pipeIndex].fd = -1;
-				_socketTypes.erase(pipeFd);
-				safeClose(cgi->pipeErr, "Server");
-				cgi->pipeErr = -1;
+				closePollFd(cgi->pipeErr);
 			}
 			return;
 		}
