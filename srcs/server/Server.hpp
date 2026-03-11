@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 14:07:38 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/11 18:50:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -83,9 +83,10 @@ class	Server
 
 		void				acceptNewClient(int listenSocket);
 		void				handleClientTimeouts();
-		void				removeClient(int fd);
+		ClientMap::iterator	removeClient(ClientMap::iterator it);
 		void				handleCgiTimeouts();
-		void				removePollFd(int fd);
+		void				closePollFd(int fd);
+		void				killCgiProcess(Client& client);
 		void				handleSessionTimeouts();
 		static void			signalHandler(int sig);
 		void				installSignals();
