@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/11 19:08:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/11 19:16:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -192,19 +192,18 @@ void Server::logClientResponse(const Client& client)
 	Logger::logRequestEnd(info);
 }
 
-// Closes fd, marks its pollfd slot as unused, removes it from the socket type map.
-void Server::closePollFd(int fd)
+// Closes fd, marks its pollfd slot as unused, removes it from the socket type map, sets fd to -1.
+void Server::closePollFd(int& fd)
 {
 	safeClose(fd, "Server");
 	for (size_t i = 0; i < _pollFds.size(); ++i)
-	{
 		if (_pollFds[i].fd == fd)
 		{
 			_pollFds[i].fd = -1;
 			_socketTypes.erase(fd);
-			return;
+			break;
 		}
-	}
+	fd = -1;
 }
 
 // Kills a CGI process, closes and soft-deletes its pipes, frees memory.
@@ -319,9 +318,9 @@ void Server::handleCgiTimeouts()
 void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 {
 	// Close and unregister all CGI pipes
-	if (cgi->pipeOut != -1) { closePollFd(cgi->pipeOut); cgi->pipeOut = -1; }
-	if (cgi->pipeIn  != -1) { closePollFd(cgi->pipeIn);  cgi->pipeIn  = -1; }
-	if (cgi->pipeErr != -1) { closePollFd(cgi->pipeErr); cgi->pipeErr = -1; }
+	if (cgi->pipeOut != -1) closePollFd(cgi->pipeOut);
+	if (cgi->pipeIn  != -1) closePollFd(cgi->pipeIn);
+	if (cgi->pipeErr != -1) closePollFd(cgi->pipeErr);
 
 	// Reap CGI process (kill if still running)
 	int status = 0;
@@ -854,7 +853,6 @@ void Server::handleCgiPipe(size_t pipeIndex)
 						{
 							cgi->inputWritten = true;
 							closePollFd(cgi->pipeIn);
-							cgi->pipeIn = -1;
 						}
 					}
 					else if (written < 0)
@@ -862,7 +860,6 @@ void Server::handleCgiPipe(size_t pipeIndex)
 						Logger::logMessage(RED "[CGI] Error: " RESET "handleCGIPipe: write to stdin pipe failed on fd " + intToString(pipeFd));
 						cgi->inputWritten = true;
 						closePollFd(cgi->pipeIn);
-						cgi->pipeIn = -1;
 					}
 				}
 			}
