@@ -102,6 +102,9 @@ class	Server
 		/** @brief Spawns a CGI process, sets up pipes, and registers them for I/O multiplexing. */
 		void				startCgi(Client& client, const RouteMatch& match, size_t clientIndex, const ServerBlock* server);
 
+		/** @brief Routes the client request and builds the appropriate HTTP response. */
+		bool				buildClientResponse(Client& client, const ServerBlock* server, size_t clientIndex);
+
 		/** @brief Processes POLLIN for the client at _pollFds[clientIndex]. */
 		void				handleClientRead(size_t clientIndex);
 

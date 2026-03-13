@@ -575,6 +575,36 @@ void Server::startCgi(Client& client, const RouteMatch& match, size_t clientInde
 	registerCgiPipes(cgiProc, clientIndex);
 }
 
+// Routes the completed request to either a CGI process or a regular response builder.
+// Returns true if a CGI was started (caller must not touch _pollFds[clientIndex] afterwards).
+bool Server::buildClientResponse(Client& client, const ServerBlock* server, size_t clientIndex)
+{
+    client.setState(STATE_PROCESSING);
+    client.updateActivity();
+
+    if (!server)
+    {
+        client.buildErrorResponse(500, NULL);
+        client.setState(STATE_KEEPALIVE);
+        return false;
+    }
+
+    HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+    RouteMatch match = _router.matchRoute(*server, requestRef);
+
+    if (match.statusCode == 200 && match.isCGI)
+    {
+        // Start CGI process asynchronously and register its pipes
+        startCgi(client, match, clientIndex, server);
+        return true;
+    }
+
+    // Regular non-CGI request
+    client.buildResponse(*server, _router, _sessions);
+    client.setState(STATE_KEEPALIVE);
+    return false;
+}
+
 void Server::handleClientRead(size_t clientIndex)
 {
 	int clientFd = _pollFds[clientIndex].fd;
@@ -623,42 +653,16 @@ void Server::handleClientRead(size_t clientIndex)
 	// Keep any additional requests already present in the buffer
 	client.stashLeftoverFromRequest();
 
-	// Build response
+	// Build and dispatch the response (CGI or static)
 	if (!client.isResponseReady())
 	{
-		client.setState(STATE_PROCESSING);
-		client.updateActivity();
-
-		if (!server)
-		{
-			client.buildErrorResponse(500, NULL);
-			client.setState(STATE_KEEPALIVE);
-			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
+		bool cgiStarted = buildClientResponse(client, server, clientIndex);
+		if (cgiStarted)
 			return;
-		}
-
-		// Match route to determine effective body size limit (location overrides server)
-		HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
-		RouteMatch match = _router.matchRoute(*server, requestRef);
-
-		if (match.statusCode == 200 && match.isCGI)
-		{
-			// Start CGI process asynchronously and register its pipes
-			startCgi(client, match, clientIndex, server);
-			return;
-		}
-		else
-		{
-			// Regular non-CGI request
-			client.buildResponse(*server, _router, _sessions);
-			client.setState(STATE_KEEPALIVE);
-			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
-		}
 	}
-	else
-	{
-		_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
-	}
+
+	_pollFds[clientIndex].events = client.shouldCloseAfterResponse()
+		? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 }
 
 void Server::handleClientWrite(size_t clientIndex)
