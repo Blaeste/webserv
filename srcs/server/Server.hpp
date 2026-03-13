@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:23:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 14:55:58 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,6 +92,12 @@ class	Server
 
 		/** @brief Creates, binds and adds one listening socket per configured port to the poll set. */
 		void				setupListenSockets();
+
+		/** @brief Registers CGI process pipes (stdin, stdout, stderr) in the poll set for monitoring. */
+		void				registerCgiPipes(CgiProcess* cgi, size_t clientIndex);
+
+		/** @brief Spawns a CGI process, sets up pipes, and registers them for I/O multiplexing. */
+		void				startCgi(Client& client, const RouteMatch& match, size_t clientIndex, const ServerBlock* server);
 
 		/** @brief Processes POLLIN for the client at _pollFds[clientIndex]. */
 		void				handleClientRead(size_t clientIndex);

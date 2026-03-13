@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 14:13:15 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 14:56:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -490,6 +490,64 @@ void Server::acceptNewClient(int listenSocket)
 	_socketTypes[clientFd] = SOCKET_CLIENT;
 }
 
+// Registers CGI process pipes (stdout, stderr, stdin) in the poll set.
+// Disables POLLIN on the client socket while CGI is running.
+void Server::registerCgiPipes(CgiProcess* cgi, size_t clientIndex)
+{
+	// Suspend client socket monitoring while CGI handles the request
+	_pollFds[clientIndex].events = 0;
+
+	// Monitor CGI stdout for response output
+	pollfd pfd = { cgi->pipeOut, POLLIN, 0 };
+	_pollFds.push_back(pfd);
+	_socketTypes[cgi->pipeOut] = SOCKET_CGI;
+
+	// Monitor CGI stderr for error output (if available)
+	if (cgi->pipeErr != -1)
+	{
+		pollfd pfdErr = { cgi->pipeErr, POLLIN, 0 };
+		_pollFds.push_back(pfdErr);
+		_socketTypes[cgi->pipeErr] = SOCKET_CGI;
+	}
+
+	// Monitor CGI stdin for writing POST body (if available)
+	if (cgi->pipeIn != -1)
+	{
+		pollfd pfdIn = { cgi->pipeIn, POLLOUT, 0 };
+		_pollFds.push_back(pfdIn);
+		_socketTypes[cgi->pipeIn] = SOCKET_CGI;
+	}
+}
+
+// Spawns a CGI process asynchronously, sets its execution timeout,
+// and registers its pipes in the poll set for I/O multiplexing.
+void Server::startCgi(Client& client, const RouteMatch& match, size_t clientIndex, const ServerBlock* server)
+{
+	// Store server info needed for CGI response logging
+	client.setCgiTiming(*server);
+
+	// Collect all open fds so the child process can close them after fork
+	std::vector<int> fdsToClose;
+	for (size_t i = 0; i < _pollFds.size(); i++)
+		fdsToClose.push_back(_pollFds[i].fd);
+
+	HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+	Cgi cgi;
+	CgiProcess* cgiProc = cgi.startAsync(match, requestRef, fdsToClose);
+	if (!cgiProc)
+	{
+		client.buildErrorResponse(500, server);
+		client.setState(STATE_KEEPALIVE);
+		return;
+	}
+	cgiProc->executionTimeout = server->getCgiTimeout();
+
+	client.setCgiProcess(cgiProc);
+
+	// Register CGI pipes in poll set and suspend client socket monitoring
+	registerCgiPipes(cgiProc, clientIndex);
+}
+
 void Server::handleClientRead(size_t clientIndex)
 {
 	int clientFd = _pollFds[clientIndex].fd;
@@ -579,53 +637,9 @@ void Server::handleClientRead(size_t clientIndex)
 
 		if (match.statusCode == 200 && match.isCGI)
 		{
-			// Start CGI asynchronously
-			size_t timeout = server->getCgiTimeout();
-
-			// Store timing info for CGI logging
-			client.setCgiTiming(*server);
-
-			std::vector<int> fdsToClose;
-			for (size_t i = 0; i < _pollFds.size(); i++)
-				fdsToClose.push_back(_pollFds[i].fd);
-
-			Cgi cgi;
-			CgiProcess* cgiProc = cgi.startAsync(match, requestRef, fdsToClose);
-			if (cgiProc)
-				cgiProc->executionTimeout = timeout;
-			else
-			{
-				client.buildErrorResponse(500, server);
-				client.setState(STATE_KEEPALIVE);
-				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
-				return;
-			}
-
-			client.setCgiProcess(cgiProc);
-
-			// Disable POLLIN on client socket while CGI is running
-			_pollFds[clientIndex].events = 0;
-
-			// Add CGI pipe to poll
-			pollfd pfd = { cgiProc->pipeOut, POLLIN, 0 };
-			_pollFds.push_back(pfd);
-			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
-
-			// Add CGI stderr pipe to poll
-			if (cgiProc->pipeErr != -1)
-			{
-				pollfd pfdErr = { cgiProc->pipeErr, POLLIN, 0 };
-				_pollFds.push_back(pfdErr);
-				_socketTypes[cgiProc->pipeErr] = SOCKET_CGI;
-			}
-
-			// If POST with body, also monitor pipeIn for writing
-			if (cgiProc->pipeIn != -1)
-			{
-				pollfd pfdIn = { cgiProc->pipeIn, POLLOUT, 0 };
-				_pollFds.push_back(pfdIn);
-				_socketTypes[cgiProc->pipeIn] = SOCKET_CGI;
-			}
+			// Start CGI process asynchronously and register its pipes
+			startCgi(client, match, clientIndex, server);
+			return;
 		}
 		else
 		{
