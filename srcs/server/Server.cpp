@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/11 23:45:47 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 11:15:26 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -258,7 +258,7 @@ void Server::setPollEvents(int fd, short events)
 	}
 }
 
-const ServerBlock* Server::selectConfig(const HttpRequest& request, int clientFd) const
+const ServerBlock* Server::getServerBlock(const HttpRequest& request, int clientFd) const
 {
 	// Remove port from Host header if present
 	std::string host = request.getHeader("Host");
@@ -268,17 +268,17 @@ const ServerBlock* Server::selectConfig(const HttpRequest& request, int clientFd
 
 	// Virtual host lookup: match server_name against Host header
 	const int localPort = getSocketPort(clientFd);
-	const ServerBlock* firstConfig = NULL;
+	const ServerBlock* firstServer = NULL;
 	for (size_t i = 0; i < _configs.size(); i++)
 	{
 		if (_configs[i].getPort() != localPort)
 			continue;
-		if (!firstConfig)
-			firstConfig = &_configs[i];
+		if (!firstServer)
+			firstServer = &_configs[i];
 		if (!host.empty() && _configs[i].getServerName() == host)
 			return &_configs[i];
 	}
-	return firstConfig;
+	return firstServer;
 }
 
 void Server::handleCgiTimeouts()
@@ -296,11 +296,11 @@ void Server::handleCgiTimeouts()
 			killCgiProcess(client);
 
 			// Build 504 Gateway Timeout response
-			const ServerBlock* cfg = selectConfig(client.getRequest(), it->first);
-			client.buildErrorResponse(504, cfg);
+			const ServerBlock* server = getServerBlock(client.getRequest(), it->first);
+			client.buildErrorResponse(504, server);
 
 			// Log the timeout event so it appears in server logs
-			if (cfg)
+			if (server)
 				Server::logClientResponse(client);
 
 			client.setState(STATE_KEEPALIVE);
@@ -339,8 +339,8 @@ void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 
 	if (cgiError)
 	{
-		const ServerBlock* cfg = selectConfig(client.getRequest(), clientFd);
-		client.buildErrorResponse(500, cfg);
+		const ServerBlock* server = getServerBlock(client.getRequest(), clientFd);
+		client.buildErrorResponse(500, server);
 		Server::logClientResponse(client);
 		if (!cgi->errorOutput.empty())
 			Logger::logMessage(RED "[CGI] Error:\n" RESET + cgi->errorOutput);
@@ -506,7 +506,6 @@ void Server::acceptNewClient(int listenSocket)
 
 void Server::handleClientRead(size_t clientIndex)
 {
-
 	int clientFd = _pollFds[clientIndex].fd;
 
 	// Find the client with this fd
@@ -519,10 +518,10 @@ void Server::handleClientRead(size_t clientIndex)
 	Client& client = it->second;
 
 	// Get config early for logging
-	const ServerBlock* config = selectConfig(client.getRequest(), clientFd);
+	const ServerBlock* server = getServerBlock(client.getRequest(), clientFd);
 
 	// Read data from socket
-	if (!client.readData(config))
+	if (!client.readData(server))
 	{
 		Server::logClientResponse(client);
 		removeClient(it);
@@ -530,29 +529,30 @@ void Server::handleClientRead(size_t clientIndex)
 	}
 
 	// Log request start after headers are parsed so Host-based vhost is accurate
-	const ServerBlock* effectiveCfg = selectConfig(client.getRequest(), clientFd);
-	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && effectiveCfg)
+	server = getServerBlock(client.getRequest(), clientFd);
+	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && server)
 	{
 		std::string method = client.getRequest().getMethod();
 		std::string uri = client.getRequest().getUri();
 		if (!client.getRequest().headersParsed())
 		{
-			if (method.empty())
-				method = "UNKNOWN";
-			if (uri.empty())
-				uri = "/";
+			if (method.empty()) method = "UNKNOWN";
+			if (uri.empty()) uri = "/";
 		}
+
 		size_t declSize = std::numeric_limits<size_t>::max();
 		if ((method == "POST" || method == "PUT" || method == "PATCH") && !client.getRequest().isChunked())
 			declSize = client.getRequest().getContentLength();
+
 		RequestInfo logInfo;
-		logInfo.requestId   = client.getSocket();
-		logInfo.method      = method;
-		logInfo.uri         = uri;
-		logInfo.clientIP    = client.getClientIp();
-		logInfo.serverName  = effectiveCfg->getServerName();
-		logInfo.port        = effectiveCfg->getPort();
+		logInfo.requestId = client.getSocket();
+		logInfo.method = method;
+		logInfo.uri = uri;
+		logInfo.clientIP = client.getClientIp();
+		logInfo.serverName = server->getServerName();
+		logInfo.port = server->getPort();
 		logInfo.declaredSize = declSize;
+
 		Logger::logRequestStart(logInfo);
 		client.markRequestLogged();
 	}
@@ -566,26 +566,24 @@ void Server::handleClientRead(size_t clientIndex)
 
 	// Early size guard: if body already exceeds configured limit (location override
 	// server default if defined), send 413 and close.
-	const ServerBlock* earlyCfg = effectiveCfg;
-	if (!client.isResponseReady() && earlyCfg)
+	if (!client.isResponseReady() && server)
 	{
 		// Default to server-level limit
-		size_t maxBodySize = earlyCfg->getMaxBodySize();
+		size_t maxBodySize = server->getMaxBodySize();
 
 		// If we can resolve a location, prefer its specific limit when set
-		HttpRequest& earlyRequest = const_cast<HttpRequest&>(client.getRequest());
-		RouteMatch earlyMatch = _router.matchRoute(*earlyCfg, earlyRequest);
-		if (earlyMatch.location && earlyMatch.location->getMaxBodySize() > 0)
-			maxBodySize = earlyMatch.location->getMaxBodySize();
+		HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+		RouteMatch match = _router.matchRoute(*server, requestRef);
+		if (match.location && match.location->getMaxBodySize() > 0)
+			maxBodySize = match.location->getMaxBodySize();
 
 		if (client.getRequest().getBody().size() > maxBodySize
 			|| (!client.getRequest().isChunked() && client.getRequest().getContentLength() > maxBodySize))
 		{
-			client.buildErrorResponse(413, earlyCfg);
+			client.buildErrorResponse(413, server);
 			client.markCloseAfterResponse();
 			// Log the oversized request early rejection
-			if (earlyCfg)
-				Server::logClientResponse(client);
+			Server::logClientResponse(client);
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -604,8 +602,7 @@ void Server::handleClientRead(size_t clientIndex)
 		client.setState(STATE_PROCESSING);
 		client.updateActivity();
 
-		const ServerBlock* config = selectConfig(client.getRequest(), clientFd);
-		if (!config)
+		if (!server)
 		{
 			client.buildErrorResponse(500, NULL);
 			client.setState(STATE_KEEPALIVE);
@@ -614,45 +611,28 @@ void Server::handleClientRead(size_t clientIndex)
 		}
 
 		// Match route to determine effective body size limit (location overrides server)
-		HttpRequest& request = const_cast<HttpRequest&>(client.getRequest());
-		RouteMatch match = _router.matchRoute(*config, request);
-		size_t maxBodySize = config->getMaxBodySize();
-		if (match.location && match.location->getMaxBodySize() > 0)
-			maxBodySize = match.location->getMaxBodySize();
-
-		// Enforce configured body size limit before routing/CGI
-		if (request.getBody().size() > maxBodySize)
-		{
-			client.buildErrorResponse(413, config);
-			client.markCloseAfterResponse();
-			client.setState(STATE_KEEPALIVE);
-			_pollFds[clientIndex].events = POLLOUT;
-			return;
-		}
-
-		// Check if this is a CGI request
+		HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+		RouteMatch match = _router.matchRoute(*server, requestRef);
 
 		if (match.statusCode == 200 && match.isCGI)
 		{
 			// Start CGI asynchronously
-			const ServerBlock* cgiConfig = selectConfig(client.getRequest(), clientFd);
-			size_t cgiExecutionTimeout = cgiConfig ? cgiConfig->getCgiTimeout() : static_cast<size_t>(DEFAULT_CGI_EXECUTION_TIMEOUT);
+			size_t timeout = server->getCgiTimeout();
 
 			// Store timing info for CGI logging
-			if (cgiConfig)
-				client.setCgiTiming(*cgiConfig);
+			client.setCgiTiming(*server);
 
 			std::vector<int> fdsToClose;
 			for (size_t i = 0; i < _pollFds.size(); i++)
 				fdsToClose.push_back(_pollFds[i].fd);
 
 			Cgi cgi;
-			CgiProcess* cgiProc = cgi.startAsync(match, request, fdsToClose);
+			CgiProcess* cgiProc = cgi.startAsync(match, requestRef, fdsToClose);
 			if (cgiProc)
-				cgiProc->executionTimeout = cgiExecutionTimeout;
+				cgiProc->executionTimeout = timeout;
 			else
 			{
-				client.buildErrorResponse(500, cgiConfig);
+				client.buildErrorResponse(500, server);
 				client.setState(STATE_KEEPALIVE);
 				_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 				return;
@@ -662,10 +642,12 @@ void Server::handleClientRead(size_t clientIndex)
 
 			// Disable POLLIN on client socket while CGI is running
 			_pollFds[clientIndex].events = 0;
+
 			// Add CGI pipe to poll
 			pollfd pfd = { cgiProc->pipeOut, POLLIN, 0 };
 			_pollFds.push_back(pfd);
 			_socketTypes[cgiProc->pipeOut] = SOCKET_CGI;
+
 			// Add CGI stderr pipe to poll
 			if (cgiProc->pipeErr != -1)
 			{
@@ -673,6 +655,7 @@ void Server::handleClientRead(size_t clientIndex)
 				_pollFds.push_back(pfdErr);
 				_socketTypes[cgiProc->pipeErr] = SOCKET_CGI;
 			}
+
 			// If POST with body, also monitor pipeIn for writing
 			if (cgiProc->pipeIn != -1)
 			{
@@ -684,7 +667,7 @@ void Server::handleClientRead(size_t clientIndex)
 		else
 		{
 			// Regular non-CGI request
-			client.buildResponse(*config, _router, _sessions);
+			client.buildResponse(*server, _router, _sessions);
 			client.setState(STATE_KEEPALIVE);
 			_pollFds[clientIndex].events = client.shouldCloseAfterResponse() ? POLLOUT : (_pollFds[clientIndex].events | POLLOUT);
 		}
@@ -742,8 +725,8 @@ void Server::handleClientWrite(size_t clientIndex)
 	// If the next request is already complete (pipeline), chain it
 	if (client.isRequestComplete())
 	{
-		const ServerBlock* cfg = selectConfig(client.getRequest(), clientFd);
-		if (!cfg)
+		const ServerBlock* server = getServerBlock(client.getRequest(), clientFd);
+		if (!server)
 		{
 			client.buildErrorResponse(500, NULL);
 			client.markCloseAfterResponse();
@@ -758,16 +741,16 @@ void Server::handleClientWrite(size_t clientIndex)
 				declSize = client.getRequest().getContentLength();
 		}
 		RequestInfo logInfo;
-		logInfo.requestId    = client.getSocket();
-		logInfo.method       = client.getRequest().getMethod();
-		logInfo.uri          = client.getRequest().getUri();
-		logInfo.clientIP     = client.getClientIp();
-		logInfo.serverName   = cfg->getServerName();
-		logInfo.port         = cfg->getPort();
+		logInfo.requestId = client.getSocket();
+		logInfo.method = client.getRequest().getMethod();
+		logInfo.uri = client.getRequest().getUri();
+		logInfo.clientIP = client.getClientIp();
+		logInfo.serverName = server->getServerName();
+		logInfo.port = server->getPort();
 		logInfo.declaredSize = declSize;
 		Logger::logRequestStart(logInfo);
 		client.markRequestLogged();
-		client.buildResponse(*cfg, _router, _sessions);
+		client.buildResponse(*server, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;
 	}

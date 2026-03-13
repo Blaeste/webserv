@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/11 19:15:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 11:15:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,6 @@ class	Server
 		static const time_t	SESSION_CLEANUP_INTERVAL		= 60;	// 1 minute
 		static const time_t	CLIENT_KEEPALIVE_TIMEOUT		= 75;	// 75 seconds - max idle time on keep-alive connections
 		static const time_t	CLIENT_PROCESSING_TIMEOUT		= 180;	// 3 minutes - request processing timeout, including CGI execution
-		static const time_t	DEFAULT_CGI_EXECUTION_TIMEOUT	= 90;	// 90 seconds - single CGI execution timeout (prevents hanging scripts)
 
 		// Attribute(s)
 
@@ -102,7 +101,7 @@ class	Server
 		void				handleClientWrite(size_t clientIndex);
 		
 		/** @brief Picks the ServerBlock matching the Host header, or falls back to the first config. */
-		const ServerBlock*	selectConfig(const HttpRequest& request, int clientFd) const;
+		const ServerBlock*	getServerBlock(const HttpRequest& request, int clientFd) const;
 
 		/** @brief Reads available CGI stdout/stderr and triggers response finalization on EOF. */
 		void				handleCgiPipe(size_t pipeIndex);
