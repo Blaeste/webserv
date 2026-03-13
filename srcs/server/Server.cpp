@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 11:15:26 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 12:53:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -182,9 +182,8 @@ void Server::logClientResponse(const Client& client)
 	const std::string& method = client.getRequest().getMethod();
 	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
 
-	RequestInfo info;
-	info.requestId = client.getSocket();
-	info.statusCode = client.getResponseStatus();
+	RequestInfo info = client.getLogInfo();
+	info.statusCode  = client.getResponseStatus();
 	info.requestSize = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
 	info.responseSize = client.getResponseBodySize();
 	info.responseTime = std::time(NULL) - client.getRequestStartTime();
@@ -530,6 +529,7 @@ void Server::handleClientRead(size_t clientIndex)
 
 	// Log request start after headers are parsed so Host-based vhost is accurate
 	server = getServerBlock(client.getRequest(), clientFd);
+
 	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && server)
 	{
 		std::string method = client.getRequest().getMethod();
@@ -544,17 +544,7 @@ void Server::handleClientRead(size_t clientIndex)
 		if ((method == "POST" || method == "PUT" || method == "PATCH") && !client.getRequest().isChunked())
 			declSize = client.getRequest().getContentLength();
 
-		RequestInfo logInfo;
-		logInfo.requestId = client.getSocket();
-		logInfo.method = method;
-		logInfo.uri = uri;
-		logInfo.clientIP = client.getClientIp();
-		logInfo.serverName = server->getServerName();
-		logInfo.port = server->getPort();
-		logInfo.declaredSize = declSize;
-
-		Logger::logRequestStart(logInfo);
-		client.markRequestLogged();
+		client.beginRequestLog(server->getServerName(), server->getPort());
 	}
 
 	// If an early error response is already prepared (e.g., size limit), switch to write-only
@@ -740,16 +730,8 @@ void Server::handleClientWrite(size_t clientIndex)
 			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
 				declSize = client.getRequest().getContentLength();
 		}
-		RequestInfo logInfo;
-		logInfo.requestId = client.getSocket();
-		logInfo.method = client.getRequest().getMethod();
-		logInfo.uri = client.getRequest().getUri();
-		logInfo.clientIP = client.getClientIp();
-		logInfo.serverName = server->getServerName();
-		logInfo.port = server->getPort();
-		logInfo.declaredSize = declSize;
-		Logger::logRequestStart(logInfo);
-		client.markRequestLogged();
+
+		client.beginRequestLog(server->getServerName(), server->getPort());
 		client.buildResponse(*server, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;

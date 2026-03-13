@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 11:16:04 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 12:55:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -94,6 +94,24 @@ void Client::setCgiTiming(const ServerBlock& config)
 {
 	_cgiStartTime = std::time(NULL);
 	_serverConfig = &config;
+}
+
+void Client::beginRequestLog(const std::string& serverName, int port)
+{
+	_logInfo.requestId = _socket;
+	_logInfo.method = _request.getMethod();
+	_logInfo.uri = _request.getUri();
+	_logInfo.clientIP = _clientIp;
+	_logInfo.serverName = serverName;
+	_logInfo.port = port;
+
+	const std::string& m = _request.getMethod();
+	if ((m == "POST" || m == "PUT" || m == "PATCH") && !_request.isChunked())
+		_logInfo.declaredSize = _request.getContentLength();
+	else
+		_logInfo.declaredSize = std::numeric_limits<size_t>::max();
+	Logger::logRequestStart(_logInfo);
+	_requestLogged = true;
 }
 
 // Public method(s) ------------------------------------------------------------
@@ -367,6 +385,7 @@ void Client::resetForNextRequest()
 	_cachedResponse.clear();
 	_bytesSent = 0;
 	_requestStartTime = 0;
+	_logInfo = RequestInfo();
 
 	// Re-inject already received bytes for next request
 	std::string tmp = _pendingInput;
