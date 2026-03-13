@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 12:53:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:38:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -177,19 +177,6 @@ void Server::setupListenSockets()
 	}
 }
 
-void Server::logClientResponse(const Client& client)
-{
-	const std::string& method = client.getRequest().getMethod();
-	bool hasBody = (method == "POST" || method == "PUT" || method == "PATCH");
-
-	RequestInfo info = client.getLogInfo();
-	info.statusCode  = client.getResponseStatus();
-	info.requestSize = hasBody ? client.getRequestBodySize() : std::numeric_limits<size_t>::max();
-	info.responseSize = client.getResponseBodySize();
-	info.responseTime = std::time(NULL) - client.getRequestStartTime();
-	Logger::logRequestEnd(info);
-}
-
 // Closes fd, marks its pollfd slot as unused, removes it from the socket type map, sets fd to -1.
 void Server::closePollFd(int& fd)
 {
@@ -236,7 +223,7 @@ void Server::handleClientTimeouts()
 	{
 		if (it->second.hasTimedOut(CLIENT_KEEPALIVE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
 		{
-			Server::logClientResponse(it->second);
+			it->second.logRequestEnd();
 			killCgiProcess(it->second);
 			it = removeClient(it);
 		}
@@ -300,7 +287,7 @@ void Server::handleCgiTimeouts()
 
 			// Log the timeout event so it appears in server logs
 			if (server)
-				Server::logClientResponse(client);
+				client.logRequestEnd();
 
 			client.setState(STATE_KEEPALIVE);
 
@@ -340,7 +327,7 @@ void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 	{
 		const ServerBlock* server = getServerBlock(client.getRequest(), clientFd);
 		client.buildErrorResponse(500, server);
-		Server::logClientResponse(client);
+		client.logRequestEnd();
 		if (!cgi->errorOutput.empty())
 			Logger::logMessage(RED "[CGI] Error:\n" RESET + cgi->errorOutput);
 	}
@@ -401,7 +388,7 @@ void Server::handleSocketError(size_t i)
 		std::map<int, Client>::iterator it = _clients.find(fd);
 		if (it != _clients.end())
 		{
-			Server::logClientResponse(it->second);
+			it->second.logRequestEnd();
 			removeClient(it);
 		}
 		return;
@@ -522,7 +509,7 @@ void Server::handleClientRead(size_t clientIndex)
 	// Read data from socket
 	if (!client.readData(server))
 	{
-		Server::logClientResponse(client);
+		client.logRequestEnd();
 		removeClient(it);
 		return;
 	}
@@ -531,21 +518,7 @@ void Server::handleClientRead(size_t clientIndex)
 	server = getServerBlock(client.getRequest(), clientFd);
 
 	if (!client.isRequestLogged() && (client.getRequest().headersParsed() || client.isRequestComplete()) && server)
-	{
-		std::string method = client.getRequest().getMethod();
-		std::string uri = client.getRequest().getUri();
-		if (!client.getRequest().headersParsed())
-		{
-			if (method.empty()) method = "UNKNOWN";
-			if (uri.empty()) uri = "/";
-		}
-
-		size_t declSize = std::numeric_limits<size_t>::max();
-		if ((method == "POST" || method == "PUT" || method == "PATCH") && !client.getRequest().isChunked())
-			declSize = client.getRequest().getContentLength();
-
-		client.beginRequestLog(server->getServerName(), server->getPort());
-	}
+		client.logRequestStart(server->getServerName(), server->getPort());
 
 	// If an early error response is already prepared (e.g., size limit), switch to write-only
 	if (client.isResponseReady())
@@ -573,7 +546,7 @@ void Server::handleClientRead(size_t clientIndex)
 			client.buildErrorResponse(413, server);
 			client.markCloseAfterResponse();
 			// Log the oversized request early rejection
-			Server::logClientResponse(client);
+			client.logRequestEnd();
 			_pollFds[clientIndex].events = POLLOUT;
 			return;
 		}
@@ -692,7 +665,7 @@ void Server::handleClientWrite(size_t clientIndex)
 		// Send error: clean up the client immediately
 		if (client.shouldCloseAfterResponse())
 		{
-			Server::logClientResponse(client);
+			client.logRequestEnd();
 			removeClient(it);
 		}
 		// Otherwise: large response, retry on next POLLOUT
@@ -700,7 +673,7 @@ void Server::handleClientWrite(size_t clientIndex)
 	}
 
 	// Response fully sent
-	Server::logClientResponse(client);
+	client.logRequestEnd();
 
 	if (client.shouldCloseAfterResponse())
 	{
@@ -723,15 +696,9 @@ void Server::handleClientWrite(size_t clientIndex)
 			_pollFds[clientIndex].events = POLLIN | POLLOUT;
 			return;
 		}
-		// Log start for pipelined leftover (headers already parsed, not logged via readData)
-		size_t declSize = std::numeric_limits<size_t>::max();
-		{
-			const std::string& m = client.getRequest().getMethod();
-			if ((m == "POST" || m == "PUT" || m == "PATCH") && !client.getRequest().isChunked())
-				declSize = client.getRequest().getContentLength();
-		}
 
-		client.beginRequestLog(server->getServerName(), server->getPort());
+		// Log start for pipelined leftover (headers already parsed, not logged via readData)
+		client.logRequestStart(server->getServerName(), server->getPort());
 		client.buildResponse(*server, _router, _sessions);
 		client.stashLeftoverFromRequest();
 		_pollFds[clientIndex].events = POLLIN | POLLOUT;

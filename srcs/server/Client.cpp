@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 12:55:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:34:55 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -96,7 +96,7 @@ void Client::setCgiTiming(const ServerBlock& config)
 	_serverConfig = &config;
 }
 
-void Client::beginRequestLog(const std::string& serverName, int port)
+void Client::logRequestStart(const std::string& serverName, int port)
 {
 	_logInfo.requestId = _socket;
 	_logInfo.method = _request.getMethod();
@@ -110,8 +110,21 @@ void Client::beginRequestLog(const std::string& serverName, int port)
 		_logInfo.declaredSize = _request.getContentLength();
 	else
 		_logInfo.declaredSize = std::numeric_limits<size_t>::max();
-	Logger::logRequestStart(_logInfo);
+	Logger::requestStart(_logInfo);
 	_requestLogged = true;
+}
+
+void Client::logRequestEnd()
+{
+	const std::string& m = _logInfo.method;
+	bool hasBody = (m == "POST" || m == "PUT" || m == "PATCH");
+
+	_logInfo.statusCode   = _response.getStatus();
+	_logInfo.requestSize  = hasBody ? _request.getBody().size() : std::numeric_limits<size_t>::max();
+	_logInfo.responseSize = _response.getBody().size();
+	_logInfo.responseTime = std::time(NULL) - _requestStartTime;
+
+	Logger::requestEnd(_logInfo);
 }
 
 // Public method(s) ------------------------------------------------------------

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:54:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:32:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -208,7 +208,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 // Public method(s) ------------------------------------------------------------
 
-void Logger::logRequestStart(const RequestInfo& info)
+void Logger::requestStart(const RequestInfo& info)
 {
 	if (_firstLog)
 	{
@@ -269,7 +269,7 @@ void Logger::logRequestStart(const RequestInfo& info)
 	flushRequestLine(info.requestId, false, 0, 0, 0);
 }
 
-void Logger::logRequestEnd(const RequestInfo& info)
+void Logger::requestEnd(const RequestInfo& info)
 {
 	if (!_pendingRequest)
 		return;

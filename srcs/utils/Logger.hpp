@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:54:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:34:06 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -132,10 +132,10 @@ class Logger
 		// Public method(s)
 
 		/** @brief Records request start and displays the pending log line. */
-		static void				logRequestStart(const RequestInfo& info);
+		static void				requestStart(const RequestInfo& info);
 
 		/** @brief Completes the log line with status, sizes and response time. */
-		static void				logRequestEnd(const RequestInfo& info);
+		static void				requestEnd(const RequestInfo& info);
 
 		/** @brief Prints a free-form message to stdout (warnings, errors). */
 		static void				logMessage(const std::string& message);

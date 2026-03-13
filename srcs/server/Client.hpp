@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 12:51:50 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:35:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,7 +147,10 @@ class	Client
 		void					resetForNextRequest();
 
 		/** @brief Records the server name and port for request logging at the start of processing. */
-		void					beginRequestLog(const std::string& serverName, int port);
+		void					logRequestStart(const std::string& serverName, int port);
+
+		/** @brief Completes the request log with end-of-request metrics and sends it to the logger. */
+		void					logRequestEnd();
 };
 
 #endif

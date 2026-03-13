@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 11:51:27 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 13:23:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,7 +89,6 @@ class	Server
 		void				handleSessionTimeouts();
 		static void			signalHandler(int sig);
 		void				installSignals();
-		void				logClientResponse(const Client& client);
 
 		/** @brief Creates, binds and adds one listening socket per configured port to the poll set. */
 		void				setupListenSockets();
@@ -99,7 +98,7 @@ class	Server
 
 		/** @brief Processes POLLOUT for the client at _pollFds[clientIndex]. */
 		void				handleClientWrite(size_t clientIndex);
-		
+
 		/** @brief Picks the ServerBlock matching the Host header, or falls back to the first config. */
 		const ServerBlock*	getServerBlock(const HttpRequest& request, int clientFd) const;
 
@@ -114,13 +113,13 @@ class	Server
 
 		/** @brief Updates the events mask (POLLIN/POLLOUT) for the given fd in _pollFds. */
 		void				setPollEvents(int fd, short events);
-		
+
 		/** @brief Drains the self-pipe after a signal to prevent poll() from busy-looping. */
 		void				handleSignalPipeReadable();
 
 		/** @brief Registers the self-pipe read end in _pollFds for signal-safe interruption. */
 		void				addSignalPipeToPoll();
-		
+
 	public:
 
 		// Special member function(s)
