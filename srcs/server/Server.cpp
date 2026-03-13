@@ -490,6 +490,32 @@ void Server::acceptNewClient(int listenSocket)
 	_socketTypes[clientFd] = SOCKET_CLIENT;
 }
 
+// Checks if the request body exceeds the configured size limit (location overrides server default).
+// Builds a 413 error response and enables POLLOUT if the limit is exceeded.
+// Returns true if the limit was exceeded (caller must return immediately).
+bool Server::checkBodySize(Client& client, const ServerBlock* server, size_t clientIndex)
+{
+	// Default to server-level limit
+	size_t maxBodySize = server->getMaxBodySize();
+
+	// Prefer location-specific limit when defined
+	HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+	RouteMatch match = _router.matchRoute(*server, requestRef);
+	if (match.location && match.location->getMaxBodySize() > 0)
+		maxBodySize = match.location->getMaxBodySize();
+
+	if (client.getRequest().getBody().size() > maxBodySize
+		|| (!client.getRequest().isChunked() && client.getRequest().getContentLength() > maxBodySize))
+	{
+		client.buildErrorResponse(413, server);
+		client.markCloseAfterResponse();
+		client.logRequestEnd();
+		_pollFds[clientIndex].events = POLLOUT;
+		return true;
+	}
+	return false;
+}
+
 // Registers CGI process pipes (stdout, stderr, stdin) in the poll set.
 // Disables POLLIN on the client socket while CGI is running.
 void Server::registerCgiPipes(CgiProcess* cgi, size_t clientIndex)
@@ -538,6 +564,7 @@ void Server::startCgi(Client& client, const RouteMatch& match, size_t clientInde
 	{
 		client.buildErrorResponse(500, server);
 		client.setState(STATE_KEEPALIVE);
+		_pollFds[clientIndex].events |= POLLOUT;
 		return;
 	}
 	cgiProc->executionTimeout = server->getCgiTimeout();
@@ -585,30 +612,9 @@ void Server::handleClientRead(size_t clientIndex)
 		return;
 	}
 
-	// Early size guard: if body already exceeds configured limit (location override
-	// server default if defined), send 413 and close.
-	if (!client.isResponseReady() && server)
-	{
-		// Default to server-level limit
-		size_t maxBodySize = server->getMaxBodySize();
-
-		// If we can resolve a location, prefer its specific limit when set
-		HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
-		RouteMatch match = _router.matchRoute(*server, requestRef);
-		if (match.location && match.location->getMaxBodySize() > 0)
-			maxBodySize = match.location->getMaxBodySize();
-
-		if (client.getRequest().getBody().size() > maxBodySize
-			|| (!client.getRequest().isChunked() && client.getRequest().getContentLength() > maxBodySize))
-		{
-			client.buildErrorResponse(413, server);
-			client.markCloseAfterResponse();
-			// Log the oversized request early rejection
-			client.logRequestEnd();
-			_pollFds[clientIndex].events = POLLOUT;
-			return;
-		}
-	}
+	// Reject oversized request bodies early before full parsing
+	if (server && checkBodySize(client, server, clientIndex))
+		return;
 
 	// Check if request is complete
 	if (!client.isRequestComplete())

@@ -93,6 +93,9 @@ class	Server
 		/** @brief Creates, binds and adds one listening socket per configured port to the poll set. */
 		void				setupListenSockets();
 
+		/** @brief Validates request body size against configured limits; returns true if exceeded. */
+		bool				checkBodySize(Client& client, const ServerBlock* server, size_t clientIndex);
+
 		/** @brief Registers CGI process pipes (stdin, stdout, stderr) in the poll set for monitoring. */
 		void				registerCgiPipes(CgiProcess* cgi, size_t clientIndex);
 
