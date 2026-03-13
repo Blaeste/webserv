@@ -382,11 +382,6 @@ bool Client::sendResponse()
 	return false; // More data to send, wait for next POLLOUT
 }
 
-void Client::stashLeftoverFromRequest()
-{
-	_pendingInput = _request.getLeftover();
-}
-
 void Client::resetForNextRequest()
 {
 	// Save connection-level state and leftover before full reset

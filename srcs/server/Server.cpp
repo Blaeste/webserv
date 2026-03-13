@@ -650,9 +650,6 @@ void Server::handleClientRead(size_t clientIndex)
 	if (!client.isRequestComplete())
 		return;
 
-	// Keep any additional requests already present in the buffer
-	client.stashLeftoverFromRequest();
-
 	// Build and dispatch the response (CGI or static)
 	if (!client.isResponseReady())
 	{

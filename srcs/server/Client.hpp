@@ -67,7 +67,6 @@ class	Client
 		time_t					_cgiStartTime;			// Start time for CGI timeout tracking
 		time_t					_requestStartTime;		// Start time for request timing (from first data)
 		const ServerBlock*		_serverConfig;			// Server configuration for logging
-		std::string				_pendingInput;			// Restes d'une requête suivante déjà reçue
 		RequestInfo     		_logInfo;				// Cached request info for logging (set once, reused at end)
 
 		// Private method(s)
@@ -139,9 +138,6 @@ class	Client
 
 		/** @brief Sends the cached response progressively; returns true when fully sent. */
 		bool					sendResponse();
-
-		/** @brief Stashes leftover bytes from _rawData (next pipelined request) into _pendingInput. */
-		void					stashLeftoverFromRequest();
 
 		/** @brief Resets request/response state to handle the next request on this connection. */
 		void					resetForNextRequest();
