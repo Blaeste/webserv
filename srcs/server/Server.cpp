@@ -579,30 +579,30 @@ void Server::startCgi(Client& client, const RouteMatch& match, size_t clientInde
 // Returns true if a CGI was started (caller must not touch _pollFds[clientIndex] afterwards).
 bool Server::buildClientResponse(Client& client, const ServerBlock* server, size_t clientIndex)
 {
-    client.setState(STATE_PROCESSING);
-    client.updateActivity();
+	client.setState(STATE_PROCESSING);
+	client.updateActivity();
 
-    if (!server)
-    {
-        client.buildErrorResponse(500, NULL);
-        client.setState(STATE_KEEPALIVE);
-        return false;
-    }
+	if (!server)
+	{
+		client.buildErrorResponse(500, NULL);
+		client.setState(STATE_KEEPALIVE);
+		return false;
+	}
 
-    HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
-    RouteMatch match = _router.matchRoute(*server, requestRef);
+	HttpRequest& requestRef = const_cast<HttpRequest&>(client.getRequest());
+	RouteMatch match = _router.matchRoute(*server, requestRef);
 
-    if (match.statusCode == 200 && match.isCGI)
-    {
-        // Start CGI process asynchronously and register its pipes
-        startCgi(client, match, clientIndex, server);
-        return true;
-    }
+	if (match.statusCode == 200 && match.isCGI)
+	{
+		// Start CGI process asynchronously and register its pipes
+		startCgi(client, match, clientIndex, server);
+		return true;
+	}
 
-    // Regular non-CGI request
-    client.buildResponse(*server, _router, _sessions);
-    client.setState(STATE_KEEPALIVE);
-    return false;
+	// Regular non-CGI request
+	client.buildResponse(*server, _router, _sessions);
+	client.setState(STATE_KEEPALIVE);
+	return false;
 }
 
 void Server::handleClientRead(size_t clientIndex)
