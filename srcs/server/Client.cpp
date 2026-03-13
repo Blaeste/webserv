@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:34:55 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/13 14:19:33 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -105,19 +105,20 @@ void Client::logRequestStart(const std::string& serverName, int port)
 	_logInfo.serverName = serverName;
 	_logInfo.port = port;
 
-	const std::string& m = _request.getMethod();
-	if ((m == "POST" || m == "PUT" || m == "PATCH") && !_request.isChunked())
+	const bool hasBody = (_logInfo.method == "POST" || _logInfo.method == "PUT" || _logInfo.method == "PATCH");
+
+	if (hasBody && !_request.isChunked())
 		_logInfo.declaredSize = _request.getContentLength();
 	else
 		_logInfo.declaredSize = std::numeric_limits<size_t>::max();
+
 	Logger::requestStart(_logInfo);
 	_requestLogged = true;
 }
 
 void Client::logRequestEnd()
 {
-	const std::string& m = _logInfo.method;
-	bool hasBody = (m == "POST" || m == "PUT" || m == "PATCH");
+	const bool hasBody = (_logInfo.method == "POST" || _logInfo.method == "PUT" || _logInfo.method == "PATCH");
 
 	_logInfo.statusCode   = _response.getStatus();
 	_logInfo.requestSize  = hasBody ? _request.getBody().size() : std::numeric_limits<size_t>::max();
@@ -388,28 +389,21 @@ void Client::stashLeftoverFromRequest()
 
 void Client::resetForNextRequest()
 {
-	_request = HttpRequest();
-	_response = HttpResponse();
-	_requestComplete = false;
-	_responseReady = false;
-	_closeAfterResponse = false;
-	_requestLogged = false;
-	_state = STATE_KEEPALIVE;
-	_cachedResponse.clear();
-	_bytesSent = 0;
-	_requestStartTime = 0;
-	_logInfo = RequestInfo();
+	// Save connection-level state and leftover before full reset
+	const int socket = _socket;
+	const std::string clientIp = _clientIp;
+	const std::string leftover = _request.getLeftover();
+
+	// Full reset via constructor
+	*this = Client(socket, clientIp);
 
 	// Re-inject already received bytes for next request
-	std::string tmp = _pendingInput;
-	_pendingInput.clear();
-	if (!tmp.empty())
+	if (!leftover.empty())
 	{
-		_request.appendData(tmp);
+		_request.appendData(leftover);
 		if (_request.isComplete())
 			_requestComplete = true;
-		if (_requestStartTime == 0)
-			_requestStartTime = std::time(NULL);
+		_requestStartTime = std::time(NULL);
 	}
 }
 
