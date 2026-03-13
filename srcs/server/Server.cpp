@@ -723,9 +723,9 @@ void Server::handleClientWrite(size_t clientIndex)
 
 		// Log start for pipelined leftover (headers already parsed, not logged via readData)
 		client.logRequestStart(server->getServerName(), server->getPort());
-		client.buildResponse(*server, _router, _sessions);
-		client.stashLeftoverFromRequest();
-		_pollFds[clientIndex].events = POLLIN | POLLOUT;
+		bool cgiStarted = buildClientResponse(client, server, clientIndex);
+		if (!cgiStarted)
+			_pollFds[clientIndex].events = POLLIN | POLLOUT;
 	}
 }
 
