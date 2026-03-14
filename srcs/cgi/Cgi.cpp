@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 14:45:11 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 14:56:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ static void executeCgiChild(const RouteMatch& match, const std::vector<int>& fds
 		std::string scriptDir = match.filePath.substr(0, lastSlash);
 		scriptName = match.filePath.substr(lastSlash + 1);
 		if (chdir(scriptDir.c_str()) != 0)
-			std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
+			std::cerr << "chdir failed to " << scriptDir << std::endl;
 	}
 
 	// Build environment for execve
@@ -90,8 +90,7 @@ static void executeCgiChild(const RouteMatch& match, const std::vector<int>& fds
 
 	execve(interpreter.c_str(), argv, &envp[0]);
 
-	std::cerr << "CGI: execve failed for: " << interpreter
-			  << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;
+	std::cerr << "execve failed for " << interpreter << ": " << strerror(errno) << std::endl;
 	std::exit(1);
 }
 
