@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 23:12:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:28:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -85,11 +85,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 {
 	// Look up request data for this specific request
 	requestMap::iterator it = _activeRequests.find(requestId);
-	std::string method = it->second.method;
-	std::string uri = it->second.uri;
-	std::string clientIP = it->second.clientIP;
-	std::string serverName = it->second.serverName;
-	int serverPort = it->second.serverPort;
+	std::string method      = it->second.info.method;
+	std::string uri         = it->second.info.uri;
+	std::string clientIP    = it->second.info.clientIP;
+	std::string serverName  = it->second.info.serverName;
+	int serverPort          = it->second.info.port;
 	std::string requestStartTime = _lastRequestStartTime;
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
@@ -98,7 +98,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 							  (method == "DELETE") ? RED : GREY;
 
 	std::string serverPortStr = formatServerPort(serverName, serverPort);
-	std::string uriFieldStr   = formatUriField(uri, it->second.declaredSize, requestSize, includeCompletion);
+	std::string uriFieldStr   = formatUriField(uri, it->second.info.declaredSize, requestSize, includeCompletion);
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
@@ -256,14 +256,9 @@ void Logger::requestStart(const RequestInfo& info)
 
 	// Store request data for this specific request
 	RequestData data;
-	data.method = info.method;
-	data.uri = info.uri;
-	data.clientIP = info.clientIP;
-	data.serverName = info.serverName;
-	data.serverPort = info.port;
-	data.declaredSize = info.declaredSize;
+	data.info             = info;
 	data.requestStartTime = getCurrentTime();
-	data.displayLine = _currentLine;
+	data.displayLine      = _currentLine;
 	_activeRequests[info.requestId] = data;
 
 	bool isGroupableRequest = (_lastMethod == info.method && _lastUri == info.uri
@@ -309,11 +304,11 @@ void Logger::requestEnd(const RequestInfo& info)
 	requestMap::iterator it = _activeRequests.find(info.requestId);
 	if (it == _activeRequests.end())
 		return; // already logged or unknown request
-	bool isGroupedRequest = (it->second.method == _lastMethod &&
-							it->second.uri == _lastUri &&
-							it->second.clientIP == _lastClientIP &&
-							it->second.serverName == _lastServerName &&
-							it->second.serverPort == _lastServerPort);
+	bool isGroupedRequest = (it->second.info.method == _lastMethod
+		&& it->second.info.uri == _lastUri
+		&& it->second.info.clientIP == _lastClientIP
+		&& it->second.info.serverName == _lastServerName
+		&& it->second.info.port == _lastServerPort);
 
 	// Break the group if request body size or status differs from previous completion
 	if (isGroupedRequest && _groupEndCount

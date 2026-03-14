@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 23:09:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:29:07 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,34 +33,22 @@
 
 // Structure(s) ----------------------------------------------------------------
 
-struct	RequestData
-{
-	std::string		method;				// HTTP method (GET, POST, etc.)
-	std::string		uri;				// Request URI path
-	std::string		clientIP;			// Client IP address
-	std::string		serverName;			// Matched server name
-	int				serverPort;			// Listening port
-	size_t			declaredSize;		// Content-Length from request headers
-	std::string		requestStartTime;	// Timestamp when request was received
-	int				displayLine;		// Terminal line number for in-place update
-};
-
 struct	RequestInfo
 {
 	// Fields used by logRequestStart
-	int			 requestId;		// Socket fd used as unique key
-	std::string	 method;		// HTTP method (GET, POST, etc.)
-	std::string	 uri;			// Request URI path
-	std::string	 clientIP;		// Client IP address
-	std::string	 serverName;	// Matched server name
-	int			 port;			// Listening port
-	size_t		 declaredSize;	// Content-Length (max = unknown)
+	int			 requestId;			// Socket fd used as unique key
+	std::string	 method;			// HTTP method (GET, POST, etc.)
+	std::string	 uri;				// Request URI path
+	std::string	 clientIP;			// Client IP address
+	std::string	 serverName;		// Matched server name
+	int			 port;				// Listening port
+	size_t		 declaredSize;		// Content-Length (max = unknown)
 
 	// Fields used by logRequestEnd
 	int			 statusCode;		// HTTP response status code
-	size_t		 requestSize;	// Request body size (max = unknown)
-	size_t		 responseSize;	// Response body size in bytes
-	time_t		 responseTime;	// Elapsed time in seconds
+	size_t		 requestSize;		// Request body size (max = unknown)
+	size_t		 responseSize;		// Response body size in bytes
+	time_t		 responseTime;		// Elapsed time in seconds
 
 	RequestInfo()
 		: requestId(-1)
@@ -71,6 +59,13 @@ struct	RequestInfo
 		, responseSize(0)
 		, responseTime(0)
 	{}
+};
+
+struct RequestData
+{
+	RequestInfo info;				// Full request info snapshot
+	std::string requestStartTime;	// Timestamp when request was received
+	int         displayLine;		// Terminal line number for in-place update
 };
 
 // Enum(s) ---------------------------------------------------------------------
