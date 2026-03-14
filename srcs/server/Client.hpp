@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 21:14:31 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:07:14 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,10 @@ enum	ClientState
 	STATE_KEEPALIVE,			// Reading request or writing response
 	STATE_PROCESSING			// Processing request (buildResponse, CGI execution)
 };
+
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<std::string, SessionData>	SessionMap;
 
 // Class -----------------------------------------------------------------------
 
@@ -75,17 +79,21 @@ class	Client
 		/** @brief Generates a cryptographically random session ID of SESSION_ID_LENGTH characters. */
 		static std::string		generateSessionId();
 
-		/** @brief Creates or validates the session cookie and updates the sessions map. */
-		void					handleSession(std::map<std::string, SessionData>& sessions);
-
 		/** @brief Sets Connection header to "keep-alive" or "close" based on _closeAfterResponse. */
 		void					applyConnectionHeader();
 
 		/** @brief Handles the /counter-api endpoint, returning session visit count as JSON. */
-		void					handleCounterApi(std::map<std::string, SessionData>& sessions);
+		void					handleCounterApi(SessionMap& sessions);
 
 		/** @brief Dispatches a validated request to the appropriate handler based on method and route. */
 		void					dispatchRequest(const ServerBlock& server, const RouteMatch& match);
+
+		/** @brief Creates a new session, sets its cookie header, and assigns it to the client. */
+		void					createSession(SessionMap& sessions, const std::string& sessionId);
+
+		/** @brief Creates or validates the session cookie and updates the sessions map. */
+		void					handleSession(SessionMap& sessions);
+
 
 	public:
 
@@ -126,13 +134,17 @@ class	Client
 		/** @brief Records CGI start time and stores config reference for timeout enforcement. */
 		void					setCgiTiming(const ServerBlock& server);
 
-		// Public method(s)
+		/** @brief Records the server name and port for request logging at the start of processing. */
+		void					logRequestStart(const std::string& serverName, int port);
+
+		/** @brief Completes the request log with end-of-request metrics and sends it to the logger. */
+		void					logRequestEnd();
 
 		/** @brief Reads from socket into the request parser; returns false on disconnect or error. */
 		bool					readData(const ServerBlock* server = NULL);
 
 		/** @brief Routes the request and builds the appropriate HTTP response. */
-		void					buildResponse(const ServerBlock& server, Router& router, std::map<std::string, SessionData>& sessions);
+		void					buildResponse(const ServerBlock& server, Router& router, SessionMap& sessions);
 
 		/** @brief Builds the response from a completed CGI execution result. */
 		void					buildResponseFromCGI(const CgiResult& result);
@@ -148,12 +160,6 @@ class	Client
 
 		/** @brief Resets request/response state to handle the next request on this connection. */
 		void					resetForNextRequest();
-
-		/** @brief Records the server name and port for request logging at the start of processing. */
-		void					logRequestStart(const std::string& serverName, int port);
-
-		/** @brief Completes the request log with end-of-request metrics and sends it to the logger. */
-		void					logRequestEnd();
 };
 
 #endif

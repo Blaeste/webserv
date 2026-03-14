@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:34:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:54:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,40 +33,22 @@
 
 // Structure(s) ----------------------------------------------------------------
 
-struct RequestData
-{
-	std::string		method;				// HTTP method (GET, POST, etc.)
-	std::string		uri;				// Request URI path
-	std::string		clientIP;			// Client IP address
-	std::string		serverName;			// Matched server name
-	int				serverPort;			// Listening port
-	size_t			declaredSize;		// Content-Length from request headers
-	std::string		requestStartTime;	// Timestamp when request was received
-	int				displayLine;		// Terminal line number for in-place update
-};
-
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::map<int, RequestData>	requestMap;
-
-// Structure(s) ----------------------------------------------------------------
-
-struct RequestInfo
+struct	RequestInfo
 {
 	// Fields used by logRequestStart
-	int			 requestId;		// Socket fd used as unique key
-	std::string	 method;		// HTTP method (GET, POST, etc.)
-	std::string	 uri;			// Request URI path
-	std::string	 clientIP;		// Client IP address
-	std::string	 serverName;	// Matched server name
-	int			 port;			// Listening port
-	size_t		 declaredSize;	// Content-Length (max = unknown)
+	int			 requestId;			// Socket fd used as unique key
+	std::string	 method;			// HTTP method (GET, POST, etc.)
+	std::string	 uri;				// Request URI path
+	std::string	 clientIP;			// Client IP address
+	std::string	 serverName;		// Matched server name
+	int			 port;				// Listening port
+	size_t		 declaredSize;		// Content-Length (max = unknown)
 
 	// Fields used by logRequestEnd
 	int			 statusCode;		// HTTP response status code
-	size_t		 requestSize;	// Request body size (max = unknown)
-	size_t		 responseSize;	// Response body size in bytes
-	time_t		 responseTime;	// Elapsed time in seconds
+	size_t		 requestSize;		// Request body size (max = unknown)
+	size_t		 responseSize;		// Response body size in bytes
+	time_t		 responseTime;		// Elapsed time in seconds
 
 	RequestInfo()
 		: requestId(-1)
@@ -76,6 +58,66 @@ struct RequestInfo
 		, requestSize(std::numeric_limits<size_t>::max())
 		, responseSize(0)
 		, responseTime(0)
+	{}
+};
+
+struct RequestData
+{
+	RequestInfo info;				// Full request info snapshot
+	std::string requestStartTime;	// Timestamp when request was received
+	int         displayLine;		// Terminal line number for in-place update
+};
+
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<int, RequestData>	requestMap;
+
+// Enum(s) ---------------------------------------------------------------------
+
+enum	LastLineType
+{
+	LINE_NONE,       // nothing printed yet
+	LINE_REQUEST,    // a request line (complete or pending)
+	LINE_SEPARATOR,  // a separator ---
+	LINE_MESSAGE     // a logMessage content line
+};
+
+// Structure(s) ----------------------------------------------------------------
+
+struct LoggerState
+{
+	requestMap		activeRequests;			// Track each request's data by socket
+	std::string		lastMethod;				// Last logged HTTP method
+	std::string		lastUri;				// Last logged URI
+	std::string		lastClientIP;			// Last logged client IP address
+	size_t			requestCount;			// Number of grouped identical requests
+	time_t			minTime; 				// Minimum response time in group
+	time_t			maxTime;				// Maximum response time in group
+	std::string		lastServerName;			// Last logged server name
+	int				lastServerPort;			// Last logged server port
+	size_t			lastEndRequestSize; 	// Last completed request body size
+	int				lastEndStatus;			// Last completed response status code
+	size_t			groupEndCount;			// Number of completions in current visual group
+	bool			pendingRequest;			// Request started but not completed
+	std::string		lastRequestStartTime;	// Store timestamp from logRequestStart
+	int				lastDisplayedRequestId;	// Track which request displayed the last line
+	int				currentLine;			// Current terminal line number for cursor movement
+	bool			logging;				// True while Logger is writing to stdout (guards safeClose output)
+	LastLineType	lastLineType;			// Type of the last physically printed line
+
+	LoggerState()
+		: requestCount(0)
+		, minTime(std::numeric_limits<time_t>::max())
+		, maxTime(0)
+		, lastServerPort(0)
+		, lastEndRequestSize(std::numeric_limits<size_t>::max())
+		, lastEndStatus(-1)
+		, groupEndCount(0)
+		, pendingRequest(false)
+		, lastDisplayedRequestId(-1)
+		, currentLine(0)
+		, logging(false)
+		, lastLineType(LINE_NONE)
 	{}
 };
 
@@ -98,24 +140,7 @@ class Logger
 
 		// Attribute(s)
 
-		static requestMap		_activeRequests;			// Track each request's data by socket
-		static std::string		_lastMethod;				// Last logged HTTP method
-		static std::string		_lastUri;					// Last logged URI
-		static std::string		_lastClientIP;				// Last logged client IP address
-		static size_t			_requestCount;				// Number of grouped identical requests
-		static time_t			_minTime;					// Minimum response time in group
-		static time_t			_maxTime;					// Maximum response time in group
-		static std::string		_lastServerName;			// Last logged server name
-		static int				_lastServerPort;			// Last logged server port
-		static size_t			_lastEndRequestSize;		// Last completed request body size
-		static int				_lastEndStatus;				// Last completed response status code
-		static size_t			_groupEndCount;				// Number of completions in current visual group
-		static bool				_firstLog;					// Indicates if this is the first log entry
-		static bool				_pendingRequest;			// Request started but not completed
-		static std::string		_lastRequestStartTime;		// Store timestamp from logRequestStart
-		static int				_lastDisplayedRequestId;	// Track which request displayed the last line
-		static int				_currentLine;				// Current terminal line number for cursor movement
-		static bool				_s_logging;					// True while Logger is writing to stdout (guards safeClose output)
+		static LoggerState		_state;		
 
 		// Private method(s)
 
@@ -126,6 +151,18 @@ class Logger
 
 		/** @brief Renders one log line to stdout; appends status and timing if includeCompletion. */
 		static void				flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize);
+
+		/** @brief Resets timing and completion counters for the current request group. */
+		static void				resetTimingState();
+
+		/** @brief Resets all grouping state so the next request starts a fresh group. */
+		static void				resetGroupState();
+
+		/** @brief Formats "servername:port" truncated to SERVER_PORT_FIELD_WIDTH. */
+		static std::string		formatServerPort(const std::string& serverName, int serverPort);
+
+		/** @brief Formats the URI column with size hint, group count and padding to URI_FIELD_WIDTH. */
+		static std::string		formatUriField(const std::string& uri, size_t declaredSize, size_t requestSize, bool includeCompletion);
 
 	public:
 
