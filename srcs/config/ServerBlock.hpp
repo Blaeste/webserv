@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 15:36:32 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/13 11:07:34 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:05:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,7 @@ typedef	std::map<int, std::string>	errorPageMap;
 
 // Class -----------------------------------------------------------------------
 
-class ServerBlock
+class	ServerBlock
 {
 	private:
 

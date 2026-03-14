@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/23 14:23:30 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:02:40 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,9 @@
 // Private method(s) -----------------------------------------------------------
 
 // Find location with longest matching path prefix
-const Location* Router::findMatchingLocation(const ServerBlock& config, const std::string& uri) const
+const Location* Router::findMatchingLocation(const ServerBlock& server, const std::string& uri) const
 {
-	const locationVector& locations = config.getLocations();
+	const locationVector& locations = server.getLocations();
 	const Location* bestMatch = NULL;
 	size_t longestMatch = 0;
 	for (size_t i = 0; i < locations.size(); i++)
@@ -48,12 +48,12 @@ const Location* Router::findMatchingLocation(const ServerBlock& config, const st
 // Public method(s) ------------------------------------------------------------
 
 // Match request to appropriate route and determine response type
-RouteMatch Router::matchRoute(const ServerBlock& config, const HttpRequest& request) const
+RouteMatch Router::matchRoute(const ServerBlock& server, const HttpRequest& request) const
 {
 	std::string uri = request.getUri();
 	RouteMatch match;
-	match.serverName = config.getServerName();
-	match.serverPort = config.getPort();
+	match.serverName = server.getServerName();
+	match.serverPort = server.getPort();
 	match.statusCode = 200;
 	match.isRedirect = false;
 	match.isCGI = false;
@@ -65,7 +65,7 @@ RouteMatch Router::matchRoute(const ServerBlock& config, const HttpRequest& requ
 		pathPart = uri.substr(0, queryPos);
 
 	// Find matching location block
-	match.location = findMatchingLocation(config, pathPart);
+	match.location = findMatchingLocation(server, pathPart);
 	if (!match.location)
 		match.statusCode = 404;
 	else
@@ -112,10 +112,11 @@ RouteMatch Router::matchRoute(const ServerBlock& config, const HttpRequest& requ
 			std::string relativePath = decodedPath;
 			if (relativePath.find(locationPath) == 0)
 				relativePath = decodedPath.substr(locationPath.length());
+
 			// If the request exactly matches the location path, stay at that location root
 			if (relativePath.empty())
 				relativePath = "/";
-			if (relativePath.empty() || relativePath[0] != '/')
+			else if (relativePath[0] != '/')
 				relativePath = "/" + relativePath;
 
 			// If we are at the location root, try its index files

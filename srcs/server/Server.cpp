@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 14:56:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:18:21 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -52,7 +52,7 @@ int Server::_s_sigpipe[2] = {-1, -1}; // Self-pipe for signal handling in poll()
 // Special member function(s) --------------------------------------------------
 
 Server::Server(const ConfigParser& config)
-	: _configs(config.getServers())
+	: _servers(config.getServers())
 	, _running(false)
 	, _lastSessionCleanup(0)
 {
@@ -123,14 +123,14 @@ void Server::setupListenSockets()
 {
 	// Create one listening socket per configuration (one per port)
 	std::vector<int> port;
-	for (size_t i = 0; i < _configs.size(); i++)
+	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		if (std::find(port.begin(), port.end(), _configs[i].getPort()) != port.end())
+		if (std::find(port.begin(), port.end(), _servers[i].getPort()) != port.end())
 		{
-			std::cout << "Server " << _configs[i].getServerName() << " listening on port " << _configs[i].getPort() << std::endl;
+			std::cout << "Server " << _servers[i].getServerName() << " listening on port " << _servers[i].getPort() << std::endl;
 			continue; // Skip duplicate ports
 		}
-		port.push_back(_configs[i].getPort());
+		port.push_back(_servers[i].getPort());
 
 		// Create a TCP socket (file descriptor = entry point for network communication)
 		int listenFd = socket(AF_INET, SOCK_STREAM, 0); // AF_INET = IPv4, SOCK_STREAM = TCP
@@ -149,11 +149,11 @@ void Server::setupListenSockets()
 		// Define the local address the socket will be bound to (IP + port)
 		struct sockaddr_in addr = {};
 		addr.sin_family = AF_INET;						// IPv4 address family
-		addr.sin_port = htons(_configs[i].getPort());	// Port from config, converted to network byte order (big-endian)
+		addr.sin_port = htons(_servers[i].getPort());	// Port from config, converted to network byte order (big-endian)
 		addr.sin_addr.s_addr = INADDR_ANY;				// Accept connections on all local network interfaces (0.0.0.0)
 
 		// Bind the socket fd to the address structure above
-		// After this call, listenFd is associated with port _configs[i].getPort() on all interfaces
+		// After this call, listenFd is associated with port _servers[i].getPort() on all interfaces
 		if (bind(listenFd, (struct sockaddr*)&addr, sizeof(addr)) < 0)
 		{
 			safeClose(listenFd, "Server");
@@ -173,7 +173,7 @@ void Server::setupListenSockets()
 		pollfd pfd = { listenFd, POLLIN, 0 };
 		_pollFds.push_back(pfd);
 		_socketTypes[listenFd] = SOCKET_LISTEN;
-		std::cout << "Server " << _configs[i].getServerName() << " listening on port " << _configs[i].getPort() << std::endl;
+		std::cout << "Server " << _servers[i].getServerName() << " listening on port " << _servers[i].getPort() << std::endl;
 	}
 }
 
@@ -255,14 +255,14 @@ const ServerBlock* Server::getServerBlock(const HttpRequest& request, int client
 	// Virtual host lookup: match server_name against Host header
 	const int localPort = getSocketPort(clientFd);
 	const ServerBlock* firstServer = NULL;
-	for (size_t i = 0; i < _configs.size(); i++)
+	for (size_t i = 0; i < _servers.size(); i++)
 	{
-		if (_configs[i].getPort() != localPort)
+		if (_servers[i].getPort() != localPort)
 			continue;
 		if (!firstServer)
-			firstServer = &_configs[i];
-		if (!host.empty() && _configs[i].getServerName() == host)
-			return &_configs[i];
+			firstServer = &_servers[i];
+		if (!host.empty() && _servers[i].getServerName() == host)
+			return &_servers[i];
 	}
 	return firstServer;
 }

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 14:55:58 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:18:48 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,7 @@ class	Server
 
 		// Attribute(s)
 
-		serverBlockVector	_configs;				// Server configurations
+		serverBlockVector	_servers;				// Server configurations
 		PollfdVector		_pollFds;				// Poll file descriptors for I/O multiplexing
 		ClientMap			_clients;				// Active client connections
 		socketTypeMap		_socketTypes;			// Socket type mapping

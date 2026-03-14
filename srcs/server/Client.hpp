@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 15:14:51 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:14:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ class	Client
 		size_t					_bytesSent;				// Bytes already sent from cached response
 		time_t					_cgiStartTime;			// Start time for CGI timeout tracking
 		time_t					_requestStartTime;		// Start time for request timing (from first data)
-		const ServerBlock*		_serverConfig;			// Server configuration for logging
+		const ServerBlock*		_server;				// Server configuration for logging
 		RequestInfo     		_logInfo;				// Cached request info for logging (set once, reused at end)
 
 		// Private method(s)
@@ -85,7 +85,7 @@ class	Client
 		void					handleCounterApi(std::map<std::string, SessionData>& sessions);
 
 		/** @brief Dispatches a validated request to the appropriate handler based on method and route. */
-		void					dispatchRequest(const ServerBlock& config, const RouteMatch& match);
+		void					dispatchRequest(const ServerBlock& server, const RouteMatch& match);
 
 	public:
 
@@ -124,15 +124,15 @@ class	Client
 		void					markCloseAfterResponse();
 
 		/** @brief Records CGI start time and stores config reference for timeout enforcement. */
-		void					setCgiTiming(const ServerBlock& config);
+		void					setCgiTiming(const ServerBlock& server);
 
 		// Public method(s)
 
 		/** @brief Reads from socket into the request parser; returns false on disconnect or error. */
-		bool					readData(const ServerBlock* config = NULL);
+		bool					readData(const ServerBlock* server = NULL);
 
 		/** @brief Routes the request and builds the appropriate HTTP response. */
-		void					buildResponse(const ServerBlock& config, Router& router, std::map<std::string, SessionData>& sessions);
+		void					buildResponse(const ServerBlock& server, Router& router, std::map<std::string, SessionData>& sessions);
 
 		/** @brief Builds the response from a completed CGI execution result. */
 		void					buildResponseFromCGI(const CgiResult& result);
@@ -141,7 +141,7 @@ class	Client
 		 * @brief Builds an error response, resolving a custom error page from config if available.
 		 * @param config Optional — used to look up configured error_page paths.
 		 */
-		void					buildErrorResponse(int statusCode, const ServerBlock* config = NULL);
+		void					buildErrorResponse(int statusCode, const ServerBlock* server = NULL);
 
 		/** @brief Sends the cached response progressively; returns true when fully sent. */
 		bool					sendResponse();

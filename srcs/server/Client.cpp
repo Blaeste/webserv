@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 15:19:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 21:13:18 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,7 +68,7 @@ Client::Client(int socket, const std::string& clientIp)
 	, _bytesSent(0)
 	, _cgiStartTime(0)
 	, _requestStartTime(0)
-	, _serverConfig(NULL)
+	, _server(NULL)
 {}
 
 // Accessor(s) -----------------------------------------------------------------
@@ -90,10 +90,10 @@ void Client::markCloseAfterResponse()
 	_closeAfterResponse = true;
 }
 
-void Client::setCgiTiming(const ServerBlock& config)
+void Client::setCgiTiming(const ServerBlock& server)
 {
 	_cgiStartTime = std::time(NULL);
-	_serverConfig = &config;
+	_server = &server;
 }
 
 void Client::logRequestStart(const std::string& serverName, int port)
@@ -130,7 +130,7 @@ void Client::logRequestEnd()
 
 // Public method(s) ------------------------------------------------------------
 
-bool Client::readData(const ServerBlock* config)
+bool Client::readData(const ServerBlock* server)
 {
 	// Set start time on very first read (before any parsing)
 	if (_requestStartTime == 0)
@@ -150,7 +150,7 @@ bool Client::readData(const ServerBlock* config)
 		_requestComplete = true;
 		if (_request.getErrorCode())
 		{
-			buildErrorResponse(_request.getErrorCode(), config);
+			buildErrorResponse(_request.getErrorCode(), server);
 			markCloseAfterResponse();
 			_responseReady = true;
 		}
@@ -172,7 +172,7 @@ void Client::handleCounterApi(std::map<std::string, SessionData>& sessions)
 }
 
 // Dispatches a validated request to the appropriate handler based on method and route.
-void Client::dispatchRequest(const ServerBlock& config, const RouteMatch& match)
+void Client::dispatchRequest(const ServerBlock& server, const RouteMatch& match)
 {
     if (!match.redirectUrl.empty())
     {
@@ -184,7 +184,7 @@ void Client::dispatchRequest(const ServerBlock& config, const RouteMatch& match)
     {
         if (match.statusCode == 405 && match.location)
         {
-            buildErrorResponse(match.statusCode, &config);
+            buildErrorResponse(match.statusCode, &server);
             std::string allow;
             const stringVector& methods = match.location->getAllowedMethods();
             for (size_t i = 0; i < methods.size(); ++i)
@@ -196,7 +196,7 @@ void Client::dispatchRequest(const ServerBlock& config, const RouteMatch& match)
             _response.setHeader("Allow", allow);
         }
         else
-            buildErrorResponse(match.statusCode, &config);
+            buildErrorResponse(match.statusCode, &server);
     }
     else if (_request.getMethod() == "OPTIONS")
         _response.serveOptions(match.location->getAllowedMethods());
@@ -204,13 +204,13 @@ void Client::dispatchRequest(const ServerBlock& config, const RouteMatch& match)
     {
         int status = _response.serveDelete(match.filePath, match.location->getUploadPath());
         if (status >= 400)
-            buildErrorResponse(status, &config);
+            buildErrorResponse(status, &server);
     }
     else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
     {
         int status = _response.handleUpload(_request, match.location->getUploadPath());
         if (status >= 400)
-            buildErrorResponse(status, &config);
+            buildErrorResponse(status, &server);
     }
     else if (_request.getMethod() == "POST")
     {
@@ -222,28 +222,28 @@ void Client::dispatchRequest(const ServerBlock& config, const RouteMatch& match)
     {
         int status = _response.serveDirectoryListing(match.filePath, _request.getUri());
         if (status >= 400)
-            buildErrorResponse(status, &config);
+            buildErrorResponse(status, &server);
     }
     else
     {
         int status = _response.serveFile(match.filePath, match.location->getRoot());
         if (status >= 400)
-            buildErrorResponse(status, &config);
+            buildErrorResponse(status, &server);
     }
 }
 
-void Client::buildResponse(const ServerBlock& config, Router& router, std::map<std::string, SessionData>& sessions)
+void Client::buildResponse(const ServerBlock& server, Router& router, std::map<std::string, SessionData>& sessions)
 {
-    RouteMatch match = router.matchRoute(config, _request);
+    RouteMatch match = router.matchRoute(server, _request);
 
     // Check body size limit (use location limit if set, otherwise server limit)
-    size_t maxBodySize = config.getMaxBodySize();
+    size_t maxBodySize = server.getMaxBodySize();
     if (match.location && match.location->getMaxBodySize() > 0)
         maxBodySize = match.location->getMaxBodySize();
 
     if (_request.getBody().size() > maxBodySize)
     {
-        buildErrorResponse(413, &config);
+        buildErrorResponse(413, &server);
         markCloseAfterResponse();
         _responseReady = true;
         applyConnectionHeader();
@@ -258,7 +258,7 @@ void Client::buildResponse(const ServerBlock& config, Router& router, std::map<s
         return;
     }
 
-    dispatchRequest(config, match);
+    dispatchRequest(server, match);
 
     _responseReady = true;
     applyConnectionHeader();
@@ -273,13 +273,13 @@ void Client::buildResponseFromCGI(const CgiResult &result)
 		_response.setBody(result.output);
 	}
 	else
-		buildErrorResponse(result.statusCode, _serverConfig);
+		buildErrorResponse(result.statusCode, _server);
 
 	_responseReady = true;
 	applyConnectionHeader();
 }
 
-void Client::buildErrorResponse(int statusCode, const ServerBlock* config)
+void Client::buildErrorResponse(int statusCode, const ServerBlock* server)
 {
 	_response.setStatus(statusCode);
 	_response.setHeader("Content-Type", "text/html");
@@ -287,13 +287,13 @@ void Client::buildErrorResponse(int statusCode, const ServerBlock* config)
 	std::string errorPage;
 
 	// 1. Check custom error page from server configuration
-	if (config)
+	if (server)
 	{
-		std::string customPath = config->getErrorPage(statusCode);
+		std::string customPath = server->getErrorPage(statusCode);
 		if (!customPath.empty())
 		{
 			// Resolve against the root of the first location (typically "/")
-			const locationVector& locations = config->getLocations();
+			const locationVector& locations = server->getLocations();
 			for (size_t i = 0; i < locations.size(); ++i)
 			{
 				if (locations[i].getPath() == "/")
