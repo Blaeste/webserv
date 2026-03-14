@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:32:54 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:44:03 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,24 +19,24 @@
 
 // Static variable(s) initialization -------------------------------------------
 
-requestMap	Logger::_activeRequests;
-std::string	Logger::_lastMethod;
-std::string	Logger::_lastUri;
-std::string	Logger::_lastClientIP;
-size_t		Logger::_requestCount			= 0;
-time_t		Logger::_minTime				= std::numeric_limits<time_t>::max();
-time_t		Logger::_maxTime				= 0;
-std::string	Logger::_lastServerName;
-int			Logger::_lastServerPort			= 0;
-size_t		Logger::_lastEndRequestSize		= std::numeric_limits<size_t>::max();
-int			Logger::_lastEndStatus			= -1;
-size_t		Logger::_groupEndCount			= 0;
-bool		Logger::_firstLog				= true;
-bool		Logger::_pendingRequest			= false;
-std::string	Logger::_lastRequestStartTime;
-int			Logger::_lastDisplayedRequestId	= -1;
-int			Logger::_currentLine			= 0;
-bool		Logger::_s_logging				= false;
+requestMap		Logger::_activeRequests;
+std::string		Logger::_lastMethod;
+std::string		Logger::_lastUri;
+std::string		Logger::_lastClientIP;
+size_t			Logger::_requestCount			= 0;
+time_t			Logger::_minTime				= std::numeric_limits<time_t>::max();
+time_t			Logger::_maxTime				= 0;
+std::string		Logger::_lastServerName;
+int				Logger::_lastServerPort			= 0;
+size_t			Logger::_lastEndRequestSize		= std::numeric_limits<size_t>::max();
+int				Logger::_lastEndStatus			= -1;
+size_t			Logger::_groupEndCount			= 0;
+bool			Logger::_pendingRequest			= false;
+std::string		Logger::_lastRequestStartTime;
+int				Logger::_lastDisplayedRequestId	= -1;
+int				Logger::_currentLine			= 0;
+bool			Logger::_s_logging				= false;
+LastLineType	Logger::_lastLineType			= LINE_NONE;
 
 // Private method(s) -----------------------------------------------------------
 
@@ -210,14 +210,20 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 void Logger::requestStart(const RequestInfo& info)
 {
-	if (_firstLog)
+	if (_lastLineType == LINE_NONE)
 	{
 		_s_logging = true;
 		printSeparator();
 		std::cout << std::endl;
 		_currentLine++;
-		_firstLog = false;
 	}
+	else if (_lastLineType == LINE_SEPARATOR)
+	{
+		// Start a new line after the closing separator
+		std::cout << std::endl;
+		_currentLine++;
+	}
+	_lastLineType = LINE_REQUEST;
 
 	// Store request data for this specific request
 	RequestData data;
@@ -340,17 +346,20 @@ void Logger::requestEnd(const RequestInfo& info)
 
 void Logger::logMessage(const std::string& message)
 {
-	// Finalize current line if we're mid-display
-	if (_pendingRequest)
-	{
-		std::cout << std::endl;
-		_currentLine++;
-	}
+    if (_pendingRequest)
+    {
+        std::cout << std::endl;
+        _currentLine++;
+        _lastLineType = LINE_REQUEST;
+    }
 
-	// Opening separator + newline
-	printSeparator();
-	std::cout << std::endl;
-	_currentLine++;
+    // Opening separator only if last line wasn't already one
+    if (_lastLineType != LINE_SEPARATOR)
+    {
+        printSeparator();
+        std::cout << std::endl;
+        _currentLine++;
+    }
 
 	// Message content
 	std::cout << message;
@@ -364,9 +373,20 @@ void Logger::logMessage(const std::string& message)
 	}
 
 	// Closing separator (no trailing newline — next logRequestStart will handle it)
-	printSeparator();
+    printSeparator();
+    _lastLineType = LINE_SEPARATOR;
+    std::cout.flush();
 
-	std::cout.flush();
+	// Break any pending group — next identical request starts fresh
+	_pendingRequest = false;
+	_lastMethod = "";
+	_lastUri = "";
+	_requestCount = 0;
+	_groupEndCount = 0;
+	_minTime = std::numeric_limits<time_t>::max();
+	_maxTime = 0;
+	_lastEndRequestSize = std::numeric_limits<size_t>::max();
+	_lastEndStatus = -1;
 }
 
 bool Logger::hasStarted()

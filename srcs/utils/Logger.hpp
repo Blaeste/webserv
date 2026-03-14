@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:34:06 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:28:46 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@
 
 // Structure(s) ----------------------------------------------------------------
 
-struct RequestData
+struct	RequestData
 {
 	std::string		method;				// HTTP method (GET, POST, etc.)
 	std::string		uri;				// Request URI path
@@ -45,13 +45,7 @@ struct RequestData
 	int				displayLine;		// Terminal line number for in-place update
 };
 
-// Typedef(s) ------------------------------------------------------------------
-
-typedef	std::map<int, RequestData>	requestMap;
-
-// Structure(s) ----------------------------------------------------------------
-
-struct RequestInfo
+struct	RequestInfo
 {
 	// Fields used by logRequestStart
 	int			 requestId;		// Socket fd used as unique key
@@ -78,6 +72,20 @@ struct RequestInfo
 		, responseTime(0)
 	{}
 };
+
+// Enum(s) ---------------------------------------------------------------------
+
+enum	LastLineType
+{
+    LINE_NONE,       // nothing printed yet
+    LINE_REQUEST,    // a request line (complete or pending)
+    LINE_SEPARATOR,  // a separator ---
+    LINE_MESSAGE     // a logMessage content line
+};
+
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<int, RequestData>	requestMap;
 
 // Class -----------------------------------------------------------------------
 
@@ -110,12 +118,12 @@ class Logger
 		static size_t			_lastEndRequestSize;		// Last completed request body size
 		static int				_lastEndStatus;				// Last completed response status code
 		static size_t			_groupEndCount;				// Number of completions in current visual group
-		static bool				_firstLog;					// Indicates if this is the first log entry
 		static bool				_pendingRequest;			// Request started but not completed
 		static std::string		_lastRequestStartTime;		// Store timestamp from logRequestStart
 		static int				_lastDisplayedRequestId;	// Track which request displayed the last line
 		static int				_currentLine;				// Current terminal line number for cursor movement
 		static bool				_s_logging;					// True while Logger is writing to stdout (guards safeClose output)
+		static LastLineType		_lastLineType;				// Type of the last physically printed line
 
 		// Private method(s)
 
