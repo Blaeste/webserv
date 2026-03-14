@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 22:55:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:09:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,6 +140,12 @@ class Logger
 
 		/** @brief Resets all grouping state so the next request starts a fresh group. */
 		static void				resetGroupState();
+
+		/** @brief Formats "servername:port" truncated to SERVER_PORT_FIELD_WIDTH. */
+		static std::string		formatServerPort(const std::string& serverName, int serverPort);
+
+		/** @brief Formats the URI column with size hint, group count and padding to URI_FIELD_WIDTH. */
+		static std::string		formatUriField(const std::string& uri, size_t declaredSize, size_t requestSize, bool includeCompletion);
 
 	public:
 

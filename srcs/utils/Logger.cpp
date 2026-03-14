@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 22:57:57 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:12:31 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -97,85 +97,8 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 							  (method == "POST") ? YELLOW : 
 							  (method == "DELETE") ? RED : GREY;
 
-	// Format server:port (right-align)
-	std::stringstream portStr;
-	portStr << ":" << serverPort;
-	std::string portPart = portStr.str();
-	size_t maxServerNameLen = 0;
-	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
-		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
-	std::string displayServerName = serverName;
-	if (displayServerName.length() > maxServerNameLen)
-	{
-		if (maxServerNameLen < 2)
-			displayServerName = displayServerName.substr(0, maxServerNameLen);
-		else
-			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
-	}
-	std::string serverPortStr = displayServerName + portPart;
-	size_t serverPad = 0;
-	if (serverPortStr.length() < SERVER_PORT_FIELD_WIDTH)
-		serverPad = SERVER_PORT_FIELD_WIDTH - serverPortStr.length();
-	std::string rightAlignedServerPort = std::string(serverPad, ' ') + serverPortStr;
-
-	// --- Build URI field (fixed width: URI_FIELD_WIDTH) ---
-
-	// Clean URI: replace non-printable characters with '?'
-	std::string displayUri = uri;
-	for (size_t i = 0; i < displayUri.length(); i++)
-		if (displayUri[i] < 32 || displayUri[i] == 127)
-			displayUri[i] = '?';
-
-	// Compute upload size hint shown after URI for POST
-	std::string hintStr;
-	size_t hintLen = 0;
-	{
-		size_t sz = it->second.declaredSize;
-		if (sz == std::numeric_limits<size_t>::max() && includeCompletion
-			&& requestSize != std::numeric_limits<size_t>::max())
-			sz = requestSize;
-		if (sz != std::numeric_limits<size_t>::max())
-		{
-			std::string s = formatSize(sz);
-			hintStr = std::string(" ") + YELLOW + "(" + s + ")" + RESET;
-			hintLen = 3 + s.length();
-		}
-	}
-
-	// Compute count suffix for grouped requests
-	std::string countStr;
-	size_t countLen = 0;
-	if (_requestCount > 1)
-	{
-		std::stringstream ss;
-		ss << "(x" << _requestCount << ")";
-		countLen = ss.str().length();
-		countStr = std::string(GREY) + ss.str() + RESET;
-	}
-
-	// Truncate URI to fit - reserving space for hint, count, pending "..."
-	size_t reserved = hintLen + (countLen > 0 ? 1 + countLen : 0)
-					+ (!includeCompletion && countLen == 0 ? 4 : 0);
-	size_t maxUriLen = (reserved < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - reserved : 2;
-	if (maxUriLen < 2) maxUriLen = 2;
-	if (displayUri.length() > maxUriLen)
-		displayUri = (maxUriLen >= 2) ? displayUri.substr(0, maxUriLen - 1) + "…" : "…";
-
-	// Assemble URI field
-	std::stringstream uriField;
-	size_t usedLen = displayUri.length() + hintLen;
-	uriField << displayUri << hintStr;
-	if (countLen > 0)
-	{
-		size_t gap = (usedLen + countLen < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - usedLen - countLen : 1;
-		uriField << std::string(gap, ' ') << countStr;
-	} else {
-		if (!includeCompletion)
-			uriField << GREY << " ..." << RESET;
-		size_t totalUsed = usedLen + (!includeCompletion ? 4 : 0);
-		if (totalUsed < URI_FIELD_WIDTH)
-			uriField << std::string(URI_FIELD_WIDTH - totalUsed, ' ');
-	}
+	std::string serverPortStr = formatServerPort(serverName, serverPort);
+	std::string uriFieldStr   = formatUriField(uri, it->second.declaredSize, requestSize, includeCompletion);
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
@@ -196,7 +119,7 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 		   << CYAN << std::setw(SERVER_PORT_FIELD_WIDTH) << std::right << serverPortStr << RESET << " >-< "
 		   << CYAN << std::setw(IP_FIELD_WIDTH) << std::left << clientIP << GREY << " | " << RESET
 		   << methodColor << BOLD << std::setw(METHOD_FIELD_WIDTH) << std::right << method << RESET << " "
-		   << uriField.str();
+		   << uriFieldStr;
 	if (includeCompletion)
 		output << GREY << " | " << RESET << std::setw(RESPONSE_SIZE_FIELD_WIDTH) << std::right << formatSize(responseSize)
 			   << GREY << " | " << RESET << std::setw(STATUS_FIELD_WIDTH) << statusStr.str() << RESET
@@ -224,6 +147,92 @@ void Logger::resetGroupState()
 	_lastMethod     = "";
 	_lastUri        = "";
 	_requestCount   = 0;
+}
+
+// Formats "servername:port" right-aligned and truncated to SERVER_PORT_FIELD_WIDTH.
+std::string Logger::formatServerPort(const std::string& serverName, int serverPort)
+{
+	std::stringstream portStr;
+	portStr << ":" << serverPort;
+	std::string portPart = portStr.str();
+
+	size_t maxServerNameLen = 0;
+	if (portPart.length() < SERVER_PORT_FIELD_WIDTH)
+		maxServerNameLen = SERVER_PORT_FIELD_WIDTH - portPart.length();
+
+	std::string displayServerName = serverName;
+	if (displayServerName.length() > maxServerNameLen)
+	{
+		if (maxServerNameLen < 2)
+			displayServerName = displayServerName.substr(0, maxServerNameLen);
+		else
+			displayServerName = displayServerName.substr(0, maxServerNameLen - 2) + "..";
+	}
+	return displayServerName + portPart;
+}
+
+// Formats the URI column: computes size hint, truncates URI, appends group count or pending "...".
+std::string Logger::formatUriField(const std::string& uri, size_t declaredSize, size_t requestSize, bool includeCompletion)
+{
+	// Clean URI: replace non-printable characters with '?'
+	std::string displayUri = uri;
+	for (size_t i = 0; i < displayUri.length(); i++)
+		if (displayUri[i] < 32 || displayUri[i] == 127)
+			displayUri[i] = '?';
+
+	// Compute upload size hint shown after URI for POST
+	std::string hintStr;
+	size_t hintLen = 0;
+	{
+		size_t sz = declaredSize;
+		if (sz == std::numeric_limits<size_t>::max() && includeCompletion
+			&& requestSize != std::numeric_limits<size_t>::max())
+			sz = requestSize;
+		if (sz != std::numeric_limits<size_t>::max())
+		{
+			std::string s = formatSize(sz);
+			hintStr = std::string(" ") + YELLOW + "(" + s + ")" + RESET;
+			hintLen = 3 + s.length();
+		}
+	}
+
+	// Compute count suffix for grouped requests
+	std::string countStr;
+	size_t countLen = 0;
+	if (_requestCount > 1)
+	{
+		std::stringstream ss;
+		ss << "(x" << _requestCount << ")";
+		countLen = ss.str().length();
+		countStr = std::string(GREY) + ss.str() + RESET;
+	}
+
+	// Truncate URI to fit
+	size_t reserved = hintLen + (countLen > 0 ? 1 + countLen : 0)
+					+ (!includeCompletion && countLen == 0 ? 4 : 0);
+	size_t maxUriLen = (reserved < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - reserved : 2;
+	if (maxUriLen < 2) maxUriLen = 2;
+	if (displayUri.length() > maxUriLen)
+		displayUri = (maxUriLen >= 2) ? displayUri.substr(0, maxUriLen - 1) + "…" : "…";
+
+	// Assemble URI field
+	std::stringstream uriField;
+	size_t usedLen = displayUri.length() + hintLen;
+	uriField << displayUri << hintStr;
+	if (countLen > 0)
+	{
+		size_t gap = (usedLen + countLen < URI_FIELD_WIDTH) ? URI_FIELD_WIDTH - usedLen - countLen : 1;
+		uriField << std::string(gap, ' ') << countStr;
+	}
+	else
+	{
+		if (!includeCompletion)
+			uriField << GREY << " ..." << RESET;
+		size_t totalUsed = usedLen + (!includeCompletion ? 4 : 0);
+		if (totalUsed < URI_FIELD_WIDTH)
+			uriField << std::string(URI_FIELD_WIDTH - totalUsed, ' ');
+	}
+	return uriField.str();
 }
 
 // Public method(s) ------------------------------------------------------------
@@ -360,20 +369,20 @@ void Logger::requestEnd(const RequestInfo& info)
 
 void Logger::logMessage(const std::string& message)
 {
-    if (_pendingRequest)
-    {
-        std::cout << std::endl;
-        _currentLine++;
-        _lastLineType = LINE_REQUEST;
-    }
+	if (_pendingRequest)
+	{
+		std::cout << std::endl;
+		_currentLine++;
+		_lastLineType = LINE_REQUEST;
+	}
 
-    // Opening separator only if last line wasn't already one
-    if (_lastLineType != LINE_SEPARATOR)
-    {
-        printSeparator();
-        std::cout << std::endl;
-        _currentLine++;
-    }
+	// Opening separator only if last line wasn't already one
+	if (_lastLineType != LINE_SEPARATOR)
+	{
+		printSeparator();
+		std::cout << std::endl;
+		_currentLine++;
+	}
 
 	// Message content
 	std::cout << message;
@@ -387,9 +396,9 @@ void Logger::logMessage(const std::string& message)
 	}
 
 	// Closing separator (no trailing newline — next logRequestStart will handle it)
-    printSeparator();
-    _lastLineType = LINE_SEPARATOR;
-    std::cout.flush();
+	printSeparator();
+	_lastLineType = LINE_SEPARATOR;
+	std::cout.flush();
 
 	// Break any pending group — next identical request starts fresh
 	resetGroupState();
