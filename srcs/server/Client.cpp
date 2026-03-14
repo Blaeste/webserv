@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 15:12:36 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 15:19:23 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -145,9 +145,6 @@ bool Client::readData(const ServerBlock* config)
 	std::string newData(buffer, bytesRead);
 	_request.appendData(newData);
 
-	// Log request start as soon as headers are parsed
-	// Logging moved to Server::handleClientRead once Host header is fully parsed
-
 	if (_request.isComplete())
 	{
 		_requestComplete = true;
@@ -156,8 +153,6 @@ bool Client::readData(const ServerBlock* config)
 			buildErrorResponse(_request.getErrorCode(), config);
 			markCloseAfterResponse();
 			_responseReady = true;
-
-			// Logging moved to Server::handleClientRead once Host header is fully parsed
 		}
 	}
 	updateActivity();
