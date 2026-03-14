@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 14:22:05 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 15:03:42 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -62,9 +62,9 @@ struct	CgiProcess
 struct	CgiResult
 {
 	// Attribute(s)
-	int statusCode;				// HTTP status code from CGI response
-	std::string output;			// Response body from CGI script
-	std::string contentType;	// Content-Type header from CGI response
+	int			statusCode;		// HTTP status code from CGI response
+	std::string	output;			// Response body from CGI script
+	std::string	contentType;	// Content-Type header from CGI response
 
 	// Default constructor
 	CgiResult()
@@ -78,10 +78,6 @@ struct	CgiResult
 class	Cgi
 {
 	private:
-
-		// Constant(s)
-
-		static const size_t	CGI_OUTPUT_DISPLAY_LIMIT = 500;	// Max bytes of CGI output shown in log messages
 
 		// Attribute(s)
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 14:56:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 15:04:08 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -169,11 +169,6 @@ void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request)
 
 void Cgi::parseHeaders(const std::string& output, CgiResult& result)
 {
-	// Truncate display for large outputs
-	std::string displayOutput = output;
-	if (displayOutput.size() > CGI_OUTPUT_DISPLAY_LIMIT)
-		displayOutput = displayOutput.substr(0, CGI_OUTPUT_DISPLAY_LIMIT) + "... [truncated, total " + intToString(output.size()) + " bytes]";
-
 	size_t headersEnd = output.find("\r\n\r\n");
 	if (headersEnd == std::string::npos)
 	{
