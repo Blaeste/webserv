@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:44 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/13 13:35:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 15:14:51 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 class	Location;
 class	ServerBlock;
 class	Router;
+struct	RouteMatch;
 struct	SessionData;
 struct	CgiProcess;
 struct	CgiResult;
@@ -79,6 +80,12 @@ class	Client
 
 		/** @brief Sets Connection header to "keep-alive" or "close" based on _closeAfterResponse. */
 		void					applyConnectionHeader();
+
+		/** @brief Handles the /counter-api endpoint, returning session visit count as JSON. */
+		void					handleCounterApi(std::map<std::string, SessionData>& sessions);
+
+		/** @brief Dispatches a validated request to the appropriate handler based on method and route. */
+		void					dispatchRequest(const ServerBlock& config, const RouteMatch& match);
 
 	public:
 
