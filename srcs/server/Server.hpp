@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:51 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 21:18:48 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:06:45 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,6 @@ enum	SocketType
 // Typedef(s) ------------------------------------------------------------------
 
 typedef	std::map<int, SocketType>			socketTypeMap;
-typedef	std::map<std::string, SessionData>	SessionMap;
 typedef std::map<int, Client>				ClientMap;
 typedef	std::vector<pollfd>					PollfdVector;
 

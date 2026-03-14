@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 21:13:18 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:04:56 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -71,7 +71,136 @@ Client::Client(int socket, const std::string& clientIp)
 	, _server(NULL)
 {}
 
-// Accessor(s) -----------------------------------------------------------------
+// Private method(s) -----------------------------------------------------------
+
+void Client::applyConnectionHeader()
+{
+	// If already marked for closure, force close header
+	if (_closeAfterResponse)
+	{
+		_response.setHeader("Connection", "close");
+		return;
+	}
+
+	std::string conn = toLowercase(trim(_request.getHeader("connection")));
+	if (_request.getVersion() == "HTTP/1.1")
+		_closeAfterResponse = (conn == "close"); // keep-alive by default
+	else
+		_closeAfterResponse = (conn != "keep-alive"); // HTTP/1.0 => close by default
+
+	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
+}
+
+// Handles the /counter-api endpoint: returns session visit count as JSON.
+void Client::handleCounterApi(SessionMap& sessions)
+{
+	SessionData& session = sessions[_sessionId];
+	std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
+	_response.setStatus(200);
+	_response.setHeader("Content-Type", "application/json");
+	_response.setBody(json);
+	_responseReady = true;
+	applyConnectionHeader();
+}
+
+// Dispatches a validated request to the appropriate handler based on method and route.
+void Client::dispatchRequest(const ServerBlock& server, const RouteMatch& match)
+{
+	if (!match.redirectUrl.empty())
+	{
+		_response.setStatus(match.statusCode);
+		_response.setHeader("Location", match.redirectUrl);
+		_response.setBody("");
+	}
+	else if (match.statusCode != 200)
+	{
+		if (match.statusCode == 405 && match.location)
+		{
+			buildErrorResponse(match.statusCode, &server);
+			std::string allow;
+			const stringVector& methods = match.location->getAllowedMethods();
+			for (size_t i = 0; i < methods.size(); ++i)
+			{
+				if (i > 0)
+					allow += ", ";
+				allow += methods[i];
+			}
+			_response.setHeader("Allow", allow);
+		}
+		else
+			buildErrorResponse(match.statusCode, &server);
+	}
+	else if (_request.getMethod() == "OPTIONS")
+		_response.serveOptions(match.location->getAllowedMethods());
+	else if (_request.getMethod() == "DELETE")
+	{
+		int status = _response.serveDelete(match.filePath, match.location->getUploadPath());
+		if (status >= 400)
+			buildErrorResponse(status, &server);
+	}
+	else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
+	{
+		int status = _response.handleUpload(_request, match.location->getUploadPath());
+		if (status >= 400)
+			buildErrorResponse(status, &server);
+	}
+	else if (_request.getMethod() == "POST")
+	{
+		_response.setStatus(200);
+		_response.setHeader("Content-Type", "text/plain");
+		_response.setBody("OK");
+	}
+	else if (isDirectory(match.filePath) && match.location->getAutoIndex())
+	{
+		int status = _response.serveDirectoryListing(match.filePath, _request.getUri());
+		if (status >= 400)
+			buildErrorResponse(status, &server);
+	}
+	else
+	{
+		int status = _response.serveFile(match.filePath, match.location->getRoot());
+		if (status >= 400)
+			buildErrorResponse(status, &server);
+	}
+}
+
+void Client::createSession(SessionMap& sessions, const std::string& sessionId)
+{
+	sessions[sessionId].lastActive = std::time(NULL);
+	sessions[sessionId].visitCount = 1;
+	sessions[sessionId].username = "";
+	_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
+	_sessionId = sessionId;
+}
+
+void Client::handleSession(SessionMap& sessions)
+{
+	cookieMap cookies = _request.getCookies();
+
+	if (cookies.find("session_id") != cookies.end())
+	{
+		std::string sessionId = cookies["session_id"];
+
+		if (sessions.find(sessionId) != sessions.end())
+		{
+			sessions[sessionId].lastActive = std::time(NULL);
+
+			// Only count HTML requests for page visit counter
+			std::string uri = _request.getUri();
+			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
+			bool isHtmlPage = (uri == "/"
+				|| uri.find(".html") != std::string::npos
+				|| (uri.find('.') == std::string::npos && uri != "/counter-api"));
+			if (isHtmlPage && !isInternalRequest)
+				sessions[sessionId].visitCount++;
+			_sessionId = sessionId;
+			return;
+		}
+	}
+	createSession(sessions, generateSessionId()); // New session
+}
+
+// Public method(s) ------------------------------------------------------------
 
 bool Client::hasTimedOut(time_t idleTimeout, time_t processingTimeout) const
 {
@@ -128,8 +257,6 @@ void Client::logRequestEnd()
 	Logger::requestEnd(_logInfo);
 }
 
-// Public method(s) ------------------------------------------------------------
-
 bool Client::readData(const ServerBlock* server)
 {
 	// Set start time on very first read (before any parsing)
@@ -159,109 +286,36 @@ bool Client::readData(const ServerBlock* server)
 	return true;
 }
 
-// Handles the /counter-api endpoint: returns session visit count as JSON.
-void Client::handleCounterApi(std::map<std::string, SessionData>& sessions)
+void Client::buildResponse(const ServerBlock& server, Router& router, SessionMap& sessions)
 {
-    SessionData& session = sessions[_sessionId];
-    std::string json = "{\"visitCount\":" + intToString(session.visitCount) + ",\"sessionId\":\"" + _sessionId + "\"}";
-    _response.setStatus(200);
-    _response.setHeader("Content-Type", "application/json");
-    _response.setBody(json);
-    _responseReady = true;
-    applyConnectionHeader();
-}
+	RouteMatch match = router.matchRoute(server, _request);
 
-// Dispatches a validated request to the appropriate handler based on method and route.
-void Client::dispatchRequest(const ServerBlock& server, const RouteMatch& match)
-{
-    if (!match.redirectUrl.empty())
-    {
-        _response.setStatus(match.statusCode);
-        _response.setHeader("Location", match.redirectUrl);
-        _response.setBody("");
-    }
-    else if (match.statusCode != 200)
-    {
-        if (match.statusCode == 405 && match.location)
-        {
-            buildErrorResponse(match.statusCode, &server);
-            std::string allow;
-            const stringVector& methods = match.location->getAllowedMethods();
-            for (size_t i = 0; i < methods.size(); ++i)
-            {
-                if (i > 0)
-                    allow += ", ";
-                allow += methods[i];
-            }
-            _response.setHeader("Allow", allow);
-        }
-        else
-            buildErrorResponse(match.statusCode, &server);
-    }
-    else if (_request.getMethod() == "OPTIONS")
-        _response.serveOptions(match.location->getAllowedMethods());
-    else if (_request.getMethod() == "DELETE")
-    {
-        int status = _response.serveDelete(match.filePath, match.location->getUploadPath());
-        if (status >= 400)
-            buildErrorResponse(status, &server);
-    }
-    else if (_request.getMethod() == "POST" && !_request.getUploadedFiles().empty())
-    {
-        int status = _response.handleUpload(_request, match.location->getUploadPath());
-        if (status >= 400)
-            buildErrorResponse(status, &server);
-    }
-    else if (_request.getMethod() == "POST")
-    {
-        _response.setStatus(200);
-        _response.setHeader("Content-Type", "text/plain");
-        _response.setBody("OK");
-    }
-    else if (isDirectory(match.filePath) && match.location->getAutoIndex())
-    {
-        int status = _response.serveDirectoryListing(match.filePath, _request.getUri());
-        if (status >= 400)
-            buildErrorResponse(status, &server);
-    }
-    else
-    {
-        int status = _response.serveFile(match.filePath, match.location->getRoot());
-        if (status >= 400)
-            buildErrorResponse(status, &server);
-    }
-}
+	// Check body size limit (use location limit if set, otherwise server limit)
+	size_t maxBodySize = server.getMaxBodySize();
+	if (match.location && match.location->getMaxBodySize() > 0)
+		maxBodySize = match.location->getMaxBodySize();
 
-void Client::buildResponse(const ServerBlock& server, Router& router, std::map<std::string, SessionData>& sessions)
-{
-    RouteMatch match = router.matchRoute(server, _request);
+	if (_request.getBody().size() > maxBodySize)
+	{
+		buildErrorResponse(413, &server);
+		markCloseAfterResponse();
+		_responseReady = true;
+		applyConnectionHeader();
+		return;
+	}
 
-    // Check body size limit (use location limit if set, otherwise server limit)
-    size_t maxBodySize = server.getMaxBodySize();
-    if (match.location && match.location->getMaxBodySize() > 0)
-        maxBodySize = match.location->getMaxBodySize();
+	handleSession(sessions);
 
-    if (_request.getBody().size() > maxBodySize)
-    {
-        buildErrorResponse(413, &server);
-        markCloseAfterResponse();
-        _responseReady = true;
-        applyConnectionHeader();
-        return;
-    }
+	if (_request.getUri() == "/counter-api")
+	{
+		handleCounterApi(sessions);
+		return;
+	}
 
-    handleSession(sessions);
+	dispatchRequest(server, match);
 
-    if (_request.getUri() == "/counter-api")
-    {
-        handleCounterApi(sessions);
-        return;
-    }
-
-    dispatchRequest(server, match);
-
-    _responseReady = true;
-    applyConnectionHeader();
+	_responseReady = true;
+	applyConnectionHeader();
 }
 
 void Client::buildResponseFromCGI(const CgiResult &result)
@@ -390,69 +444,4 @@ void Client::resetForNextRequest()
 			_requestComplete = true;
 		_requestStartTime = std::time(NULL);
 	}
-}
-
-void Client::applyConnectionHeader()
-{
-	// If already marked for closure, force close header
-	if (_closeAfterResponse)
-	{
-		_response.setHeader("Connection", "close");
-		return;
-	}
-
-	std::string conn = toLowercase(trim(_request.getHeader("connection")));
-	if (_request.getVersion() == "HTTP/1.1")
-		_closeAfterResponse = (conn == "close"); // keep-alive by default
-	else
-		_closeAfterResponse = (conn != "keep-alive"); // HTTP/1.0 => close by default
-
-	_response.setHeader("Connection", _closeAfterResponse ? "close" : "keep-alive");
-}
-
-// Private method(s) -----------------------------------------------------------
-
-void Client::handleSession(std::map<std::string, SessionData>& sessions)
-{
-	cookieMap cookies = _request.getCookies();
-	std::string sessionId;
-
-	if (cookies.find("session_id") != cookies.end())
-	{
-		sessionId = cookies["session_id"];
-
-		// Update existing session or create new if expired
-		if (sessions.find(sessionId) != sessions.end())
-		{
-			sessions[sessionId].lastActive = std::time(NULL);
-
-			// Only count html request (for good count page visit)
-			std::string uri = _request.getUri();
-			bool isInternalRequest = _request.getHeader("X-Internal-Request") == "true";
-			bool isHtmlPage = (uri == "/" ||
-							   uri.find(".html") != std::string::npos ||
-							   (uri.find('.') == std::string::npos && uri != "/counter-api"));
-			if (isHtmlPage && !isInternalRequest)
-				sessions[sessionId].visitCount++;
-		}
-		else
-		{
-			// Invalid/expired session → create new
-			sessionId = generateSessionId();
-			sessions[sessionId].lastActive = std::time(NULL);
-			sessions[sessionId].visitCount = 1;
-			sessions[sessionId].username = "";
-			_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-		}
-	}
-	else
-	{
-		// New session
-		sessionId = generateSessionId();
-		sessions[sessionId].lastActive = std::time(NULL);
-		sessions[sessionId].visitCount = 1;
-		sessions[sessionId].username = "";
-		_response.setHeader("Set-Cookie", "session_id=" + sessionId + "; Path=/; HttpOnly");
-	}
-	_sessionId = sessionId;
 }
