@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 23:28:09 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:46:43 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,24 +19,7 @@
 
 // Static variable(s) initialization -------------------------------------------
 
-requestMap		Logger::_activeRequests;
-std::string		Logger::_lastMethod;
-std::string		Logger::_lastUri;
-std::string		Logger::_lastClientIP;
-size_t			Logger::_requestCount			= 0;
-time_t			Logger::_minTime				= std::numeric_limits<time_t>::max();
-time_t			Logger::_maxTime				= 0;
-std::string		Logger::_lastServerName;
-int				Logger::_lastServerPort			= 0;
-size_t			Logger::_lastEndRequestSize		= std::numeric_limits<size_t>::max();
-int				Logger::_lastEndStatus			= -1;
-size_t			Logger::_groupEndCount			= 0;
-bool			Logger::_pendingRequest			= false;
-std::string		Logger::_lastRequestStartTime;
-int				Logger::_lastDisplayedRequestId	= -1;
-int				Logger::_currentLine			= 0;
-bool			Logger::_s_logging				= false;
-LastLineType	Logger::_lastLineType			= LINE_NONE;
+LoggerState Logger::_state;
 
 // Private method(s) -----------------------------------------------------------
 
@@ -84,13 +67,13 @@ std::string Logger::getStatusColor(int statusCode)
 void Logger::flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize)
 {
 	// Look up request data for this specific request
-	requestMap::iterator it = _activeRequests.find(requestId);
+	requestMap::iterator it = _state.activeRequests.find(requestId);
 	std::string method      = it->second.info.method;
 	std::string uri         = it->second.info.uri;
 	std::string clientIP    = it->second.info.clientIP;
 	std::string serverName  = it->second.info.serverName;
 	int serverPort          = it->second.info.port;
-	std::string requestStartTime = _lastRequestStartTime;
+	std::string requestStartTime = _state.lastRequestStartTime;
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
 	std::string methodColor = (method == "GET") ? GREEN : 
 							  (method == "HEAD") ? CYAN : 
@@ -102,11 +85,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
-	if (includeCompletion && _maxTime)
+	if (includeCompletion && _state.maxTime)
 	{
-		if (_requestCount > 1 && _minTime != _maxTime)
-			timingStr << _minTime << "-";
-		timingStr << _maxTime << "s";
+		if (_state.requestCount > 1 && _state.minTime != _state.maxTime)
+			timingStr << _state.minTime << "-";
+		timingStr << _state.maxTime << "s";
 	}
 
 	std::stringstream statusStr;
@@ -132,21 +115,21 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 // Resets timing and completion counters for the current request group.
 void Logger::resetTimingState()
 {
-	_minTime            = std::numeric_limits<time_t>::max();
-	_maxTime            = 0;
-	_lastEndRequestSize = std::numeric_limits<size_t>::max();
-	_lastEndStatus      = -1;
-	_groupEndCount      = 0;
+	_state.minTime            = std::numeric_limits<time_t>::max();
+	_state.maxTime            = 0;
+	_state.lastEndRequestSize = std::numeric_limits<size_t>::max();
+	_state.lastEndStatus      = -1;
+	_state.groupEndCount      = 0;
 }
 
 // Resets all grouping state so the next request starts a fresh group.
 void Logger::resetGroupState()
 {
 	resetTimingState();
-	_pendingRequest = false;
-	_lastMethod     = "";
-	_lastUri        = "";
-	_requestCount   = 0;
+	_state.pendingRequest = false;
+	_state.lastMethod     = "";
+	_state.lastUri        = "";
+	_state.requestCount   = 0;
 }
 
 // Formats "servername:port" right-aligned and truncated to SERVER_PORT_FIELD_WIDTH.
@@ -199,10 +182,10 @@ std::string Logger::formatUriField(const std::string& uri, size_t declaredSize, 
 	// Compute count suffix for grouped requests
 	std::string countStr;
 	size_t countLen = 0;
-	if (_requestCount > 1)
+	if (_state.requestCount > 1)
 	{
 		std::stringstream ss;
-		ss << "(x" << _requestCount << ")";
+		ss << "(x" << _state.requestCount << ")";
 		countLen = ss.str().length();
 		countStr = std::string(GREY) + ss.str() + RESET;
 	}
@@ -239,112 +222,112 @@ std::string Logger::formatUriField(const std::string& uri, size_t declaredSize, 
 
 void Logger::requestStart(const RequestInfo& info)
 {
-	if (_lastLineType == LINE_NONE)
+	if (_state.lastLineType == LINE_NONE)
 	{
-		_s_logging = true;
+		_state.logging = true;
 		printSeparator();
 		std::cout << std::endl;
-		_currentLine++;
+		_state.currentLine++;
 	}
-	else if (_lastLineType == LINE_SEPARATOR)
+	else if (_state.lastLineType == LINE_SEPARATOR)
 	{
 		// Start a new line after the closing separator
 		std::cout << std::endl;
-		_currentLine++;
+		_state.currentLine++;
 	}
-	_lastLineType = LINE_REQUEST;
+	_state.lastLineType = LINE_REQUEST;
 
 	// Store request data for this specific request
 	RequestData data;
 	data.info             = info;
 	data.requestStartTime = getCurrentTime();
-	data.displayLine      = _currentLine;
-	_activeRequests[info.requestId] = data;
+	data.displayLine      = _state.currentLine;
+	_state.activeRequests[info.requestId] = data;
 
-	bool isGroupableRequest = (_lastMethod == info.method && _lastUri == info.uri
-		&& _lastClientIP == info.clientIP && _lastServerName == info.serverName
-		&& _lastServerPort == info.port);
+	bool isGroupableRequest = (_state.lastMethod == info.method && _state.lastUri == info.uri
+		&& _state.lastClientIP == info.clientIP && _state.lastServerName == info.serverName
+		&& _state.lastServerPort == info.port);
 
-	if (_pendingRequest && !isGroupableRequest)
+	if (_state.pendingRequest && !isGroupableRequest)
 	{
 		std::cout << std::endl;
-		_currentLine++;
+		_state.currentLine++;
 		resetTimingState();
 	}
 
-	if (isGroupableRequest && _pendingRequest)
+	if (isGroupableRequest && _state.pendingRequest)
 	{
-		_requestCount++;
+		_state.requestCount++;
 		return;
 	}
 
 	// New request - initialize
-	_requestCount = 1;
-	_lastMethod = info.method;
-	_lastUri = info.uri;
-	_lastClientIP = info.clientIP;
-	_lastServerName = info.serverName;
-	_lastServerPort = info.port;
-	_lastRequestStartTime = data.requestStartTime;
-	_pendingRequest = true;
-	_lastDisplayedRequestId = info.requestId;
+	_state.requestCount = 1;
+	_state.lastMethod = info.method;
+	_state.lastUri = info.uri;
+	_state.lastClientIP = info.clientIP;
+	_state.lastServerName = info.serverName;
+	_state.lastServerPort = info.port;
+	_state.lastRequestStartTime = data.requestStartTime;
+	_state.pendingRequest = true;
+	_state.lastDisplayedRequestId = info.requestId;
 
 	// Record line AFTER potential endl above
-	_activeRequests[info.requestId].displayLine = _currentLine;
+	_state.activeRequests[info.requestId].displayLine = _state.currentLine;
 
 	flushRequestLine(info.requestId, false, 0, 0, 0);
 }
 
 void Logger::requestEnd(const RequestInfo& info)
 {
-	if (!_pendingRequest)
+	if (!_state.pendingRequest)
 		return;
 
 	// Check if this request is part of the currently displayed group
-	requestMap::iterator it = _activeRequests.find(info.requestId);
-	if (it == _activeRequests.end())
+	requestMap::iterator it = _state.activeRequests.find(info.requestId);
+	if (it == _state.activeRequests.end())
 		return; // already logged or unknown request
-	bool isGroupedRequest = (it->second.info.method == _lastMethod
-		&& it->second.info.uri == _lastUri
-		&& it->second.info.clientIP == _lastClientIP
-		&& it->second.info.serverName == _lastServerName
-		&& it->second.info.port == _lastServerPort);
+	bool isGroupedRequest = (it->second.info.method == _state.lastMethod
+		&& it->second.info.uri == _state.lastUri
+		&& it->second.info.clientIP == _state.lastClientIP
+		&& it->second.info.serverName == _state.lastServerName
+		&& it->second.info.port == _state.lastServerPort);
 
 	// Break the group if request body size or status differs from previous completion
-	if (isGroupedRequest && _groupEndCount
-		&& (info.requestSize != _lastEndRequestSize || info.statusCode != _lastEndStatus))
+	if (isGroupedRequest && _state.groupEndCount
+		&& (info.requestSize != _state.lastEndRequestSize || info.statusCode != _state.lastEndStatus))
 	{
 		std::cout << std::endl;
-		_currentLine++;
-		_requestCount = 1;
+		_state.currentLine++;
+		_state.requestCount = 1;
 		resetTimingState();
 	}
 
 	if (isGroupedRequest)
 	{
 		// Part of the current group - update timing and overwrite current line
-		if (info.responseTime < _minTime) _minTime = info.responseTime;
-		if (info.responseTime > _maxTime) _maxTime = info.responseTime;
-		_lastEndRequestSize = info.requestSize;
-		_lastEndStatus = info.statusCode;
-		_groupEndCount++;
+		if (info.responseTime < _state.minTime) _state.minTime = info.responseTime;
+		if (info.responseTime > _state.maxTime) _state.maxTime = info.responseTime;
+		_state.lastEndRequestSize = info.requestSize;
+		_state.lastEndStatus = info.statusCode;
+		_state.groupEndCount++;
 		flushRequestLine(info.requestId, true, info.statusCode, info.requestSize, info.responseSize);
-		_lastDisplayedRequestId = info.requestId;
+		_state.lastDisplayedRequestId = info.requestId;
 	}
-	else if (it != _activeRequests.end())
+	else if (it != _state.activeRequests.end())
 	{
 		// Non-grouped request on a previous line - overwrite it in place
-		int linesUp = _currentLine - it->second.displayLine;
+		int linesUp = _state.currentLine - it->second.displayLine;
 
 		// Save current group state
-		size_t savedCount = _requestCount;
-		time_t savedMin = _minTime;
-		time_t savedMax = _maxTime;
+		size_t savedCount = _state.requestCount;
+		time_t savedMin = _state.minTime;
+		time_t savedMax = _state.maxTime;
 
 		// Set state for this individual request
-		_requestCount = 1;
-		_minTime = info.responseTime;
-		_maxTime = info.responseTime;
+		_state.requestCount = 1;
+		_state.minTime = info.responseTime;
+		_state.maxTime = info.responseTime;
 
 		if (linesUp > 0)
 			std::cout << "\033[" << linesUp << "A"; // cursor up
@@ -354,45 +337,45 @@ void Logger::requestEnd(const RequestInfo& info)
 		std::cout.flush();
 
 		// Restore group state
-		_requestCount = savedCount;
-		_minTime = savedMin;
-		_maxTime = savedMax;
+		_state.requestCount = savedCount;
+		_state.minTime = savedMin;
+		_state.maxTime = savedMax;
 	}
 
-	_activeRequests.erase(info.requestId);
+	_state.activeRequests.erase(info.requestId);
 }
 
 void Logger::logMessage(const std::string& message)
 {
-	if (_pendingRequest)
+	if (_state.pendingRequest)
 	{
 		std::cout << std::endl;
-		_currentLine++;
-		_lastLineType = LINE_REQUEST;
+		_state.currentLine++;
+		_state.lastLineType = LINE_REQUEST;
 	}
 
 	// Opening separator only if last line wasn't already one
-	if (_lastLineType != LINE_SEPARATOR)
+	if (_state.lastLineType != LINE_SEPARATOR)
 	{
 		printSeparator();
 		std::cout << std::endl;
-		_currentLine++;
+		_state.currentLine++;
 	}
 
 	// Message content
 	std::cout << message;
 	for (size_t i = 0; i < message.length(); i++)
 		if (message[i] == '\n')
-			_currentLine++;
+			_state.currentLine++;
 	if (message.empty() || message[message.length() - 1] != '\n')
 	{
 		std::cout << std::endl;
-		_currentLine++;
+		_state.currentLine++;
 	}
 
 	// Closing separator (no trailing newline — next logRequestStart will handle it)
 	printSeparator();
-	_lastLineType = LINE_SEPARATOR;
+	_state.lastLineType = LINE_SEPARATOR;
 	std::cout.flush();
 
 	// Break any pending group — next identical request starts fresh
@@ -401,7 +384,7 @@ void Logger::logMessage(const std::string& message)
 
 bool Logger::hasStarted()
 {
-	return _s_logging;
+	return _state.logging;
 }
 
 void Logger::printSeparator()

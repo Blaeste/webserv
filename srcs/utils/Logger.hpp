@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 23:29:07 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 23:54:34 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,19 +68,58 @@ struct RequestData
 	int         displayLine;		// Terminal line number for in-place update
 };
 
+// Typedef(s) ------------------------------------------------------------------
+
+typedef	std::map<int, RequestData>	requestMap;
+
 // Enum(s) ---------------------------------------------------------------------
 
 enum	LastLineType
 {
-    LINE_NONE,       // nothing printed yet
-    LINE_REQUEST,    // a request line (complete or pending)
-    LINE_SEPARATOR,  // a separator ---
-    LINE_MESSAGE     // a logMessage content line
+	LINE_NONE,       // nothing printed yet
+	LINE_REQUEST,    // a request line (complete or pending)
+	LINE_SEPARATOR,  // a separator ---
+	LINE_MESSAGE     // a logMessage content line
 };
 
-// Typedef(s) ------------------------------------------------------------------
+// Structure(s) ----------------------------------------------------------------
 
-typedef	std::map<int, RequestData>	requestMap;
+struct LoggerState
+{
+	requestMap		activeRequests;			// Track each request's data by socket
+	std::string		lastMethod;				// Last logged HTTP method
+	std::string		lastUri;				// Last logged URI
+	std::string		lastClientIP;			// Last logged client IP address
+	size_t			requestCount;			// Number of grouped identical requests
+	time_t			minTime; 				// Minimum response time in group
+	time_t			maxTime;				// Maximum response time in group
+	std::string		lastServerName;			// Last logged server name
+	int				lastServerPort;			// Last logged server port
+	size_t			lastEndRequestSize; 	// Last completed request body size
+	int				lastEndStatus;			// Last completed response status code
+	size_t			groupEndCount;			// Number of completions in current visual group
+	bool			pendingRequest;			// Request started but not completed
+	std::string		lastRequestStartTime;	// Store timestamp from logRequestStart
+	int				lastDisplayedRequestId;	// Track which request displayed the last line
+	int				currentLine;			// Current terminal line number for cursor movement
+	bool			logging;				// True while Logger is writing to stdout (guards safeClose output)
+	LastLineType	lastLineType;			// Type of the last physically printed line
+
+	LoggerState()
+		: requestCount(0)
+		, minTime(std::numeric_limits<time_t>::max())
+		, maxTime(0)
+		, lastServerPort(0)
+		, lastEndRequestSize(std::numeric_limits<size_t>::max())
+		, lastEndStatus(-1)
+		, groupEndCount(0)
+		, pendingRequest(false)
+		, lastDisplayedRequestId(-1)
+		, currentLine(0)
+		, logging(false)
+		, lastLineType(LINE_NONE)
+	{}
+};
 
 // Class -----------------------------------------------------------------------
 
@@ -101,24 +140,7 @@ class Logger
 
 		// Attribute(s)
 
-		static requestMap		_activeRequests;			// Track each request's data by socket
-		static std::string		_lastMethod;				// Last logged HTTP method
-		static std::string		_lastUri;					// Last logged URI
-		static std::string		_lastClientIP;				// Last logged client IP address
-		static size_t			_requestCount;				// Number of grouped identical requests
-		static time_t			_minTime;					// Minimum response time in group
-		static time_t			_maxTime;					// Maximum response time in group
-		static std::string		_lastServerName;			// Last logged server name
-		static int				_lastServerPort;			// Last logged server port
-		static size_t			_lastEndRequestSize;		// Last completed request body size
-		static int				_lastEndStatus;				// Last completed response status code
-		static size_t			_groupEndCount;				// Number of completions in current visual group
-		static bool				_pendingRequest;			// Request started but not completed
-		static std::string		_lastRequestStartTime;		// Store timestamp from logRequestStart
-		static int				_lastDisplayedRequestId;	// Track which request displayed the last line
-		static int				_currentLine;				// Current terminal line number for cursor movement
-		static bool				_s_logging;					// True while Logger is writing to stdout (guards safeClose output)
-		static LastLineType		_lastLineType;				// Type of the last physically printed line
+		static LoggerState		_state;		
 
 		// Private method(s)
 
