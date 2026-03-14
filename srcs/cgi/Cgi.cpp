@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 14:31:23 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 14:45:11 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,6 +35,64 @@ static std::string toAbsolutePath(const std::string& path)
 	if (cwd)
 		return std::string(cwd) + "/" + path;
 	return path;
+}
+
+// Executes the CGI script in the child process after fork().
+// Redirects stdin/stdout/stderr to pipes, closes inherited fds, then execve().
+// Never returns on success; calls exit(1) on failure.
+static void executeCgiChild(const RouteMatch& match, const std::vector<int>& fdsToClose,
+	int pipeIn0, int pipeOut1, int pipeErr1, const envMap& env)
+{
+	// Redirect stdin/stdout/stderr to pipes
+	dup2(pipeIn0, STDIN_FILENO);
+	dup2(pipeOut1, STDOUT_FILENO);
+	dup2(pipeErr1, STDERR_FILENO);
+
+	close(pipeIn0);
+	close(pipeOut1);
+	close(pipeErr1);
+
+	// Close all inherited fds from the server
+	for (size_t i = 0; i < fdsToClose.size(); i++)
+		close(fdsToClose[i]);
+
+	// Get CGI interpreter path as absolute BEFORE chdir
+	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
+
+	// Change to script directory for relative path access
+	std::string scriptName = match.filePath;
+	size_t lastSlash = match.filePath.find_last_of('/');
+	if (lastSlash != std::string::npos)
+	{
+		std::string scriptDir = match.filePath.substr(0, lastSlash);
+		scriptName = match.filePath.substr(lastSlash + 1);
+		if (chdir(scriptDir.c_str()) != 0)
+			std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
+	}
+
+	// Build environment for execve
+	std::vector<std::string> envStrings;
+	for (envMap::const_iterator it = env.begin(); it != env.end(); ++it)
+		envStrings.push_back(it->first + "=" + it->second);
+
+	std::vector<char*> envp;
+	for (size_t i = 0; i < envStrings.size(); ++i)
+		envp.push_back(const_cast<char*>(envStrings[i].c_str()));
+	envp.push_back(NULL);
+
+	// Execute CGI script
+	char* argv[] =
+	{
+		const_cast<char*>(interpreter.c_str()),
+		const_cast<char*>(scriptName.c_str()),
+		NULL
+	};
+
+	execve(interpreter.c_str(), argv, &envp[0]);
+
+	std::cerr << "CGI: execve failed for: " << interpreter
+			  << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;
+	std::exit(1);
 }
 
 // Private method(s) -----------------------------------------------------------
@@ -204,67 +262,12 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 
 	if (!pid)
 	{
-		// Child process - execute CGI script
-		close(pipeOut[0]);  // Close read end
-		close(pipeIn[1]);   // Close write end
-		close(pipeErr[0]);  // Close read end
+		// Close unused pipe ends before handing off to child
+		close(pipeOut[0]);
+		close(pipeIn[1]);
+		close(pipeErr[0]);
 
-		// Redirect stdin/stdout/stderr
-		dup2(pipeIn[0], STDIN_FILENO);
-		dup2(pipeOut[1], STDOUT_FILENO);
-		dup2(pipeErr[1], STDERR_FILENO);
-
-		close(pipeIn[0]);
-		close(pipeOut[1]);
-		close(pipeErr[1]);
-
-		// Close ALL inherited FDs from the server (sockets, other CGI pipes, etc.)
-		// This prevents the child from holding write-ends of sibling CGI pipes,
-		// which would delay EOF detection on those pipes.
-		for (size_t i = 0; i < fdsToClose.size(); i++)
-			close(fdsToClose[i]);
-
-		// Get CGI interpreter path as absolute BEFORE chdir
-		std::string interpreter = toAbsolutePath(match.location->getCgiPath());
-
-		// Change to script directory for relative path access
-		std::string scriptPath = match.filePath;
-		std::string scriptName = scriptPath; // Will hold just the filename after chdir
-		size_t lastSlash = scriptPath.find_last_of('/');
-		if (lastSlash != std::string::npos)
-		{
-			std::string scriptDir = scriptPath.substr(0, lastSlash);
-			scriptName = scriptPath.substr(lastSlash + 1); // Extract filename only
-			if (chdir(scriptDir.c_str()) != 0)
-			{
-				std::cerr << "CGI: chdir failed to " << scriptDir << std::endl;
-			}
-		}
-
-		// Prepare environment variables as owned strings, then build raw pointer array for execve
-		std::vector<std::string> envStrings;
-		for (envMap::const_iterator it = _env.begin(); it != _env.end(); ++it)
-			envStrings.push_back(it->first + "=" + it->second);
-
-		std::vector<char*> envp;
-		for (size_t i = 0; i < envStrings.size(); ++i)
-			envp.push_back(const_cast<char*>(envStrings[i].c_str()));
-		envp.push_back(NULL);
-
-		// Execute CGI with absolute interpreter path
-		// Use scriptName (basename) after chdir
-		char* argv[] =
-		{
-			const_cast<char*>(interpreter.c_str()),
-			const_cast<char*>(scriptName.c_str()),
-			NULL
-		};
-
-		execve(interpreter.c_str(), argv,& envp[0]);
-
-		// If execve fails
-		std::cerr << "CGI: execve failed for: " << interpreter << " (errno: " << errno << " - " << strerror(errno) << ")" << std::endl;
-		std::exit(1);
+		executeCgiChild(match, fdsToClose, pipeIn[0], pipeOut[1], pipeErr[1], _env);
 	}
 
 	// Parent process
