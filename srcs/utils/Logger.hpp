@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 22:28:46 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:55:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -134,6 +134,12 @@ class Logger
 
 		/** @brief Renders one log line to stdout; appends status and timing if includeCompletion. */
 		static void				flushRequestLine(int requestId, bool includeCompletion, int status, size_t requestSize, size_t responseSize);
+
+		/** @brief Resets timing and completion counters for the current request group. */
+		static void				resetTimingState();
+
+		/** @brief Resets all grouping state so the next request starts a fresh group. */
+		static void				resetGroupState();
 
 	public:
 

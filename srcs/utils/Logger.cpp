@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/01/09 11:33:38 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 22:44:03 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 22:57:57 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -206,6 +206,26 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	std::cout.flush();
 }
 
+// Resets timing and completion counters for the current request group.
+void Logger::resetTimingState()
+{
+	_minTime            = std::numeric_limits<time_t>::max();
+	_maxTime            = 0;
+	_lastEndRequestSize = std::numeric_limits<size_t>::max();
+	_lastEndStatus      = -1;
+	_groupEndCount      = 0;
+}
+
+// Resets all grouping state so the next request starts a fresh group.
+void Logger::resetGroupState()
+{
+	resetTimingState();
+	_pendingRequest = false;
+	_lastMethod     = "";
+	_lastUri        = "";
+	_requestCount   = 0;
+}
+
 // Public method(s) ------------------------------------------------------------
 
 void Logger::requestStart(const RequestInfo& info)
@@ -245,11 +265,7 @@ void Logger::requestStart(const RequestInfo& info)
 	{
 		std::cout << std::endl;
 		_currentLine++;
-		_minTime = std::numeric_limits<time_t>::max();
-		_maxTime = 0;
-		_lastEndRequestSize = std::numeric_limits<size_t>::max();
-		_lastEndStatus = -1;
-		_groupEndCount = 0;
+		resetTimingState();
 	}
 
 	if (isGroupableRequest && _pendingRequest)
@@ -297,9 +313,7 @@ void Logger::requestEnd(const RequestInfo& info)
 		std::cout << std::endl;
 		_currentLine++;
 		_requestCount = 1;
-		_minTime = std::numeric_limits<time_t>::max();
-		_maxTime = 0;
-		_groupEndCount = 0;
+		resetTimingState();
 	}
 
 	if (isGroupedRequest)
@@ -378,15 +392,7 @@ void Logger::logMessage(const std::string& message)
     std::cout.flush();
 
 	// Break any pending group — next identical request starts fresh
-	_pendingRequest = false;
-	_lastMethod = "";
-	_lastUri = "";
-	_requestCount = 0;
-	_groupEndCount = 0;
-	_minTime = std::numeric_limits<time_t>::max();
-	_maxTime = 0;
-	_lastEndRequestSize = std::numeric_limits<size_t>::max();
-	_lastEndStatus = -1;
+	resetGroupState();
 }
 
 bool Logger::hasStarted()
