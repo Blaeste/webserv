@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:10 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:57:59 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 14:22:05 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,9 +91,6 @@ class	Cgi
 
 		/** @brief Populates _env with CGI/1.1 variables derived from the request and route. */
 		void				setupEnvironment(const RouteMatch& match, const HttpRequest& request);
-
-		/** @brief Reads all available data from a pipe fd into a string. */
-		static std::string	readFromPipe(int fd);
 
 	public:
 

@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:33:17 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/14 14:22:10 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,18 +38,6 @@ static std::string toAbsolutePath(const std::string& path)
 }
 
 // Private method(s) -----------------------------------------------------------
-
-std::string Cgi::readFromPipe(int fd)
-{
-	char buffer[READ_BUFFER_SIZE];
-	std::string result;
-	ssize_t bytesRead;
-	while ((bytesRead = read(fd, buffer, sizeof(buffer))) > 0)
-		result.append(buffer, bytesRead);
-	if (bytesRead < 0)
-		Logger::logMessage(RED "[CGI] Error: " RESET "readFromPipe: read failed");
-	return result;
-}
 
 void Cgi::setupEnvironment(const RouteMatch& match, const HttpRequest& request)
 {
