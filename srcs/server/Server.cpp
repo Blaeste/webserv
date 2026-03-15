@@ -113,7 +113,7 @@ void Server::installSignals()
 	_pollFds.push_back(pfd);
 	_socketTypes[_s_sigpipe[0]] = SOCKET_SIGNAL;
 
-	signal(SIGINT,  Server::signalHandler); // Ctrl+C
+	signal(SIGINT, Server::signalHandler); // Ctrl+C
 	signal(SIGQUIT, Server::signalHandler); // Ctrl+backslash
 	signal(SIGTERM, Server::signalHandler); // kill
 	signal(SIGPIPE, SIG_IGN); // Ignore broken pipe on socket writes
@@ -302,7 +302,7 @@ void Server::finalizeCgi(Client& client, CgiProcess* cgi, int clientFd)
 {
 	// Close and unregister all CGI pipes
 	if (cgi->pipeOut != -1) closePollFd(cgi->pipeOut);
-	if (cgi->pipeIn  != -1) closePollFd(cgi->pipeIn);
+	if (cgi->pipeIn != -1) closePollFd(cgi->pipeIn);
 	if (cgi->pipeErr != -1) closePollFd(cgi->pipeErr);
 
 	// Reap CGI process (kill if still running)
@@ -433,7 +433,7 @@ void Server::handleSocketError(size_t i)
 	{
 		std::stringstream ss;
 		ss << RED "[Server] Error: " RESET "handleSocketError: Unhandled socket error on fd " << fd
-		   << " (type=" << type << "), removing to prevent busy-loop";
+			<< " (type=" << type << "), removing to prevent busy-loop";
 		Logger::logMessage(ss.str());
 	}
 	closePollFd(fd);

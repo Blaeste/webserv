@@ -72,7 +72,7 @@ class	Client
 		time_t					_cgiStartTime;			// Start time for CGI timeout tracking
 		time_t					_requestStartTime;		// Start time for request timing (from first data)
 		const ServerBlock*		_server;				// Server configuration for logging
-		RequestInfo     		_logInfo;				// Cached request info for logging (set once, reused at end)
+		RequestInfo				_logInfo;				// Cached request info for logging (set once, reused at end)
 
 		// Private method(s)
 

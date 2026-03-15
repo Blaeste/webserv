@@ -249,8 +249,8 @@ void Client::logRequestEnd()
 {
 	const bool hasBody = (_logInfo.method == "POST" || _logInfo.method == "PUT" || _logInfo.method == "PATCH");
 
-	_logInfo.statusCode   = _response.getStatus();
-	_logInfo.requestSize  = hasBody ? _request.getBody().size() : std::numeric_limits<size_t>::max();
+	_logInfo.statusCode = _response.getStatus();
+	_logInfo.requestSize = hasBody ? _request.getBody().size() : std::numeric_limits<size_t>::max();
 	_logInfo.responseSize = _response.getBody().size();
 	_logInfo.responseTime = std::time(NULL) - _requestStartTime;
 

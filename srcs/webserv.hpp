@@ -21,7 +21,7 @@
 
 // Constant(s) -----------------------------------------------------------------
 
-static const size_t READ_BUFFER_SIZE = 4096;   // Shared I/O buffer size for pipes and sockets
+static const size_t READ_BUFFER_SIZE = 4096;	// Shared I/O buffer size for pipes and sockets
 
 // Common typedef(s) -----------------------------------------------------------
 

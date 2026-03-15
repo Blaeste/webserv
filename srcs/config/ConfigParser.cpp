@@ -422,11 +422,11 @@ bool ConfigParser::validate() const
 		// Check for duplicate Port
 		for (size_t j = i + 1; j < _servers.size(); j++)
 		{
-			if (_servers[j].getPort() ==  port)
+			if (_servers[j].getPort() == port)
 			{
 				// Same port ok if different server name
-				if (_servers[j].getServerName() ==  server.getServerName())
-					errors.push_back(prefix + "Duplicate port " +  intToString(port) + " with same server name");
+				if (_servers[j].getServerName() == server.getServerName())
+					errors.push_back(prefix + "Duplicate port " + intToString(port) + " with same server name");
 			}
 		}
 

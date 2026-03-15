@@ -68,20 +68,20 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 {
 	// Look up request data for this specific request
 	requestMap::iterator it = _state.activeRequests.find(requestId);
-	std::string method      = it->second.info.method;
-	std::string uri         = it->second.info.uri;
-	std::string clientIP    = it->second.info.clientIP;
-	std::string serverName  = it->second.info.serverName;
-	int serverPort          = it->second.info.port;
+	std::string method = it->second.info.method;
+	std::string uri = it->second.info.uri;
+	std::string clientIP = it->second.info.clientIP;
+	std::string serverName = it->second.info.serverName;
+	int serverPort = it->second.info.port;
 	std::string requestStartTime = _state.lastRequestStartTime;
 	std::string statusColor = includeCompletion ? getStatusColor(status) : RESET;
-	std::string methodColor = (method == "GET") ? GREEN : 
-							  (method == "HEAD") ? CYAN : 
-							  (method == "POST") ? YELLOW : 
-							  (method == "DELETE") ? RED : GREY;
+	std::string methodColor = (method == "GET") ? GREEN
+		: (method == "HEAD") ? CYAN
+		: (method == "POST") ? YELLOW
+		: (method == "DELETE") ? RED : GREY;
 
 	std::string serverPortStr = formatServerPort(serverName, serverPort);
-	std::string uriFieldStr   = formatUriField(uri, it->second.info.declaredSize, requestSize, includeCompletion);
+	std::string uriFieldStr = formatUriField(uri, it->second.info.declaredSize, requestSize, includeCompletion);
 
 	// Format timing (only if completion)
 	std::stringstream timingStr;
@@ -99,14 +99,14 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 	// Build output
 	std::stringstream output;
 	output << "\r" << "[" << requestStartTime << "] " << GREY << "| "
-		   << CYAN << std::setw(SERVER_PORT_FIELD_WIDTH) << std::right << serverPortStr << RESET << " >-< "
-		   << CYAN << std::setw(IP_FIELD_WIDTH) << std::left << clientIP << GREY << " | " << RESET
-		   << methodColor << BOLD << std::setw(METHOD_FIELD_WIDTH) << std::right << method << RESET << " "
-		   << uriFieldStr;
+		<< CYAN << std::setw(SERVER_PORT_FIELD_WIDTH) << std::right << serverPortStr << RESET << " >-< "
+		<< CYAN << std::setw(IP_FIELD_WIDTH) << std::left << clientIP << GREY << " | " << RESET
+		<< methodColor << BOLD << std::setw(METHOD_FIELD_WIDTH) << std::right << method << RESET << " "
+		<< uriFieldStr;
 	if (includeCompletion)
 		output << GREY << " | " << RESET << std::setw(RESPONSE_SIZE_FIELD_WIDTH) << std::right << formatSize(responseSize)
-			   << GREY << " | " << RESET << std::setw(STATUS_FIELD_WIDTH) << statusStr.str() << RESET
-			   << GREY << " | " << RESET << std::left << timingStr.str();
+			<< GREY << " | " << RESET << std::setw(STATUS_FIELD_WIDTH) << statusStr.str() << RESET
+			<< GREY << " | " << RESET << std::left << timingStr.str();
 	output << CLEARLINE;
 	std::cout << output.str();
 	std::cout.flush();
@@ -115,11 +115,11 @@ void Logger::flushRequestLine(int requestId, bool includeCompletion, int status,
 // Resets timing and completion counters for the current request group.
 void Logger::resetTimingState()
 {
-	_state.minTime            = std::numeric_limits<time_t>::max();
-	_state.maxTime            = 0;
+	_state.minTime = std::numeric_limits<time_t>::max();
+	_state.maxTime = 0;
 	_state.lastEndRequestSize = std::numeric_limits<size_t>::max();
-	_state.lastEndStatus      = -1;
-	_state.groupEndCount      = 0;
+	_state.lastEndStatus = -1;
+	_state.groupEndCount = 0;
 }
 
 // Resets all grouping state so the next request starts a fresh group.
@@ -127,9 +127,9 @@ void Logger::resetGroupState()
 {
 	resetTimingState();
 	_state.pendingRequest = false;
-	_state.lastMethod     = "";
-	_state.lastUri        = "";
-	_state.requestCount   = 0;
+	_state.lastMethod = "";
+	_state.lastUri = "";
+	_state.requestCount = 0;
 }
 
 // Formats "servername:port" right-aligned and truncated to SERVER_PORT_FIELD_WIDTH.
@@ -239,9 +239,9 @@ void Logger::requestStart(const RequestInfo& info)
 
 	// Store request data for this specific request
 	RequestData data;
-	data.info             = info;
+	data.info = info;
 	data.requestStartTime = getCurrentTime();
-	data.displayLine      = _state.currentLine;
+	data.displayLine = _state.currentLine;
 	_state.activeRequests[info.requestId] = data;
 
 	bool isGroupableRequest = (_state.lastMethod == info.method && _state.lastUri == info.uri

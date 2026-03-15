@@ -41,7 +41,7 @@ Location::Location() :
 void Location::addAllowedMethod(const std::string& method)
 {
 	std::string m = method;
-    std::transform(m.begin(), m.end(), m.begin(), ::toupper);
+	std::transform(m.begin(), m.end(), m.begin(), ::toupper);
 
 	// Anti double
 	if (isMethodAllowed(m))

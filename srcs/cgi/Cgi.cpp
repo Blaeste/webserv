@@ -230,9 +230,9 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	CgiProcess* cgi = new CgiProcess();
 
 	// Create pipes for CGI communication
-	int pipeOut[2];  // CGI stdout
-	int pipeIn[2];   // CGI stdin
-	int pipeErr[2];  // CGI stderr
+	int pipeOut[2];	// CGI stdout
+	int pipeIn[2];	// CGI stdin
+	int pipeErr[2];	// CGI stderr
 
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1)
 	{
@@ -265,9 +265,9 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	}
 
 	// Parent process
-	close(pipeOut[1]);  // Close write end
-	close(pipeIn[0]);   // Close read end
-	close(pipeErr[1]);  // Close write end
+	close(pipeOut[1]);	// Close write end
+	close(pipeIn[0]);	// Close read end
+	close(pipeErr[1]);	// Close write end
 
 	cgi->pid = pid;
 	cgi->pipeOut = pipeOut[0];

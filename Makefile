@@ -133,7 +133,7 @@ run: $(NAME) ensure-xterm
 	shift $$((choice - 1))
 	conf="$$1"
 	title="$(NAME) | $$conf"
-	xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$$title" -e "bash -c 'stty -echoctl; ./$(NAME) $$conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$$title" -e "bash -c 'stty -echoctl; ./$(NAME) $$conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 
 # Kill any running instance of the local webserv binary
 kill:
@@ -147,7 +147,7 @@ kill:
 
 test: $(NAME) ensure-xterm
 	-pkill webserv || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	@xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	sleep 1
 	@# Ensure requests is available (critical dependency)
 	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
@@ -170,7 +170,7 @@ eval: $(NAME) ensure-xterm
 	@touch YoupiBanane/Yeah/not_happy.bad_extension
 	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
 	@-pkill webserv 2>/dev/null || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/42tester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	@xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/42tester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	@sleep 1
 	yes "" | ./tester http://localhost:8080
 	@echo "✓ Tests completed, stopping server..."

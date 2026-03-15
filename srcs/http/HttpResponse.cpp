@@ -229,11 +229,11 @@ int HttpResponse::serveDirectoryListing(const std::string& path, const std::stri
 		"<html>\n"
 		"<head><title>Index of " +
 		uri + "</title></head>\n"
-			  "<body>\n"
-			  "<h1>Index of " +
+			"<body>\n"
+			"<h1>Index of " +
 		uri + "</h1>\n"
-			  "<hr>\n"
-			  "<ul>";
+			"<hr>\n"
+			"<ul>";
 
 	// Add each entry as a clickable link
 	for (size_t i = 0; i < entries.size(); ++i)

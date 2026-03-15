@@ -77,10 +77,10 @@ typedef	std::map<int, RequestData>	requestMap;
 
 enum	LastLineType
 {
-	LINE_NONE,       // nothing printed yet
-	LINE_REQUEST,    // a request line (complete or pending)
-	LINE_SEPARATOR,  // a separator ---
-	LINE_MESSAGE     // a logMessage content line
+	LINE_NONE,		// nothing printed yet
+	LINE_REQUEST,	// a request line (complete or pending)
+	LINE_SEPARATOR,	// a separator ---
+	LINE_MESSAGE	// a logMessage content line
 };
 
 // Structure(s) ----------------------------------------------------------------
