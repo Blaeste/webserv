@@ -77,10 +77,10 @@ class Location
 		void				addIndex(const std::string& index);
 
 		/** @brief Returns true if method is in the allowed list. */
-		bool							isMethodAllowed(const std::string& method) const;
+		bool				isMethodAllowed(const std::string& method) const;
 
-		/** @brief Clear defautl allowed method */
-		void							clearAllowedMethods() { _allowedMethods.clear(); }
+		/** @brief Clear default allowed method */
+		void				clearAllowedMethods() { _allowedMethods.clear(); }
 };
 
 // Typedef(s) - class-dependent ------------------------------------------------

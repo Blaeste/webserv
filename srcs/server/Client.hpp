@@ -150,8 +150,8 @@ class	Client
 		void					buildResponseFromCGI(const CgiResult& result);
 
 		/**
-		 * @brief Builds an error response, resolving a custom error page from config if available.
-		 * @param config Optional — used to look up configured error_page paths.
+		 * @brief Builds an error response, resolving a custom error page from server if available.
+		 * @param server Optional — used to look up configured error_page paths.
 		 */
 		void					buildErrorResponse(int statusCode, const ServerBlock* server = NULL);
 
