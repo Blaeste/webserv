@@ -250,6 +250,11 @@ void Logger::requestStart(const RequestInfo& info)
 
 	if (_state.pendingRequest && !isGroupableRequest)
 	{
+		// Snapshot the current group count into all active requests on this line
+		// before switching groups, so requestEnd can restore it for the cursor-up flush
+		for (requestMap::iterator it = _state.activeRequests.begin(); it != _state.activeRequests.end(); ++it)
+			if (it->first != info.requestId && it->second.displayLine == _state.currentLine)
+				it->second.finalGroupCount = _state.requestCount;
 		std::cout << std::endl;
 		_state.currentLine++;
 		resetTimingState();
@@ -325,7 +330,7 @@ void Logger::requestEnd(const RequestInfo& info)
 		time_t savedMax = _state.maxTime;
 
 		// Set state for this individual request
-		_state.requestCount = 1;
+		_state.requestCount = (it->second.finalGroupCount) ? it->second.finalGroupCount : 1;
 		_state.minTime = info.responseTime;
 		_state.maxTime = info.responseTime;
 

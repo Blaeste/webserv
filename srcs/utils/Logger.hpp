@@ -61,11 +61,12 @@ struct	RequestInfo
 	{}
 };
 
-struct RequestData
+struct	RequestData
 {
-	RequestInfo info;				// Full request info snapshot
-	std::string requestStartTime;	// Timestamp when request was received
-	int         displayLine;		// Terminal line number for in-place update
+	RequestInfo	info;				// Full request info snapshot
+	std::string	requestStartTime;	// Timestamp when request was received
+	int			displayLine;		// Terminal line number for in-place update
+	size_t		finalGroupCount;	// Group count snapshot saved when this request's group is interrupted
 };
 
 // Typedef(s) ------------------------------------------------------------------
