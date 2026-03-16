@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:46 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 22:04:56 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:33:54 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,10 +40,10 @@ std::string Client::generateSessionId()
 	unsigned char randomBytes[idLength];
 	if (read(fd, randomBytes, idLength) != (ssize_t)idLength)
 	{
-		close(fd);
+		safeClose(fd, "Client");
 		throw std::runtime_error("Failed to read from /dev/urandom (generateSessionId)");
 	}
-	close(fd);
+	safeClose(fd, "Client");
 
 	// Build session id from random bytes
 	std::string id;
@@ -374,7 +374,7 @@ void Client::buildErrorResponse(int statusCode, const ServerBlock* server)
 	{
 		try
 		{
-			_response.setBody(readFile(errorPage));
+			_response.setBody(readFile(errorPage, "Client"));
 		}
 		catch (const std::exception& e)
 		{

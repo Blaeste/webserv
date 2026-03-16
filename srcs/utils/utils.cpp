@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 11:54:42 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:32:53 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -117,7 +117,7 @@ std::string getFileExtension(const std::string& path)
 	return path.substr(pos);
 }
 
-std::string readFile(const std::string& path)
+std::string readFile(const std::string& path, const std::string& caller)
 {
 	int fd = open(path.c_str(), O_RDONLY);
 	if (fd < 0)
@@ -131,7 +131,7 @@ std::string readFile(const std::string& path)
 	while ((bytes_read = read(fd, buffer, sizeof(buffer))) > 0)
 		result.append(buffer, bytes_read);
 
-	close(fd);
+	safeClose(fd, caller);
 
 	if (bytes_read < 0)
 		throw std::runtime_error("Failed to read file: " + path);
@@ -146,8 +146,10 @@ std::string intToString(long long value)
 	return ss.str();
 }
 
-void safeClose(int fd, const std::string& caller)
+void safeClose(int& fd, const std::string& caller)
 {
+	if (fd == -1)
+		return;
 	if (close(fd) < 0)
 	{
 		if (Logger::hasStarted())
@@ -155,6 +157,7 @@ void safeClose(int fd, const std::string& caller)
 		else
 			std::cerr << "[safeClose] close failed on fd " + intToString(fd) + ": " + std::strerror(errno) << std::endl;
 	}
+	fd = -1;
 }
 
 stringVector splitTokens(const std::string& str, char delimiter)

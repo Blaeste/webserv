@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:21:41 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 13:39:33 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:31:37 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -140,7 +140,7 @@ int HttpResponse::serveFile(const std::string& path, const std::string& root)
 	try
 	{
 		// Read file content
-		std::string content = readFile(path);
+		std::string content = readFile(path, "HttpResponse");
 
 		// Get MIME type (default to application/octet-stream if no extension)
 		std::string contentType = "application/octet-stream";

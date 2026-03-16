@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:52 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/10 12:53:21 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:32:35 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,13 +37,13 @@ bool			isDirectory(const std::string& path);
 std::string		getFileExtension(const std::string& path);
 
 /** @brief Reads the entire content of a file and returns it as a string. */
-std::string		readFile(const std::string& path);
+std::string		readFile(const std::string& path, const std::string& caller);
 
 /** @brief Converts any integral value to its decimal string representation. */
 std::string		intToString(long long value);
 
 /** @brief Closes fd and logs a warning on failure, using caller as context. */
-void			safeClose(int fd, const std::string& caller);
+void			safeClose(int& fd, const std::string& caller);
 
 /**
  * @brief Checks that path stays within root after normalization (prevents directory traversal).

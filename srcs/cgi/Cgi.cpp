@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:22:04 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/14 15:04:08 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:28:02 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -37,6 +37,17 @@ static std::string toAbsolutePath(const std::string& path)
 	return path;
 }
 
+// Closes any open pipe ends, skipping fds already set to -1.
+static void closePipes(int pipeOut[2], int pipeIn[2], int pipeErr[2])
+{
+	for (int i = 0; i < 2; i++)
+	{
+		safeClose(pipeOut[i], "Cgi");
+		safeClose(pipeIn[i], "Cgi");
+		safeClose(pipeErr[i], "Cgi");
+	}
+}
+
 // Executes the CGI script in the child process after fork().
 // Redirects stdin/stdout/stderr to pipes, closes inherited fds, then execve().
 // Never returns on success; calls exit(1) on failure.
@@ -48,13 +59,13 @@ static void executeCgiChild(const RouteMatch& match, const std::vector<int>& fds
 	dup2(pipeOut1, STDOUT_FILENO);
 	dup2(pipeErr1, STDERR_FILENO);
 
-	close(pipeIn0);
-	close(pipeOut1);
-	close(pipeErr1);
+	safeClose(pipeIn0, "Cgi");
+	safeClose(pipeOut1, "Cgi");
+	safeClose(pipeErr1, "Cgi");
 
 	// Close all inherited fds from the server
 	for (size_t i = 0; i < fdsToClose.size(); i++)
-		close(fdsToClose[i]);
+		safeClose(const_cast<int&>(fdsToClose[i]), "CgiChild");
 
 	// Get CGI interpreter path as absolute BEFORE chdir
 	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
@@ -227,29 +238,26 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 		return NULL;
 	}
 
-	CgiProcess* cgi = new CgiProcess();
-
 	// Create pipes for CGI communication
-	int pipeOut[2];	// CGI stdout
-	int pipeIn[2];	// CGI stdin
-	int pipeErr[2];	// CGI stderr
+	int pipeOut[2] = {-1, -1};
+	int pipeIn[2] = {-1, -1};
+	int pipeErr[2] = {-1, -1};
 
 	if (pipe(pipeOut) == -1 || pipe(pipeIn) == -1 || pipe(pipeErr) == -1)
 	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: pipe failed");
-		delete cgi;
+		closePipes(pipeOut, pipeIn, pipeErr);
 		return NULL;
 	}
 
+	CgiProcess* cgi = new CgiProcess();
 	cgi->startTime = std::time(NULL);
 	pid_t pid = fork();
 
 	if (pid == -1)
 	{
 		Logger::logMessage(RED "[CGI] Error: " RESET "startAsync: Fork failed");
-		close(pipeOut[0]); close(pipeOut[1]);
-		close(pipeIn[0]); close(pipeIn[1]);
-		close(pipeErr[0]); close(pipeErr[1]);
+		closePipes(pipeOut, pipeIn, pipeErr);
 		delete cgi;
 		return NULL;
 	}
@@ -257,17 +265,17 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 	if (!pid)
 	{
 		// Close unused pipe ends before handing off to child
-		close(pipeOut[0]);
-		close(pipeIn[1]);
-		close(pipeErr[0]);
+		safeClose(pipeOut[0], "Cgi");
+		safeClose(pipeIn[1], "Cgi");
+		safeClose(pipeErr[0], "Cgi");
 
 		executeCgiChild(match, fdsToClose, pipeIn[0], pipeOut[1], pipeErr[1], _env);
 	}
 
 	// Parent process
-	close(pipeOut[1]);	// Close write end
-	close(pipeIn[0]);	// Close read end
-	close(pipeErr[1]);	// Close write end
+	safeClose(pipeOut[1], "Cgi");	// Close write end
+	safeClose(pipeIn[0], "Cgi");	// Close read end
+	safeClose(pipeErr[1], "Cgi");	// Close write end
 
 	cgi->pid = pid;
 	cgi->pipeOut = pipeOut[0];
@@ -286,7 +294,7 @@ CgiProcess* Cgi::startAsync(const RouteMatch& match, const HttpRequest& request,
 		cgi->bytesWritten = 0;
 	} else {
 		cgi->inputWritten = true;
-		close(cgi->pipeIn);
+		safeClose(cgi->pipeIn, "Cgi");
 		cgi->pipeIn = -1;
 	}
 
