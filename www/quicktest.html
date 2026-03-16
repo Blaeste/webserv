@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Quick Tests - Errors & HTTP</title>
+
+	<link rel="stylesheet" href="/css/style.css">
+	<link rel="stylesheet" href="/css/errors.css">
+	<link rel="stylesheet" href="/css/http-test.css">
+	<script>
+		(function () {
+			function getCookie(name) {
+				var nameEQ = name + '=';
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+				}
+				return null;
+			}
+			var disabled = getCookie('marvin_disabled') === '1';
+			var sessionId = getCookie('session_id');
+			var marvinSession = getCookie('marvin_session_id');
+			if (disabled && sessionId && marvinSession === sessionId) {
+				document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'marvin-disabled';
+			}
+		})();
+	</script>
+
+	<script src="/js/header.js" defer></script>
+	<script src="/js/quick-test.js" defer></script>
+	<script src="/js/http-test.js" defer></script>
+	<script src="/js/footer.js" defer></script>
+</head>
+
+<body class="errors-page">
+	<main class="page">
+		<div class="pageLayout">
+			<aside class="marvin">
+				<img src="/image/Marvin_error.png" alt="Quick Test Marvin">
+			</aside>
+
+			<div class="pageContent">
+				<div class="container">
+					<div class="error-tester-layout">
+						<div class="whiteBox">
+
+							<h1>🧪 Quick Tests</h1>
+							<p>Trigger common error scenarios and quick HTTP requests.</p>
+
+							<div class="error-selector">
+								<label for="errorCode">Select a quick test:</label>
+								<select id="errorCode">
+									<option value="">-- Choose a quick test --</option>
+									<option value="403">403 - Forbidden (path traversal)</option>
+									<option value="404">404 - Not Found (missing page)</option>
+									<option value="405">405 - Method Not Allowed (DELETE /)</option>
+									<option value="413">413 - Payload Too Large (POST /uploads)</option>
+									<option value="504">504 - Gateway Timeout (CGI timeout)</option>
+									<option value="quick-home">Quick test: GET /</option>
+									<option value="quick-uploads">Quick test: GET /uploads</option>
+								</select>
+								<button id="testBtn">Run Quick Test</button>
+							</div>
+						<div class="request-preview">
+								<h2>📡 Request Preview</h2>
+								<div id="requestDetails">
+									<p class="placeholder">Select a quick test to see the request details</p>
+								</div>
+							</div>
+
+						</div>
+
+						<section id="response" class="response-box">
+                            <div id="result" class="placeholder">
+							<h3>Response</h3>
+							<div id="statusCode"></div>
+							<div id="responseHeaders"></div>
+							<div id="responseBody"></div>
+						</section>
+					</div>
+				</div>
+			</div>
+
+				<div class="pageSpacer" aria-hidden="true"></div>
+			</div>
+		</main>
+	</body>
+
+	</html>
+					<section id="response" class="response-box">
+						<h3>Response</h3>
+						<div id="statusCode"></div>
+						<div id="responseHeaders"></div>
+						<div id="responseBody"></div>
+					</section>

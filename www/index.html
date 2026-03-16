@@ -6,6 +6,26 @@
 	<title>Webserv Tester</title>
 	<link rel="stylesheet" href="/css/style.css">
 	<link rel="stylesheet" href="/css/marvin.css">
+	<script>
+		(function () {
+			function getCookie(name) {
+				var nameEQ = name + '=';
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+				}
+				return null;
+			}
+			var disabled = getCookie('marvin_disabled') === '1';
+			var sessionId = getCookie('session_id');
+			var marvinSession = getCookie('marvin_session_id');
+			if (disabled && sessionId && marvinSession === sessionId) {
+				document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'marvin-disabled';
+			}
+		})();
+	</script>
 	<script src="/js/header.js" defer></script>
 </head>
 
@@ -15,14 +35,14 @@
 			<aside class="marvin">
 				<img src="/image/Marvin.png" alt="Home Marvin">
 			</aside>
-
+			<div class="pageContent">
 			<div class="whiteBox">
 				<img src="/image/welcom.png" alt="Welcom" class="welcome-image">
 				<div class="container home-container">
 					<div class="home-layout">
 						<div class="home-links">
-							<a href="/errors.html" class="home-button">
-								<span>Test errors</span>
+							<a href="/quicktest.html" class="home-button">
+								<span>Quick tests</span>
 							</a>
 							<a href="/http-test.html" class="home-button">
 								<span>Send HTTP Requests</span>
@@ -41,6 +61,7 @@
 						</div>
 					</div>
 				</div>
+			</div>
 			</div>
 
 			<div class="pageSpacer" aria-hidden="true"></div>

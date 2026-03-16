@@ -7,6 +7,26 @@
 	<title>QR Code Generator</title>
 	<link rel="stylesheet" href="/css/style.css">
 	<link rel="stylesheet" href="/css/qrcode.css">
+	<script>
+		(function () {
+			function getCookie(name) {
+				var nameEQ = name + '=';
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+				}
+				return null;
+			}
+			var disabled = getCookie('marvin_disabled') === '1';
+			var sessionId = getCookie('session_id');
+			var marvinSession = getCookie('marvin_session_id');
+			if (disabled && sessionId && marvinSession === sessionId) {
+				document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'marvin-disabled';
+			}
+		})();
+	</script>
 	<script src="/js/header.js" defer></script>
 	<script src="/js/footer.js" defer></script>
 	<script src="/js/qrcode.js" defer></script>

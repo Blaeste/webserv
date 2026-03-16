@@ -1,16 +1,30 @@
 /* Error Tester page styles */
 
 .error-tester-layout {
-	display: grid;
-	grid-template-columns: 1fr 1fr;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
 	gap: 30px;
-	align-items: start;
+}
+
+.error-tester-layout .whiteBox {
+	width: 100%;
+	max-width: 900px;
+	margin: 20px auto;
+	padding: 25px 30px;
 }
 
 @media (max-width: 1000px) {
 	.error-tester-layout {
-		grid-template-columns: 1fr;
+		align-items: center;
 	}
+}
+
+.error-tester-layout #response.response-box {
+	width: 100%;
+	max-width: 900px;
+	margin: 0 auto 40px;
 }
 
 #errorTester {

@@ -127,9 +127,15 @@
 }
 
 .http-test-container.container {
-	margin: 0;
-	padding: 0;
-	overflow: visible;
+    /* Override global .container flex layout so this block
+     * simply fills the whiteBox width on the HTTP test page. */
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: visible;
+    box-sizing: border-box;
 }
 
 /* Quick tests: grid + same "smooth card-button" vibe */
@@ -204,13 +210,6 @@
 .quick-tests,
 .response-box {
 	border-radius: 12px;
-}
-
-/* Keep everything INSIDE the whiteBox and stack nicely */
-.http-test-container.container {
-	margin: 0;           /* don't use the global 40px margin here */
-	padding: 0;
-	overflow: visible;   /* let the whiteBox grow with content */
 }
 
 .http-test-stack {
