@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2026/03/09 15:36:08 by gdosch            #+#    #+#             */
-/*   Updated: 2026/03/13 11:16:02 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 15:34:09 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -532,7 +532,7 @@ bool ConfigParser::parse(const std::string& filePath)
 {
 	try {
 
-		std::string content = readFile(filePath);
+		std::string content = readFile(filePath, "ConfigParser");
 		if (content.empty())
 			return false;
 
