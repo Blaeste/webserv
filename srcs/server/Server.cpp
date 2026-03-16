@@ -6,7 +6,7 @@
 /*   By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/12/16 10:19:49 by eschwart          #+#    #+#             */
-/*   Updated: 2026/03/16 12:01:20 by gdosch           ###   ########.fr       */
+/*   Updated: 2026/03/16 12:07:19 by gdosch           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -225,7 +225,6 @@ void Server::handleClientTimeouts()
 		if (it->second.hasTimedOut(CLIENT_KEEPALIVE_TIMEOUT, CLIENT_PROCESSING_TIMEOUT))
 		{
 			it->second.logRequestEnd();
-			killCgiProcess(it->second);
 			it = removeClient(it);
 		}
 		else
