@@ -8,6 +8,26 @@
 
 	<link rel="stylesheet" href="/css/style.css">
 	<link rel="stylesheet" href="/css/http-test.css">
+	<script>
+		(function () {
+			function getCookie(name) {
+				var nameEQ = name + '=';
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+				}
+				return null;
+			}
+			var disabled = getCookie('marvin_disabled') === '1';
+			var sessionId = getCookie('session_id');
+			var marvinSession = getCookie('marvin_session_id');
+			if (disabled && sessionId && marvinSession === sessionId) {
+				document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'marvin-disabled';
+			}
+		})();
+	</script>
 
 	<script src="/js/header.js" defer></script>
 	<script src="/js/http-test.js" defer></script>
@@ -15,35 +35,24 @@
 
 <body>
 	<main class="page">
-		<div class="pageLayout">
-			<aside class="marvin">
-				<img src="/image/Marvin.png" alt="Marvin">
-			</aside>
+			<div class="pageLayout">
+				<aside class="marvin">
+					<img src="/image/Marvin.png" alt="Marvin">
+				</aside>
+				<div class="pageContent">
+				<div class="whiteBox">
+					<h1>🔧 HTTP Methods Tester</h1>
 
-			<div class="whiteBox">
-				<h1>🔧 HTTP Methods Tester</h1>
-
-				<div class="container http-test-container">
-					<section class="quick-tests">.
-						<h3>Quick Tests</h3>
-
-						<div class="quick-tests-grid">
-							<button type="button" class="quick-btn" onclick="quickTest('GET', '/')">GET
-								Homepage</button>
-							<button type="button" class="quick-btn" onclick="quickTest('GET', '/uploads')">List
-								Uploads</button>
-							<button type="button" class="quick-btn" onclick="quickTest('GET', '/nonexistent')">404
-								Error</button>
-						</div>
-					</section>
-
-					<section class="request-form">
+					<div class="container http-test-container">
+						<section class="request-form">
 						<div class="method-url-row">
 							<select id="method">
 								<option value="GET">GET</option>
 								<option value="POST">POST</option>
-								<option value="DELETE">DELETE</option>
 								<option value="PUT">PUT</option>
+								<option value="DELETE">DELETE</option>
+								<option value="HEAD">HEAD</option>
+								<option value="OPTIONS">OPTIONS</option>
 							</select>
 
 							<input type="text" id="url" placeholder="/path/to/resource" value="/">
@@ -52,10 +61,16 @@
 						</div>
 
 						<div class="body-section">
-							<label for="requestBody">Request body (for POST/PUT)</label>
+							<label for="customMethod">Custom method (optional)</label>
+							<input type="text" id="customMethod" placeholder="PATCH, PROPFIND, ...">
+						</div>
+
+						<div class="body-section">
+							<label for="requestBody">Request body (if applicable)</label>
 							<textarea id="requestBody" placeholder='{"key": "value"}'></textarea>
 						</div>
 					</section>
+				</div>
 				</div>
 				<section id="response" class="response-box">
 					<h3>Response</h3>

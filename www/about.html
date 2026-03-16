@@ -6,6 +6,26 @@
 	<title>About webserv</title>
 	<link rel="stylesheet" href="/css/style.css">
 	<link rel="stylesheet" href="/css/contactForm.css">
+	<script>
+		(function () {
+			function getCookie(name) {
+				var nameEQ = name + '=';
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length));
+				}
+				return null;
+			}
+			var disabled = getCookie('marvin_disabled') === '1';
+			var sessionId = getCookie('session_id');
+			var marvinSession = getCookie('marvin_session_id');
+			if (disabled && sessionId && marvinSession === sessionId) {
+				document.documentElement.className += (document.documentElement.className ? ' ' : '') + 'marvin-disabled';
+			}
+		})();
+	</script>
 	<script src="/js/header.js" defer></script>
 	<script src="/js/footer.js" defer></script>
 </head>
@@ -21,9 +41,7 @@
 				<div class="whiteBox">
 					<h1>About webserv</h1>
 
-					<p>Welcome to Webserv & Sons, a proud family operation founded in the grand tradition of "we don't
-						know
-						why it works, but it works."</p>
+					<p>Welcome to Webserv & Sons, a proud friendly operation founded in the grand tradition of hardworking developers.</p>
 
 					<p>Legend says the project began generations ago, when our great-grandparent accidentally opened
 						port
@@ -39,7 +57,7 @@
 						<li>Listen carefully (to sockets, not feelings)</li>
 						<li>Respond quickly (or at least before the evaluator loses patience)</li>
 						<li>Never leak (memory, secrets, or shame)</li>
-						<li>Keep it simple (C++98 simple… like it's 1998 and we're wearing cargo shorts)</li>
+						<li>Keep it simple (C++98 simple… like it's 1998 and we scroll koreus.com)</li>
 					</ul>
 
 					<p>Today, Webserv & Sons continues to deliver time-honored services: a small but hardworking web
@@ -60,6 +78,12 @@
 
 					<p><strong>Webserv & Sons™</strong><br>
 						Serving HTTP since "it compiled on my machine."</p>
+
+					<p style="margin-top: 30px;">
+						<a href="/README.md" download style="font-weight: bold; color: #0066cc; text-decoration: none;">
+							⬇️ Download project README
+						</a>
+					</p>
 				</div>
 			</div>
 
