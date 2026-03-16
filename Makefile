@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/09 15:35:57 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/16 10:28:49 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -24,7 +24,7 @@ include ${MK_DIR}/git.mk
 .SILENT:
 .ONESHELL:
 SHELL = /bin/bash
-.PHONY: all clean fclean re run kill test eval ensure-xterm
+.PHONY: all clean fclean re ensure-xterm run kill test eval
 
 # Executable name
 NAME = webserv
@@ -114,11 +114,11 @@ fclean: clean
 
 # Rebuild everything from scratch
 re: fclean
-	@$(MAKE) --no-print-directory all
+	$(MAKE) --no-print-directory all
 
 # Ensure xterm is installed (WSL2 / Debian-based)
 ensure-xterm:
-	@command -v xterm >/dev/null 2>&1 || { \
+	command -v xterm >/dev/null 2>&1 || { \
 		echo "xterm not found, installing..."; \
 		sudo apt-get update -qq && sudo apt-get install -y -qq xterm; \
 	}
@@ -133,11 +133,15 @@ run: $(NAME) ensure-xterm
 	shift $$((choice - 1))
 	conf="$$1"
 	title="$(NAME) | $$conf"
-	xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$$title" -e "bash -c 'stty -echoctl; ./$(NAME) $$conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	xterm \
+		-xrm 'xterm*selectToClipboard: true' \
+		-xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' \
+		-fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 \
+		-T "$$title" -e "bash -c 'stty -echoctl; ./$(NAME) $$conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 
 # Kill any running instance of the local webserv binary
 kill:
-	@bin="$$(cd "$(dir $(lastword $(MAKEFILE_LIST)))" && pwd)/$(NAME)"; \
+	bin="$$(cd "$(dir $(lastword $(MAKEFILE_LIST)))" && pwd)/$(NAME)"; \
 	pids=$$(pgrep -f "$$bin" || pgrep -x "$(NAME)" || true); \
 	if [ -n "$$pids" ]; then \
 		kill $$pids && echo "✓ Killed running $(NAME): $$pids"; \
@@ -147,31 +151,39 @@ kill:
 
 test: $(NAME) ensure-xterm
 	-pkill webserv || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	xterm \
+		-xrm 'xterm*selectToClipboard: true' \
+		-xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' \
+		-fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 \
+		-T "$(NAME) | webServTester" -e "bash -c 'stty -echoctl; ./$(NAME) config/webServTester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
 	sleep 1
-	@# Ensure requests is available (critical dependency)
-	@python3 -c 'import requests' >/dev/null 2>&1 || ( \
+	# Ensure requests is available (critical dependency)
+	python3 -c 'import requests' >/dev/null 2>&1 || ( \
 		echo "Installing Python package: requests"; \
 		python3 -m pip install --user -q requests \
 	)
 	python3 webServTester.py
 
 eval: $(NAME) ensure-xterm
-	@test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
-	@test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
-	@chmod +x tester cgi_tester
-	@mkdir -p YoupiBanane/nop
-	@mkdir -p YoupiBanane/Yeah
-	@touch YoupiBanane/youpi.bad_extension
-	@touch YoupiBanane/youpi.bla
-	@touch YoupiBanane/youpla.bla
-	@touch YoupiBanane/nop/youpi.bad_extension
-	@touch YoupiBanane/nop/other.pouic
-	@touch YoupiBanane/Yeah/not_happy.bad_extension
-	@chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
-	@-pkill webserv 2>/dev/null || true
-	@xterm -xrm 'xterm*selectToClipboard: true' -xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' -fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 -T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/42tester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
-	@sleep 1
+	test -f tester || wget -q https://cdn.intra.42.fr/document/document/44506/tester
+	test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/44507/cgi_tester
+	chmod +x tester cgi_tester
+	mkdir -p YoupiBanane/nop
+	mkdir -p YoupiBanane/Yeah
+	touch YoupiBanane/youpi.bad_extension
+	touch YoupiBanane/youpi.bla
+	touch YoupiBanane/youpla.bla
+	touch YoupiBanane/nop/youpi.bad_extension
+	touch YoupiBanane/nop/other.pouic
+	touch YoupiBanane/Yeah/not_happy.bad_extension
+	chmod 644 YoupiBanane/youpi.bla YoupiBanane/youpla.bla
+	-pkill webserv 2>/dev/null || true
+	xterm \
+		-xrm 'xterm*selectToClipboard: true' \
+		-xrm 'xterm*VT100.Translations: #override \n <Key>Up: ignore() \n <Key>Down: ignore() \n <Key>Left: ignore() \n <Key>Right: ignore()' \
+		-fa 'Monospace' -fs 11 -bg '#1E1E1E' -fg '#CCCCCC' -geometry 145x50 \
+		-T "$(NAME) | 42tester" -e "bash -c 'stty -echoctl; ./$(NAME) config/42tester.conf; stty echoctl; read -p \"Press Enter to close window...\"'" &
+	sleep 1
 	yes "" | ./tester http://localhost:8080
-	@echo "✓ Tests completed, stopping server..."
-	@-pkill webserv 2>/dev/null || true
+	echo "✓ Tests completed, stopping server..."
+	-pkill webserv 2>/dev/null || true
