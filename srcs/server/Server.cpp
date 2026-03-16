@@ -177,18 +177,17 @@ void Server::setupListenSockets()
 	}
 }
 
-// Closes fd, marks its pollfd slot as unused, removes it from the socket type map, sets fd to -1.
+// Marks the pollfd slot as -1, removes fd from the socket type map, then closes fd and sets it to -1.
 void Server::closePollFd(int& fd)
 {
-	safeClose(fd, "Server");
 	for (size_t i = 0; i < _pollFds.size(); ++i)
 		if (_pollFds[i].fd == fd)
 		{
 			_pollFds[i].fd = -1;
-			_socketTypes.erase(fd);
 			break;
 		}
-	fd = -1;
+	_socketTypes.erase(fd);
+	safeClose(fd, "Server");
 }
 
 // Kills a CGI process, closes and soft-deletes its pipes, frees memory.

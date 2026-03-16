@@ -65,7 +65,10 @@ static void executeCgiChild(const RouteMatch& match, const std::vector<int>& fds
 
 	// Close all inherited fds from the server
 	for (size_t i = 0; i < fdsToClose.size(); i++)
-		safeClose(const_cast<int&>(fdsToClose[i]), "CgiChild");
+	{
+		int fd = fdsToClose[i];
+		safeClose(fd, "Cgi");
+	}
 
 	// Get CGI interpreter path as absolute BEFORE chdir
 	std::string interpreter = toAbsolutePath(match.location->getCgiPath());
