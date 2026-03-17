@@ -6,7 +6,7 @@
 #    By: gdosch <gdosch@student.42.fr>              +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/12/16 10:08:04 by eschwart          #+#    #+#              #
-#    Updated: 2026/03/16 15:08:29 by gdosch           ###   ########.fr        #
+#    Updated: 2026/03/17 10:55:24 by gdosch           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -108,7 +108,6 @@ clean:
 fclean: clean
 	rm -f $(NAME)
 	rm -rf YoupiBanane
-	rm -f tester cgi_tester
 	rm -f test_results.json
 	echo "✓ Executable removed"
 
@@ -165,8 +164,6 @@ test: $(NAME) ensure-xterm
 	python3 webServTester.py
 
 eval: $(NAME) ensure-xterm
-	test -f tester || wget -q https://cdn.intra.42.fr/document/document/47655/tester
-	test -f cgi_tester || wget -q https://cdn.intra.42.fr/document/document/47656/cgi_tester
 	chmod +x tester cgi_tester
 	mkdir -p YoupiBanane/nop
 	mkdir -p YoupiBanane/Yeah
