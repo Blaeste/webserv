@@ -1,4 +1,4 @@
-*This project has been created as part of the 42 curriculum by eschwart, gdosch and lmarck.*
+_This project has been created as part of the 42 curriculum by eschwart, gdosch, lmarck._
 
 # Webserv - HTTP Server
 
