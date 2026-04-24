@@ -125,6 +125,7 @@ Press `Ctrl+C` or use:
 
 # kill any process called "webserv"
 make kill
+```
 
 ## Resources
 
