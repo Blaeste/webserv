@@ -1,6 +1,8 @@
 _This project has been created as part of the 42 curriculum by eschwart, gdosch, lmarck._
 
-# Webserv - HTTP Server
+# Webserv
+
+![Score: 125/100](https://img.shields.io/badge/Score-125%2F100-00b4ab?style=for-the-badge&logo=42&logoColor=white)
 
 A lightweight HTTP/1.1 web server implemented in C++98, designed to handle static files, CGI execution, file uploads, and multiple ports (with optional virtual host support).
 
